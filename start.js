@@ -128,11 +128,13 @@ const originalCompile = Module.prototype._compile;
 Module.prototype._compile = function(content, filename) {
 	const normalized = filename.replace(/\\/g, '/');
 
-	// Patch 1: cdpRelay.js — extension ID + custom command handlers + global relay ref
+	// Patch 1: cdpRelay.js — extension ID + env var rename + custom command handlers + global relay ref
 	if (normalized.includes('cdpRelay')) {
 		if (!content.includes(OFFICIAL_EXTENSION_ID))
 			console.warn('[Earthling] WARNING: Extension ID not found in cdpRelay.js');
 		content = content.replaceAll(OFFICIAL_EXTENSION_ID, EARTHLING_EXTENSION_ID);
+		// Rename env var: PLAYWRIGHT_MCP_EXTENSION_TOKEN → BROWSER_AUTOMATION_MCP_EXTENSION_TOKEN
+		content = content.replaceAll('PLAYWRIGHT_MCP_EXTENSION_TOKEN', 'BROWSER_AUTOMATION_MCP_EXTENSION_TOKEN');
 		if (!content.includes(CDP_RELAY_MARKER))
 			console.warn('[Earthling] WARNING: patch failed — CDP_RELAY_MARKER not found in cdpRelay.js');
 		content = content.replace(CDP_RELAY_MARKER, CDP_RELAY_INJECTION);
