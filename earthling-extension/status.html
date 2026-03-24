@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Earthling Browser Bridge - Status</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+      :root {
+        --brand-gradient: linear-gradient(
+          120deg,
+          #f86a61 0%,
+          #d5477e 40%,
+          #9946a6 60%,
+          #4d51fc 100%
+        );
+        --bg: #000000;
+        --surface: #0d0e14;
+        --text: #f1f3f5;
+        --text-muted: #ced4da;
+        --text-secondary: #868e96;
+        --success: #20c997;
+        --error: #e03131;
+        --border: #181f2b;
+        --border-subtle: #101010;
+        --primary-500: #e0658f;
+        --primary-600: #d5477e;
+        --font-body:
+          "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+        --radius-sm: 12px;
+        --radius-md: 20px;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeSlideUp {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          box-shadow: 0 0 6px rgba(32, 201, 151, 0.5);
+        }
+        50% {
+          opacity: 0.7;
+          box-shadow: 0 0 10px rgba(32, 201, 151, 0.8);
+        }
+      }
+
+      body {
+        margin: 0;
+        padding: 40px 20px;
+        font-family: var(--font-body);
+        background: var(--bg);
+        color: var(--text);
+        min-width: 400px;
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+        box-sizing: border-box;
+        animation: fadeIn 0.4s ease-out;
+      }
+
+      .container {
+        max-width: 520px;
+        width: 100%;
+      }
+
+      .header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 32px;
+        animation: fadeSlideUp 0.5s ease-out;
+      }
+
+      .header img {
+        width: 48px;
+        height: 48px;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        background: var(--brand-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 400;
+      }
+
+      .status-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 16px;
+        margin-bottom: 20px;
+        animation: fadeSlideUp 0.5s ease-out 0.1s both;
+      }
+
+      .status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .status-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .status-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+      }
+
+      .status-value {
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .status-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+
+      .status-dot.active {
+        background: var(--success);
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      .status-dot.inactive {
+        background: var(--text-secondary);
+      }
+
+      .connected-tab {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        margin-bottom: 20px;
+        cursor: pointer;
+        transition:
+          border-color 0.2s,
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+
+      .connected-tab:hover {
+        border-color: var(--primary-500);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(224, 101, 143, 0.1);
+      }
+
+      .tab-favicon {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        border-radius: 2px;
+      }
+
+      .tab-details {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .tab-title {
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .tab-url {
+        font-size: 11px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .section-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 10px;
+        text-align: center;
+      }
+
+      .token-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        animation: fadeSlideUp 0.5s ease-out 0.2s both;
+      }
+
+      .token-display {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .token-value {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--text-muted);
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        user-select: all;
+      }
+
+      .btn {
+        padding: 8px 20px;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition:
+          transform 0.15s,
+          opacity 0.15s,
+          box-shadow 0.15s,
+          background 0.15s,
+          border-color 0.15s,
+          color 0.15s;
+        flex-shrink: 0;
+      }
+
+      .btn:hover {
+        transform: scale(1.02);
+      }
+
+      .btn:active {
+        transform: scale(0.98);
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-copy {
+        background: var(--brand-gradient);
+        color: #fff;
+        padding: 6px 14px;
+        font-size: 12px;
+        box-shadow: 0 2px 8px rgba(213, 71, 126, 0.25);
+      }
+
+      .btn-copy:hover {
+        box-shadow: 0 4px 12px rgba(213, 71, 126, 0.4);
+      }
+
+      .btn-disconnect {
+        background: transparent;
+        border: 1px solid rgba(224, 49, 49, 0.4);
+        color: var(--error);
+        width: 100%;
+        padding: 12px;
+        border-radius: var(--radius-sm);
+        animation: fadeSlideUp 0.5s ease-out 0.3s both;
+      }
+
+      .btn-disconnect:hover {
+        background: rgba(224, 49, 49, 0.08);
+      }
+
+      .btn-unblock {
+        background: transparent;
+        border: 1px solid var(--text-secondary);
+        color: var(--text-secondary);
+        padding: 4px 12px;
+        font-size: 12px;
+        border-radius: 6px;
+        transition:
+          border-color 0.2s,
+          color 0.2s;
+      }
+
+      .btn-unblock:hover {
+        border-color: var(--success);
+        color: var(--success);
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 32px 16px;
+        color: var(--text-secondary);
+        font-size: 14px;
+        border: 1px dashed var(--border);
+        border-radius: var(--radius-sm);
+        animation: fadeSlideUp 0.5s ease-out 0.2s both;
+      }
+
+      .btn-copy.copied {
+        background: var(--success);
+        color: #000000;
+        box-shadow: 0 2px 8px rgba(32, 201, 151, 0.25);
+      }
+
+      .tab-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .tab-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        margin-bottom: 6px;
+        animation: fadeSlideUp 0.4s ease-out both;
+      }
+
+      #connected-tab-section {
+        animation: fadeSlideUp 0.5s ease-out 0.15s both;
+      }
+
+      #blocklist-section {
+        animation: fadeSlideUp 0.5s ease-out 0.35s both;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="icons/icon-48.png" alt="Earthling" />
+        <h1>Browser Bridge</h1>
+        <p class="subtitle">Manage your Earthling browser connection</p>
+      </div>
+
+      <div id="status-card" class="status-card">
+        <div class="status-row">
+          <span class="status-label">Status</span>
+          <span id="status-value" class="status-value">
+            <span id="status-dot" class="status-dot inactive"></span>
+            <span id="status-text">Checking...</span>
+          </span>
+        </div>
+      </div>
+
+      <div id="connected-tab-section" style="display: none">
+        <div class="section-label">Connected Tab</div>
+        <div id="connected-tab" class="connected-tab">
+          <img
+            id="ct-favicon"
+            class="tab-favicon"
+            src="icons/icon-16.png"
+            alt=""
+          />
+          <div class="tab-details">
+            <div id="ct-title" class="tab-title"></div>
+            <div id="ct-url" class="tab-url"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label">Authentication</div>
+      <div class="token-section">
+        <div class="token-display">
+          <span id="token-value" class="token-value">Loading...</span>
+          <button id="copy-btn" class="btn btn-copy">Copy</button>
+        </div>
+      </div>
+
+      <div id="disconnect-section" style="display: none">
+        <button id="disconnect-btn" class="btn btn-disconnect">
+          Disconnect
+        </button>
+      </div>
+
+      <div id="empty-state" class="empty-state" style="display: none">
+        No active connection. The bridge will appear here once an agent
+        connects.
+      </div>
+
+      <div id="blocklist-section" style="margin-top: 24px">
+        <div class="section-label">Blocked Tabs</div>
+        <div
+          id="blocklist-empty"
+          class="empty-state"
+          style="display: none; padding: 16px"
+        >
+          No blocked tabs. Right-click the extension icon on any tab to manage
+          access.
+        </div>
+        <ul id="blocklist" class="tab-list"></ul>
+      </div>
+    </div>
+
+    <script src="status.js"></script>
+  </body>
+</html>

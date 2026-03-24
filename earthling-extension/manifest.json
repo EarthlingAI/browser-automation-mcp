@@ -1,0 +1,16 @@
+{
+	"manifest_version": 3,
+	"name": "Earthling Browser Bridge",
+	"version": "0.1.0",
+	"description": "Connect Earthling AI agent to your browser tabs",
+	"permissions": ["debugger", "activeTab", "tabs", "storage", "contextMenus"],
+	"host_permissions": ["<all_urls>"],
+	"background": { "service_worker": "background.js", "type": "module" },
+	"action": {
+		"default_title": "Earthling Browser Bridge (click to attach/detach)",
+		"default_icon": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" }
+	},
+	"icons": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
+	"options_ui": { "page": "status.html", "open_in_tab": true },
+	"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApUCv+K3yaTeZPlpp6qZ3uFShx807+dqUWC1te3fly3IaxFnhET/n/5Qlyvw3fYc23vc7LiwGL0Zt1MAstIIc0KlaBU/VNhYB5EfrVdt75jiNHdL+sGAlTmL+eOZaG0ZDXMCLQbqwJ+dEnmkGh9R7FzZlLaAqTuHwBTpKoqIf7fMdSH2dWq91oynJFZx2Cj6RwvFr8m1ZpgxkV3NBah0NCV4bHlJ6ykQYzEAG+yha/I8W2ao7HU+v6czMmi7jgpo0L+R25xcIpb1qBx0x1UeGuHkQaXCbDRChGBgTEKC4AkeYLVOH/2bgSo/ghcWVwsfop1zliuNSVnBKe90c4b/UyQIDAQAB"
+}
