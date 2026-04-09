@@ -6,4 +6,5 @@ playwright-report/
 .DS_Store
 .env
 sessions/
+dist/
 *.crx-key.pem

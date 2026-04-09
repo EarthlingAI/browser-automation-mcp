@@ -1,0 +1,27 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "Node16",
+		"moduleResolution": "Node16",
+		"lib": ["ES2022"],
+		"outDir": "./dist",
+		"rootDir": ".",
+		"strict": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"skipLibCheck": true,
+		"noEmit": true,
+		"useUnknownInCatchVariables": false,
+		"useDefineForClassFields": false,
+		"resolveJsonModule": true,
+		"allowJs": true,
+		"jsx": "react-jsx",
+		"paths": {
+			"@isomorphic/*": ["./src/utils/isomorphic/*"],
+			"@utils/*": ["./src/server/utils/*"]
+		},
+		"baseUrl": "."
+	},
+	"include": ["src/**/*", "dev.ts"],
+	"exclude": ["node_modules", "dist", "packages"]
+}

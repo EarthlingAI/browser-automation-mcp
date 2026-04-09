@@ -1,0 +1,10 @@
+[*]
+../..
+../server/
+../server/utils/
+../remote/
+../utils/
+../utilsBundle.ts
+../client/
+../server/trace/viewer/
+../tools/cli-client/program.ts
