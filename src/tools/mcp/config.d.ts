@@ -20,7 +20,6 @@ export type ToolCapability =
   'config' |
   'core' |
   'core-navigation' |
-  'core-tabs' |
   'core-input' |
   'core-install' |
   'network' |

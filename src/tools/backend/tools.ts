@@ -34,7 +34,6 @@ import runCode from './runCode';
 import snapshot from './snapshot';
 import screenshot from './screenshot';
 import storage from './storage';
-import tabs from './tabs';
 import tracing from './tracing';
 import verify from './verify';
 import video from './video';
@@ -64,7 +63,6 @@ export const browserTools: Tool<any>[] = [
   ...screenshot,
   ...snapshot,
   ...storage,
-  ...tabs,
   ...tracing,
   ...verify,
   ...video,
