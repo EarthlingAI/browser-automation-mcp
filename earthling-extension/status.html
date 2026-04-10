@@ -347,6 +347,98 @@
         box-shadow: 0 2px 8px rgba(32, 201, 151, 0.25);
       }
 
+      .relay-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 16px;
+        margin-bottom: 20px;
+        animation: fadeSlideUp 0.5s ease-out 0.15s both;
+      }
+
+      .relay-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .relay-row label {
+        font-size: 13px;
+        color: var(--text-muted);
+        white-space: nowrap;
+      }
+
+      .relay-row input[type="number"] {
+        flex: 1;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-family: var(--font-mono);
+        font-size: 13px;
+        padding: 8px 12px;
+        outline: none;
+        transition: border-color 0.2s;
+        -moz-appearance: textfield;
+      }
+
+      .relay-row input[type="number"]:focus {
+        border-color: var(--primary-500);
+      }
+
+      .relay-row input[type="number"]::-webkit-inner-spin-button,
+      .relay-row input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      .relay-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 12px;
+        font-size: 13px;
+      }
+
+      .relay-status-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+
+      .relay-status-dot.connected {
+        background: var(--success);
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      .relay-status-dot.disconnected {
+        background: var(--text-secondary);
+      }
+
+      .relay-status-dot.retrying {
+        background: #f59f00;
+        animation: pulse 1s ease-in-out infinite;
+      }
+
+      .btn-save {
+        background: var(--brand-gradient);
+        color: #fff;
+        padding: 6px 14px;
+        font-size: 12px;
+        box-shadow: 0 2px 8px rgba(213, 71, 126, 0.25);
+      }
+
+      .btn-save:hover {
+        box-shadow: 0 4px 12px rgba(213, 71, 126, 0.4);
+      }
+
+      .btn-save.saved {
+        background: var(--success);
+        color: #000;
+        box-shadow: 0 2px 8px rgba(32, 201, 151, 0.25);
+      }
+
       .tab-list {
         list-style: none;
         margin: 0;
@@ -389,6 +481,19 @@
             <span id="status-dot" class="status-dot inactive"></span>
             <span id="status-text">Checking...</span>
           </span>
+        </div>
+      </div>
+
+      <div class="section-label">Relay Configuration</div>
+      <div class="relay-section">
+        <div class="relay-row">
+          <label for="relay-port">Port</label>
+          <input type="number" id="relay-port" value="9223" min="1" max="65535" />
+          <button id="save-relay-config" class="btn btn-save">Save</button>
+        </div>
+        <div class="relay-status">
+          <span id="relay-status-dot" class="relay-status-dot disconnected"></span>
+          <span id="relay-status">Disconnected</span>
         </div>
       </div>
 

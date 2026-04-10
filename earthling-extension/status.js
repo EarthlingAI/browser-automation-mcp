@@ -10,6 +10,77 @@ const copyBtn = document.getElementById("copy-btn");
 const disconnectSection = document.getElementById("disconnect-section");
 const disconnectBtn = document.getElementById("disconnect-btn");
 const emptyState = document.getElementById("empty-state");
+const relayPortInput = document.getElementById("relay-port");
+const saveRelayBtn = document.getElementById("save-relay-config");
+const relayStatusDot = document.getElementById("relay-status-dot");
+const relayStatusText = document.getElementById("relay-status");
+
+async function loadRelayConfig() {
+	try {
+		const result = await chrome.storage.local.get("relayConfig");
+		if (result.relayConfig && result.relayConfig.port) {
+			relayPortInput.value = result.relayConfig.port;
+		}
+	} catch (_) {
+		// Use default
+	}
+}
+
+saveRelayBtn.addEventListener("click", async function () {
+	const port = parseInt(relayPortInput.value, 10);
+	if (isNaN(port) || port < 1 || port > 65535) {
+		relayPortInput.style.borderColor = "var(--error)";
+		setTimeout(() => { relayPortInput.style.borderColor = ""; }, 1500);
+		return;
+	}
+	try {
+		const result = await chrome.storage.local.get("relayConfig");
+		const config = result.relayConfig || { host: "127.0.0.1", port: 9223 };
+		config.port = port;
+		await chrome.storage.local.set({ relayConfig: config });
+		saveRelayBtn.textContent = "Saved";
+		saveRelayBtn.classList.add("saved");
+		setTimeout(() => {
+			saveRelayBtn.textContent = "Save";
+			saveRelayBtn.classList.remove("saved");
+		}, 1500);
+	} catch (e) {
+		saveRelayBtn.textContent = "Error";
+		setTimeout(() => { saveRelayBtn.textContent = "Save"; }, 1500);
+	}
+});
+
+function updateRelayStatus(status) {
+	const hasConnection = status && status.connectedTabId;
+	if (hasConnection) {
+		relayStatusDot.className = "relay-status-dot connected";
+		relayStatusText.textContent = "Connected";
+	} else {
+		// Check if auto-connect is actively retrying by probing the relay
+		chrome.storage.local.get("relayConfig").then(result => {
+			const config = result.relayConfig;
+			if (!config) {
+				relayStatusDot.className = "relay-status-dot disconnected";
+				relayStatusText.textContent = "No config";
+				return;
+			}
+			fetch(`http://${config.host}:${config.port}/discover`)
+				.then(resp => {
+					if (resp.ok) {
+						relayStatusDot.className = "relay-status-dot retrying";
+						relayStatusText.textContent = "Relay available — waiting for tab";
+					} else {
+						relayStatusDot.className = "relay-status-dot disconnected";
+						relayStatusText.textContent = "Disconnected";
+					}
+				})
+				.catch(() => {
+					relayStatusDot.className = "relay-status-dot disconnected";
+					relayStatusText.textContent = "Disconnected";
+				});
+		});
+	}
+}
 
 async function loadToken() {
   try {
@@ -76,6 +147,8 @@ async function refreshStatus() {
       "Background service worker may not be running. Check chrome://extensions/ for errors.";
     return;
   }
+
+  updateRelayStatus(status);
 
   if (status && status.connectedTabId) {
     statusDot.className = "status-dot active";
@@ -177,5 +250,11 @@ chrome.runtime.onMessage.addListener(function (message) {
 });
 
 loadToken();
+loadRelayConfig();
 refreshStatus();
 refreshBlocklist();
+
+// Periodically refresh connection and relay status
+setInterval(() => {
+	refreshStatus();
+}, 5000);

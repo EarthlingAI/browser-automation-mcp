@@ -6,12 +6,18 @@ function debugLog(...args) {
 let bridge;
 
 class RelayConnection {
-	constructor(ws) {
-		this._debuggee = {};
+	constructor(ws, tabId) {
 		this._ws = ws;
 		this._closed = false;
 		this.onclose = null;
-		this._tabPromise = new Promise((resolve) => this._tabPromiseResolve = resolve);
+		if (tabId) {
+			this._debuggee = { tabId };
+			this._tabPromise = Promise.resolve();
+			this._tabPromiseResolve = () => {};
+		} else {
+			this._debuggee = {};
+			this._tabPromise = new Promise((resolve) => this._tabPromiseResolve = resolve);
+		}
 		this._ws.onmessage = this._onMessage.bind(this);
 		this._ws.onclose = () => this._onClose();
 		this._eventListener = this._onDebuggerEvent.bind(this);
@@ -132,6 +138,16 @@ class RelayConnection {
 			return { targetInfo: result?.targetInfo };
 		}
 
+		if (message.method === "openTab") {
+			const tab = await chrome.tabs.create({ url: message.params.url || "about:blank" });
+			return { tabId: tab.id, title: tab.title, url: tab.url };
+		}
+
+		if (message.method === "closeTab") {
+			await chrome.tabs.remove(message.params.tabId);
+			return {};
+		}
+
 		if (!this._debuggee.tabId)
 			throw new Error("No tab is connected. Please go to the Playwright MCP extension and select the tab you want to connect to.");
 		if (message.method === "forwardCDPCommand") {
@@ -164,10 +180,14 @@ class EarthlingBrowserBridge {
 		this._connectedTabId = null;
 		this._preSelectedTabId = null;
 		this._pendingTabSelection = new Map();
+		this._autoConnectActive = false;
 
 		// Restore persisted state (survives service worker restarts in MV3)
 		// Store the promise so interception handlers can await it after wake
 		this._stateReady = this._restoreState();
+		// Auto-connect is triggered by connect.html?autoConnect=true from the relay.
+		// Background auto-connect (polling) is deferred — only starts after first successful connection
+		// to avoid conflicting with the connect.html flow.
 
 		chrome.tabs.onCreated.addListener(this._onTabCreated.bind(this));
 		chrome.tabs.onRemoved.addListener(this._onTabRemoved.bind(this));
@@ -175,6 +195,16 @@ class EarthlingBrowserBridge {
 		chrome.tabs.onActivated.addListener(this._onTabActivated.bind(this));
 		chrome.runtime.onMessage.addListener(this._onMessage.bind(this));
 		chrome.action.onClicked.addListener(this._onActionClicked.bind(this));
+
+		chrome.alarms.onAlarm.addListener((alarm) => {
+			if (alarm.name === "autoConnectRetry")
+				this._startAutoConnect();
+		});
+
+		chrome.storage.onChanged.addListener((changes, area) => {
+			if (area === "local" && changes.relayConfig)
+				this._startAutoConnect();
+		});
 
 		// Context menu setup — create on every service worker start (not just onInstalled)
 		this._createContextMenus();
@@ -211,23 +241,79 @@ class EarthlingBrowserBridge {
 			return;
 		}
 
-		// AUTO-CONNECT PATH: pre-selected tab exists — bypass connect page entirely
-		if (this._preSelectedTabId) {
+		const autoConnect = parsedUrl.searchParams.get("autoConnect") === "true";
+
+		// When autoConnect=true and no tab is pre-selected, auto-select the best tab.
+		// Retry with delay because Chrome session restore can take several seconds
+		// after a fresh launch — tabs may not exist yet.
+		if (autoConnect && !this._preSelectedTabId) {
+			let bestTab = null;
+			for (let attempt = 0; attempt < 5 && !bestTab; attempt++) {
+				if (attempt > 0) await new Promise(r => setTimeout(r, 2000));
+				const allTabs = await chrome.tabs.query({});
+				bestTab = allTabs.find(t =>
+					t.id !== tab.id && t.url &&
+					!t.url.startsWith("chrome://") && !t.url.startsWith("edge://") &&
+					!t.url.startsWith("chrome-extension://") && t.url !== "about:blank"
+				) || allTabs.find(t =>
+					t.id !== tab.id && t.url &&
+					!t.url.startsWith("chrome://") && !t.url.startsWith("edge://") &&
+					!t.url.startsWith("chrome-extension://")
+				);
+				if (!bestTab && attempt === 0)
+					debugLog("No suitable tabs yet, waiting for Chrome session restore...");
+			}
+			// If still no tabs after retrying (e.g. fresh Chrome, "Restore pages?" dialog
+			// blocking), create a new blank tab so the agent has something to work with.
+			if (!bestTab) {
+				debugLog("No suitable tabs found — creating a new tab for auto-connect");
+				bestTab = await chrome.tabs.create({ url: "about:blank", active: false });
+			}
+			if (bestTab) {
+				this._preSelectedTabId = bestTab.id;
+				debugLog("Auto-selected tab for connect:", bestTab.id, bestTab.title || bestTab.url);
+			}
+			// Fall through to the pre-selected tab auto-connect below
+		}
+
+		// AUTO-CONNECT PATH: pick a tab automatically — bypass connect page entirely
+		if (autoConnect || this._preSelectedTabId) {
 			try {
-				const preTab = await chrome.tabs.get(this._preSelectedTabId);
+				let targetTab;
+				if (this._preSelectedTabId) {
+					targetTab = await chrome.tabs.get(this._preSelectedTabId);
+				} else {
+					// Pick the first non-chrome, non-extension active tab
+					const allTabs = await chrome.tabs.query({ active: true, currentWindow: true });
+					targetTab = allTabs.find(t =>
+						t.id !== tab.id && t.url &&
+						!t.url.startsWith("chrome://") && !t.url.startsWith("edge://") &&
+						!t.url.startsWith("chrome-extension://")
+					);
+					// Fallback: any non-chrome tab
+					if (!targetTab) {
+						const allNonChrome = await chrome.tabs.query({});
+						targetTab = allNonChrome.find(t =>
+							t.id !== tab.id && t.url &&
+							!t.url.startsWith("chrome://") && !t.url.startsWith("edge://") &&
+							!t.url.startsWith("chrome-extension://")
+						);
+					}
+				}
+				if (!targetTab) throw new Error("No suitable tab found for auto-connect");
 
-				// Establish WebSocket to relay
-				await this._connectToRelay(tab.id, mcpRelayUrl);
+				// Pass targetTabId to _connectToRelay so the RelayConnection is
+				// created with the tab ID already set — avoids race with attachToTab
+				await this._connectToRelay(tab.id, mcpRelayUrl, targetTab.id);
 
-				// Connect to the pre-selected tab
-				await this._connectTab(tab.id, preTab.id, preTab.windowId, mcpRelayUrl);
+				// Connect to the target tab (sets up lifecycle handlers, badges, etc.)
+				await this._connectTab(tab.id, targetTab.id, targetTab.windowId, mcpRelayUrl);
 
 				// Close the connect page tab before it renders
 				await chrome.tabs.remove(tab.id);
-				debugLog("Auto-connected to pre-selected tab, connect page bypassed");
+				debugLog("Auto-connected to tab:", targetTab.id, targetTab.title || targetTab.url);
 				return;
 			} catch (error) {
-				// Pre-selected tab gone or connection failed — fall through to manual
 				debugLog("Auto-connect failed, falling through to manual:", error.message);
 			}
 		}
@@ -355,9 +441,15 @@ class EarthlingBrowserBridge {
 			return;
 		}
 
-		// Case 2: Connected to ANOTHER tab → hot-swap
+		// Case 2: Connected to ANOTHER tab → send hint to agent
 		if (this._connectedTabId && this._activeConnection) {
-			await this._hotSwapTab(tab.id);
+			this._activeConnection._sendMessage({
+				method: "userSelectedTab",
+				params: { tabId: tab.id, title: tab.title || "", url: tab.url || "" }
+			});
+			await this._updateBadge(tab.id, { text: "\u25CF", color: "#2196F3", title: "Hinted to Earthling agent" });
+			setTimeout(() => this._updateBadge(tab.id, { text: "" }).catch(() => {}), 3000);
+			debugLog("Sent tab hint to agent:", tab.id);
 			return;
 		}
 
@@ -470,16 +562,25 @@ class EarthlingBrowserBridge {
 		await chrome.storage.local.set({ blocklist });
 	}
 
-	async _connectToRelay(selectorTabId, mcpRelayUrl) {
+	async _connectToRelay(selectorTabId, mcpRelayUrl, targetTabId) {
+		// Guard: prevent dual-connect race between _handleConnectPageCreated and connect.js
+		if (this._pendingTabSelection.has(selectorTabId)) {
+			debugLog("Pending connection already exists for selector", selectorTabId, "— reusing");
+			return;
+		}
+		if (this._activeConnection) {
+			debugLog("Already connected to relay — skipping");
+			return;
+		}
 		try {
-			debugLog(`Connecting to relay at ${mcpRelayUrl}`);
+			debugLog(`Connecting to relay at ${mcpRelayUrl}`, targetTabId ? `(target tab: ${targetTabId})` : "");
 			const socket = new WebSocket(mcpRelayUrl);
 			await new Promise((resolve, reject) => {
 				socket.onopen = () => resolve();
 				socket.onerror = () => reject(new Error("WebSocket error"));
 				setTimeout(() => reject(new Error("Connection timeout")), 5000);
 			});
-			const connection = new RelayConnection(socket);
+			const connection = new RelayConnection(socket, targetTabId);
 			connection.onclose = () => {
 				debugLog("Pending connection closed");
 				this._pendingTabSelection.delete(selectorTabId);
@@ -508,9 +609,11 @@ class EarthlingBrowserBridge {
 			this._pendingTabSelection.delete(selectorTabId);
 			this._activeConnection.setTabId(tabId);
 			this._activeConnection.onclose = () => {
-				debugLog("MCP connection closed");
+				debugLog("MCP connection closed — will auto-reconnect");
 				this._activeConnection = undefined;
 				void this._setConnectedTabId(null);
+				// Auto-reconnect when relay disconnects (e.g., engine restart)
+				this._startAutoConnect();
 			};
 			if (this._preSelectedTabId === tabId)
 				this._preSelectedTabId = null;
@@ -519,7 +622,12 @@ class EarthlingBrowserBridge {
 				chrome.tabs.update(tabId, { active: true }),
 				chrome.windows.update(windowId, { focused: true })
 			]);
-			debugLog("Connected to MCP bridge");
+			// Signal relay that tab is attached and ready for Playwright commands
+			this._activeConnection._sendMessage({
+				method: "tabReady",
+				params: { tabId }
+			});
+			debugLog("Connected to MCP bridge, tabReady sent");
 		} catch (error) {
 			await this._setConnectedTabId(null);
 			debugLog(`Failed to connect tab ${tabId}:`, error.message);
@@ -572,7 +680,7 @@ class EarthlingBrowserBridge {
 			return;
 		this._activeConnection?.close("Browser tab closed");
 		this._activeConnection = undefined;
-		this._connectedTabId = null;
+		await this._setConnectedTabId(null);
 	}
 
 	_onTabActivated(activeInfo) {
@@ -595,7 +703,6 @@ class EarthlingBrowserBridge {
 						chrome.tabs.sendMessage(tabId, { type: "connectionTimeout" });
 					}
 				}, 5000);
-				return;
 			}
 		}
 	}
@@ -626,6 +733,83 @@ class EarthlingBrowserBridge {
 		this._activeConnection = undefined;
 		await this._setConnectedTabId(null);
 	}
+
+	async _startAutoConnect() {
+		let config = await this._getRelayConfig();
+		if (!config) {
+			// Set default config on first run or after update
+			config = { host: "127.0.0.1", port: 9223 };
+			await chrome.storage.local.set({ relayConfig: config });
+			debugLog("Default relay config set:", config);
+		}
+		this._autoConnectActive = true;
+		this._attemptAutoConnect(config);
+	}
+
+	async _getRelayConfig() {
+		const result = await chrome.storage.local.get("relayConfig");
+		return result.relayConfig;
+	}
+
+	async _attemptAutoConnect(config) {
+		if (this._activeConnection || !this._autoConnectActive) return;
+
+		const baseUrl = `http://${config.host}:${config.port}`;
+		try {
+			// Find a suitable tab first — don't connect to relay without one
+			const allTabs = await chrome.tabs.query({});
+			const targetTab = allTabs.find(t =>
+				t.url && !t.url.startsWith("chrome://") && !t.url.startsWith("edge://") &&
+				!t.url.startsWith("chrome-extension://") && t.url !== "about:blank"
+			) || allTabs.find(t =>
+				t.url && !t.url.startsWith("chrome://") && !t.url.startsWith("edge://") &&
+				!t.url.startsWith("chrome-extension://")
+			);
+			if (!targetTab) throw new Error("No suitable tab for auto-connect");
+
+			// Discover relay endpoint
+			const resp = await fetch(`${baseUrl}/discover`);
+			if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+			const { extensionPath } = await resp.json();
+			const wsUrl = `ws://${config.host}:${config.port}${extensionPath}`;
+
+			// Connect WebSocket WITH tab ID pre-set (avoids race)
+			const selectorId = -1; // synthetic selector ID for auto-connect
+			await this._connectToRelay(selectorId, wsUrl, targetTab.id);
+
+			// Use _connectTab which sets up lifecycle, sends tabReady
+			await this._connectTab(selectorId, targetTab.id, targetTab.windowId, wsUrl);
+
+			debugLog("Auto-connected to relay at", wsUrl, "tab:", targetTab.id, targetTab.title);
+			chrome.alarms.clear("autoConnectRetry");
+		} catch (e) {
+			debugLog("Auto-connect failed:", e.message, "— will retry");
+			this._scheduleAutoConnectRetry();
+		}
+	}
+
+	_scheduleAutoConnectRetry() {
+		if (!this._autoConnectActive) return;
+		// Fast retry via setTimeout (3s) while service worker is awake
+		// Plus chrome.alarms as safety net if service worker goes to sleep
+		this._retryTimer = setTimeout(async () => {
+			const config = await this._getRelayConfig();
+			if (config) this._attemptAutoConnect(config);
+		}, 3000);
+		chrome.alarms.create("autoConnectRetry", { delayInMinutes: 0.5 });
+	}
 }
 
 bridge = new EarthlingBrowserBridge();
+
+chrome.runtime.onInstalled.addListener(async (details) => {
+	if (details.reason === "install") {
+		const existing = await chrome.storage.local.get("relayConfig");
+		if (!existing.relayConfig) {
+			await chrome.storage.local.set({
+				relayConfig: { host: "127.0.0.1", port: 9223 }
+			});
+			debugLog("Default relay config set");
+		}
+	}
+});

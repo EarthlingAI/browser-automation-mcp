@@ -29,17 +29,18 @@ export async function createExtensionBrowser(config: FullConfig, clientInfo: Cli
   let relay = getRelay();
   if (!relay) {
     const httpServer = createHttpServer();
-    await startHttpServer(httpServer, {});
+    const relayPort = parseInt(process.env.BROWSER_AUTOMATION_MCP_RELAY_PORT || '9223', 10);
+    await startHttpServer(httpServer, { host: '127.0.0.1', port: relayPort });
     relay = new CDPRelayServer(
         httpServer,
         config.browser.launchOptions.channel || 'chrome',
         config.browser.userDataDir,
         config.browser.launchOptions.executablePath);
-    debugLogger(`CDP relay server started, extension endpoint: ${relay.extensionEndpoint()}.`);
+    debugLogger(`CDP relay server started on port ${relayPort}, extension endpoint: ${relay.extensionEndpoint()}.`);
   } else {
     debugLogger('Reusing existing CDP relay after tab switch.');
   }
 
-  await relay.ensureExtensionConnectionForMCPContext(clientInfo, /* forceNewTab */ false);
+  await relay.ensureExtensionConnectionForMCPContext(clientInfo, false);
   return await playwright.chromium.connectOverCDP(relay.cdpEndpoint(), { isLocal: true });
 }

@@ -194,16 +194,24 @@ export class Response {
     if (this._context.config.codegen !== 'none' && this._code.length)
       addSection('Ran Playwright code', this._code, 'js');
 
-    // Render tab titles upon changes or when more than one tab.
-    const tabSnapshot = this._context.currentTab() ? await this._context.currentTabOrDie().captureSnapshot(this._includeSnapshotSelector, this._clientWorkspace) : undefined;
-    const tabHeaders = await Promise.all(this._context.tabs().map(tab => tab.headerSnapshot()));
-    if (this._includeSnapshot !== 'none' || tabHeaders.some(header => header.changed)) {
-      if (tabHeaders.length !== 1)
-        addSection('Open tabs', renderTabsMarkdown(tabHeaders));
-      addSection('Page', renderTabMarkdown(tabHeaders.find(h => h.current) ?? tabHeaders[0]));
+    // Earthling: skip snapshot when backend is about to be disposed (e.g. after tab switch).
+    // The Playwright page references the OLD tab whose debugger was already detached,
+    // so snapshotForAI() would hang until timeout.
+    // Earthling: skip ALL page access when backend is about to be disposed (tab switch).
+    // The Playwright page references the OLD tab whose debugger was already detached,
+    // so any page access (snapshotForAI, page.title, etc.) would hang or throw.
+    let tabSnapshot: any;
+    if (!this._isClose) {
+      tabSnapshot = this._context.currentTab() ? await this._context.currentTabOrDie().captureSnapshot(this._includeSnapshotSelector, this._clientWorkspace) : undefined;
+      const tabHeaders = await Promise.all(this._context.tabs().map(tab => tab.headerSnapshot()));
+      if (this._includeSnapshot !== 'none' || tabHeaders.some(header => header.changed)) {
+        if (tabHeaders.length !== 1)
+          addSection('Open tabs', renderTabsMarkdown(tabHeaders));
+        addSection('Page', renderTabMarkdown(tabHeaders.find(h => h.current) ?? tabHeaders[0]));
+      }
+      if (this._context.tabs().length === 0)
+        this._isClose = true;
     }
-    if (this._context.tabs().length === 0)
-      this._isClose = true;
 
     // Handle modal states.
     if (tabSnapshot?.modalStates.length)

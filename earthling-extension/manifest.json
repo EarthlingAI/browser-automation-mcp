@@ -3,7 +3,7 @@
 	"name": "Earthling Browser Bridge",
 	"version": "0.1.0",
 	"description": "Connect Earthling AI agent to your browser tabs",
-	"permissions": ["debugger", "activeTab", "tabs", "storage", "contextMenus"],
+	"permissions": ["debugger", "activeTab", "tabs", "storage", "contextMenus", "alarms"],
 	"host_permissions": ["<all_urls>"],
 	"background": { "service_worker": "background.js", "type": "module" },
 	"action": {

@@ -32,8 +32,6 @@ import { ManualPromise } from '../../utils/isomorphic/manualPromise';
 
 import { addressToString } from '../utils/mcp/http';
 import { logUnhandledError } from './log';
-import * as protocol from './protocol';
-
 import type websocket from 'ws';
 import type { ClientInfo } from '../utils/mcp/server';
 import type { ExtensionCommand, ExtensionEvents } from './protocol';
@@ -91,21 +89,26 @@ export class CDPRelayServer {
     this._extensionPath = `/extension/${uuid}`;
 
     this._resetExtensionConnection();
+
+    // Earthling: /discover endpoint for extension auto-connect
+    server.on('request', (req: http.IncomingMessage, res: http.ServerResponse) => {
+      if (req.url === '/discover' && req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ extensionPath: this._extensionPath }));
+        return;
+      }
+      // Let WebSocket upgrade requests pass through
+    });
+
     this._wss = new wsServer({ server });
     this._wss.on('connection', this._onConnection.bind(this));
 
-    // Earthling: store relay globally and wrap close to support tab switching
+    // Earthling: store relay globally for cross-module access
     currentRelay = this;
-    this._skipExtensionClose = false;
-    const origClose = this._closeExtensionConnection.bind(this);
-    this._closeExtensionConnection = (reason: string) => {
-      if (this._skipExtensionClose) return;
-      origClose(reason);
-    };
   }
 
-  // Earthling: flag to suppress extension disconnection during tab switch
-  _skipExtensionClose = false;
+  // Earthling: public getter for extension connection (used by earthlingTabs tools)
+  get extensionConnection(): ExtensionConnection | null { return this._extensionConnection; }
 
   cdpEndpoint() {
     return `${this._wsHost}${this._cdpPath}`;
@@ -119,35 +122,25 @@ export class CDPRelayServer {
     debugLogger('Ensuring extension connection for MCP context');
     if (this._extensionConnection)
       return;
-    this._connectBrowser(clientInfo, forceNewTab);
-    debugLogger('Waiting for incoming extension connection');
+
+    // Extension not connected — launch browser (extension will auto-connect)
+    this._launchBrowser();
+    debugLogger('Browser launched, waiting for extension auto-connect');
+
+    const timeout = process.env.PWMCP_TEST_CONNECTION_TIMEOUT
+      ? parseInt(process.env.PWMCP_TEST_CONNECTION_TIMEOUT, 10)
+      : 30_000;
+
     await Promise.race([
       this._extensionConnectionPromise,
       new Promise((_, reject) => setTimeout(() => {
-        reject(new Error(`Extension connection timeout. Make sure the "Playwright MCP Bridge" extension is installed. See https://github.com/microsoft/playwright-mcp/blob/main/packages/extension/README.md for installation instructions.`));
-      }, process.env.PWMCP_TEST_CONNECTION_TIMEOUT ? parseInt(process.env.PWMCP_TEST_CONNECTION_TIMEOUT, 10) : 5_000)),
+        reject(new Error('Extension auto-connect timeout. Make sure the Earthling Browser Bridge extension is installed and relay config is set in the extension options.'));
+      }, timeout)),
     ]);
-    debugLogger('Extension connection established');
+    debugLogger('Extension connection established via auto-connect');
   }
 
-  private _connectBrowser(clientInfo: ClientInfo, forceNewTab: boolean) {
-    const mcpRelayEndpoint = `${this._wsHost}${this._extensionPath}`;
-    // Need to specify "key" in the manifest.json to make the id stable when loading from file.
-    const url = new URL('chrome-extension://ifoggnihepkfpokholefpgpcgiikkeke/connect.html');
-    url.searchParams.set('mcpRelayUrl', mcpRelayEndpoint);
-    const client = {
-      name: 'Playwright Agent',
-      version: require('../../../package.json').version,
-    };
-    url.searchParams.set('client', JSON.stringify(client));
-    url.searchParams.set('protocolVersion', process.env.PWMCP_TEST_PROTOCOL_VERSION ?? protocol.VERSION.toString());
-    if (forceNewTab)
-      url.searchParams.set('newTab', 'true');
-    const token = process.env.BROWSER_AUTOMATION_MCP_EXTENSION_TOKEN;
-    if (token)
-      url.searchParams.set('token', token);
-    const href = url.toString();
-
+  private _launchBrowser() {
     let executablePath = this._executablePath;
     if (!executablePath) {
       const executableInfo = registry.findExecutable(this._browserChannel);
@@ -158,12 +151,21 @@ export class CDPRelayServer {
         throw new Error(`"${this._browserChannel}" executable not found. Make sure it is installed at a standard location.`);
     }
 
+    // Build connect.html URL to wake the extension service worker and trigger auto-connect
+    const mcpRelayEndpoint = `${this._wsHost}${this._extensionPath}`;
+    const url = new URL('chrome-extension://ifoggnihepkfpokholefpgpcgiikkeke/connect.html');
+    url.searchParams.set('mcpRelayUrl', mcpRelayEndpoint);
+    url.searchParams.set('autoConnect', 'true');
+    const href = url.toString();
+
     const args: string[] = [];
     if (this._userDataDir)
       args.push(`--user-data-dir=${this._userDataDir}`);
+    args.push('--silent-debugger-extension-api');
     if (os.platform() === 'linux' && this._browserChannel === 'chromium')
       args.push('--no-sandbox');
     args.push(href);
+
     spawn(executablePath, args, {
       windowsHide: true,
       detached: true,
@@ -197,9 +199,9 @@ export class CDPRelayServer {
 
   private _handlePlaywrightConnection(ws: WebSocket): void {
     if (this._playwrightConnection) {
-      debugLogger('Rejecting second Playwright connection');
-      ws.close(1000, 'Another CDP client already connected');
-      return;
+      debugLogger('Replacing existing Playwright connection');
+      this._playwrightConnection.close(1000, 'Replaced by new connection');
+      this._playwrightConnection = null;
     }
     this._playwrightConnection = ws;
     ws.on('message', async data => {
@@ -214,8 +216,8 @@ export class CDPRelayServer {
       if (this._playwrightConnection !== ws)
         return;
       this._playwrightConnection = null;
-      this._closeExtensionConnection('Playwright client disconnected');
-      debugLogger('Playwright WebSocket closed');
+      // Earthling: extension persists across Playwright reconnections (tab switches)
+      debugLogger('Playwright WebSocket closed (extension kept alive)');
     });
     ws.on('error', error => {
       debugLogger('Playwright WebSocket error:', error);
@@ -256,7 +258,9 @@ export class CDPRelayServer {
       this._closePlaywrightConnection(`Extension disconnected: ${reason}`);
     };
     this._extensionConnection.onmessage = this._handleExtensionMessage.bind(this);
-    this._extensionConnectionPromise.resolve();
+    // Earthling: do NOT resolve here — wait for 'tabReady' event from extension
+    // so Playwright doesn't send commands before the extension has a tab attached.
+    debugLogger('Extension WebSocket connected, waiting for tabReady...');
   }
 
   private _handleExtensionMessage<M extends keyof ExtensionEvents>(method: M, params: ExtensionEvents[M]['params']) {
@@ -264,16 +268,28 @@ export class CDPRelayServer {
       // Earthling: update relay state when extension switches tabs
       case 'tabSwitched':
         if (this._connectedTabInfo)
-          this._connectedTabInfo.targetInfo = params.targetInfo;
+          this._connectedTabInfo.targetInfo = (params as any).targetInfo;
         break;
-      case 'forwardCDPEvent':
-        const sessionId = params.sessionId || this._connectedTabInfo?.sessionId;
+      case 'extensionReady':
+        debugLogger('Extension auto-connected, tabs:', (params as any).tabs?.length);
+        break;
+      case 'tabReady':
+        debugLogger('Extension tab ready — resolving connection promise');
+        this._extensionConnectionPromise.resolve();
+        break;
+      case 'userSelectedTab':
+        debugLogger('User selected tab hint:', (params as any).tabId, (params as any).title);
+        break;
+      case 'forwardCDPEvent': {
+        const cdpParams = params as ExtensionEvents['forwardCDPEvent']['params'];
+        const sessionId = cdpParams.sessionId || this._connectedTabInfo?.sessionId;
         this._sendToPlaywright({
           sessionId,
-          method: params.method,
-          params: params.params
+          method: cdpParams.method,
+          params: cdpParams.params
         });
         break;
+      }
     }
   }
 
@@ -309,7 +325,9 @@ export class CDPRelayServer {
         // Forward child session handling.
         if (sessionId)
           break;
-        // Simulate auto-attach behavior with real target info
+        // Simulate auto-attach behavior with real target info.
+        // By this point, the extension has already sent 'tabReady' which resolved
+        // _extensionConnectionPromise, so the tab ID and debugger are ready.
         const { targetInfo } = await this._extensionConnection!.send('attachToTab', { });
         this._connectedTabInfo = {
           targetInfo,

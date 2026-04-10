@@ -4,6 +4,7 @@ const clientParam = params.get("client");
 const protocolVersion = params.get("protocolVersion");
 const token = params.get("token");
 const newTab = params.get("newTab") === "true";
+const autoConnect = params.get("autoConnect") === "true";
 
 let clientInfo = null;
 try {
@@ -103,6 +104,14 @@ async function connectToTab(tabId, windowId) {
 		showBanner("connected", "Connected successfully. You can close this tab.");
 		setTimeout(closeThisTab, 800);
 	} else {
+		// Background.js may have already completed auto-connect via _handleConnectPageCreated
+		// before connect.js got here — check if we're actually connected despite the error
+		const status = await sendMsg({ type: "getConnectionStatus" });
+		if (status && status.connectedTabId) {
+			showBanner("connected", "Connected successfully. You can close this tab.");
+			setTimeout(closeThisTab, 300);
+			return;
+		}
 		showBanner("error", "Failed to connect: " + (resp && resp.error ? resp.error : "Unknown error"));
 		enableAllConnectButtons();
 	}
@@ -135,7 +144,7 @@ chrome.runtime.onMessage.addListener(function(message) {
 });
 
 async function main() {
-	if (protocolVersion && protocolVersion !== "1") {
+	if (protocolVersion && !["1", "2"].includes(protocolVersion)) {
 		showBanner("error",
 			"Unsupported protocol version: " + protocolVersion + ". " +
 			"This extension supports protocol version 1. " +
@@ -160,6 +169,17 @@ async function main() {
 			(clientInfo.version ? " v" + escapeHtml(clientInfo.version) : "");
 	}
 
+	// When autoConnect=true, background.js _handleConnectPageCreated may have already
+	// completed the entire connect flow before this page loaded. Check first.
+	if (autoConnect) {
+		var preStatus = await sendMsg({ type: "getConnectionStatus" });
+		if (preStatus && preStatus.connectedTabId) {
+			showBanner("connected", "Connected successfully. You can close this tab.");
+			setTimeout(closeThisTab, 300);
+			return;
+		}
+	}
+
 	showBanner("connecting", '<span class="spinner"></span>Connecting to MCP relay...');
 
 	const relayResp = await sendMsg({ type: "connectToMCPRelay", mcpRelayUrl: mcpRelayUrl });
@@ -181,6 +201,24 @@ async function main() {
 			: null;
 		if (preTab) {
 			await connectToTab(preTab.id, preTab.windowId);
+			return;
+		}
+	}
+
+	if (autoConnect) {
+		showBanner("connecting", '<span class="spinner"></span>Auto-connecting...');
+		// Retry for tabs — Chrome session restore can take several seconds after fresh launch
+		var tabsResp = null;
+		for (var attempt = 0; attempt < 5; attempt++) {
+			if (attempt > 0) await new Promise(function(r) { setTimeout(r, 2000); });
+			tabsResp = await sendMsg({ type: "getTabs" });
+			if (tabsResp && tabsResp.success && tabsResp.tabs && tabsResp.tabs.length > 0)
+				break;
+		}
+		if (tabsResp && tabsResp.success && tabsResp.tabs && tabsResp.tabs.length > 0) {
+			// Pick the first non-connect-page tab
+			var targetTab = tabsResp.tabs.find(function(t) { return t.id !== tabsResp.currentTabId; }) || tabsResp.tabs[0];
+			await connectToTab(targetTab.id, targetTab.windowId);
 			return;
 		}
 	}

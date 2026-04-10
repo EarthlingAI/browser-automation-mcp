@@ -16,27 +16,23 @@
 
 // Whenever the commands/events change, the version must be updated. The latest
 // extension version should be compatible with the old MCP clients.
-export const VERSION = 1;
+export const VERSION = 2;
 
 export type ExtensionCommand = {
-  'attachToTab': {
-    params: {};
-  };
-  'forwardCDPCommand': {
-    params: {
-      method: string,
-      sessionId?: string
-      params?: any,
-    };
-  };
+	'attachToTab': { params: {} };
+	'forwardCDPCommand': { params: { method: string; sessionId?: string; params?: any } };
+	// Earthling: cross-tab control
+	'listBrowserTabs': { params: {} };
+	'switchToTab': { params: { tabId: number } };
+	'openTab': { params: { url?: string } };
+	'closeTab': { params: { tabId: number } };
 };
 
 export type ExtensionEvents = {
-  'forwardCDPEvent': {
-    params: {
-      method: string,
-      sessionId?: string
-      params?: any,
-    };
-  };
+	'forwardCDPEvent': { params: { method: string; sessionId?: string; params?: any } };
+	// Earthling: extension lifecycle
+	'extensionReady': { params: { tabs: any[] } };
+	'userSelectedTab': { params: { tabId: number; title: string; url: string } };
+	'tabSwitched': { params: { tabId: number; targetInfo: any } };
+	'tabReady': { params: { tabId: number } };
 };
