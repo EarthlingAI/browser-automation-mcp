@@ -378,8 +378,8 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     const modalStates = await this._raceAgainstModalStates(async () => {
       const snapshot: { full: string, incremental?: string } = selector ? await this.page.locator(selector).snapshotForAI() : await this.page.snapshotForAI({ track: 'response' });
       tabSnapshot = {
-        ariaSnapshot: snapshot.full,
-        ariaSnapshotDiff: this._needsFullSnapshot ? undefined : snapshot.incremental,
+        ariaSnapshot: truncateSnapshot(snapshot.full),
+        ariaSnapshotDiff: this._needsFullSnapshot ? undefined : (snapshot.incremental ? truncateSnapshot(snapshot.incremental) : undefined),
         modalStates: [],
         events: [],
       };
@@ -562,4 +562,189 @@ function tabHeaderEquals(a: TabHeader, b: TabHeader): boolean {
       a.console.errors === b.console.errors &&
       a.console.warnings === b.console.warnings &&
       a.console.total === b.console.total;
+}
+
+const DEFAULT_SNAPSHOT_MAX_CHARS = 50_000;
+const SIBLING_KEEP = 3;
+const SIBLING_THRESHOLD = 5;
+const TEXT_TRIM_LIMIT = 300;
+const DEPTH_COLLAPSE_INDENT = 16; // indent >= 16 spaces = depth >= 8
+
+interface ParsedLine {
+  raw: string;
+  indent: number;
+  role: string;
+  ref: string;
+  textLength: number;
+}
+
+function parseLine(line: string): ParsedLine {
+  const indent = line.length - line.trimStart().length;
+  const trimmed = line.trimStart();
+
+  let role = '';
+  let ref = '';
+  let textLength = 0;
+
+  // Lines start with "- role" in the YAML aria snapshot format
+  if (trimmed.startsWith('- ')) {
+    const afterDash = trimmed.substring(2);
+    // Role is the first word (up to space, quote, or bracket)
+    const roleMatch = afterDash.match(/^(\S+?)[\s"[\]:]/);
+    role = roleMatch ? roleMatch[1] : afterDash.trim();
+
+    // Extract ref from [ref=eN]
+    const refMatch = trimmed.match(/\[ref=(e\d+)\]/);
+    if (refMatch)
+      ref = refMatch[1];
+
+    // Text content length — everything after the last ": "
+    const colonIdx = trimmed.lastIndexOf(': ');
+    if (colonIdx !== -1)
+      textLength = trimmed.length - colonIdx - 2;
+  }
+
+  return { raw: line, indent, role, ref, textLength };
+}
+
+function truncateSnapshot(yaml: string, maxChars?: number): string {
+  const budget = maxChars ?? (parseInt(process.env.BROWSER_AUTOMATION_MCP_SNAPSHOT_MAX_CHARS ?? '', 10) || DEFAULT_SNAPSHOT_MAX_CHARS);
+
+  // Early exit for small snapshots
+  if (yaml.length <= budget)
+    return yaml;
+
+  const rawLines = yaml.split('\n');
+  const parsed = rawLines.map(parseLine);
+
+  // --- Pass 1: Sibling Collapse ---
+  // Mark lines to remove, then rebuild. This correctly handles nested sibling
+  // groups at any depth (the old approach only checked the outermost level).
+  const removedLines = new Set<number>();
+  const insertions: { afterIdx: number; text: string }[] = [];
+
+  // Scan every list item and group consecutive same-indent siblings
+  let i = 0;
+  while (i < parsed.length) {
+    const line = parsed[i];
+    if (!line.raw.trimStart().startsWith('- ')) {
+      i++;
+      continue;
+    }
+
+    // Collect consecutive siblings at this indent level
+    const siblingGroup: { startIdx: number; endIdx: number; role: string }[] = [];
+    let j = i;
+    while (j < parsed.length) {
+      const sibling = parsed[j];
+      if (!sibling.raw.trimStart().startsWith('- ') || sibling.indent !== line.indent)
+        break;
+
+      // Find end of this sibling's subtree
+      let endIdx = j + 1;
+      while (endIdx < parsed.length && (parsed[endIdx].indent > line.indent || (parsed[endIdx].raw.trim() === '' && endIdx + 1 < parsed.length && parsed[endIdx + 1].indent > line.indent)))
+        endIdx++;
+
+      siblingGroup.push({ startIdx: j, endIdx, role: sibling.role });
+      j = endIdx;
+    }
+
+    if (siblingGroup.length > SIBLING_THRESHOLD) {
+      // Find dominant role
+      const roleCounts = new Map<string, number>();
+      for (const s of siblingGroup)
+        roleCounts.set(s.role, (roleCounts.get(s.role) ?? 0) + 1);
+      const dominantRole = [...roleCounts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+      const sameRoleSiblings = siblingGroup.filter(s => s.role === dominantRole);
+
+      if (sameRoleSiblings.length > SIBLING_THRESHOLD) {
+        // Mark excess same-role siblings (and their subtrees) for removal
+        let keptCount = 0;
+        const collapsedCount = sameRoleSiblings.length - SIBLING_KEEP;
+        for (const s of siblingGroup) {
+          if (s.role === dominantRole) {
+            if (keptCount >= SIBLING_KEEP) {
+              for (let k = s.startIdx; k < s.endIdx; k++)
+                removedLines.add(k);
+            }
+            keptCount++;
+          }
+        }
+        // Find parent ref for the hint
+        let parentRef = '';
+        for (let p = i - 1; p >= 0; p--) {
+          if (parsed[p].indent === line.indent - 2 && parsed[p].ref) {
+            parentRef = parsed[p].ref;
+            break;
+          }
+        }
+        const hint = parentRef ? ` [use selector="[ref=${parentRef}]" to see all]` : '';
+        const lastSibling = siblingGroup[siblingGroup.length - 1];
+        insertions.push({
+          afterIdx: lastSibling.endIdx - 1,
+          text: ' '.repeat(line.indent) + `- ... ${collapsedCount} more ${dominantRole} elements${hint}`,
+        });
+      }
+    }
+
+    // Advance past this sibling group — process children naturally on next iterations
+    i++;
+  }
+
+  // Rebuild lines with removals and insertions
+  const pass1Lines: string[] = [];
+  for (let idx = 0; idx < parsed.length; idx++) {
+    if (!removedLines.has(idx))
+      pass1Lines.push(parsed[idx].raw);
+    const insertion = insertions.find(ins => ins.afterIdx === idx);
+    if (insertion)
+      pass1Lines.push(insertion.text);
+  }
+
+  // --- Pass 2: Text Content Trimming ---
+  const pass2Lines = pass1Lines.map(line => {
+    const match = line.match(/^(\s*- (?:\S+)(?:\s+"[^"]*")?(?:\s+\[[^\]]*\])*:\s*)(.+)$/);
+    if (match && match[2].length > TEXT_TRIM_LIMIT)
+      return `${match[1]}${match[2].substring(0, TEXT_TRIM_LIMIT)}... [trimmed, ${match[2].length} chars]`;
+    return line;
+  });
+
+  // --- Pass 3: Depth Collapsing ---
+  const pass3Lines: string[] = [];
+  let d = 0;
+  while (d < pass2Lines.length) {
+    const line = pass2Lines[d];
+    const indent = line.length - line.trimStart().length;
+
+    if (indent >= DEPTH_COLLAPSE_INDENT && line.trimStart().startsWith('- ')) {
+      // Count descendants
+      let count = 0;
+      let end = d;
+      while (end < pass2Lines.length) {
+        const nextIndent = pass2Lines[end].length - pass2Lines[end].trimStart().length;
+        if (end > d && nextIndent <= indent)
+          break;
+        count++;
+        end++;
+      }
+      pass3Lines.push(' '.repeat(indent) + `- ... [${count} nested elements]`);
+      d = end;
+      continue;
+    }
+
+    pass3Lines.push(line);
+    d++;
+  }
+
+  // --- Pass 4: Character Budget Enforcement ---
+  let result = pass3Lines.join('\n');
+  if (result.length > budget) {
+    const totalK = Math.round(result.length / 1000);
+    const budgetK = Math.round(budget / 1000);
+    const cutoff = result.lastIndexOf('\n', budget);
+    const truncAt = cutoff > 0 ? cutoff : budget;
+    result = result.substring(0, truncAt) + `\n[Snapshot truncated — showing first ${budgetK}K of ${totalK}K chars. Use selector parameter for specific sections, or browser_run_code for targeted extraction.]`;
+  }
+
+  return result;
 }
