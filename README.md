@@ -86,6 +86,24 @@ The CDP relay is a **standalone daemon** (`dist/relay-daemon.js`), lazy-spawned 
 - **Tab leasing** — one agent per tab. `browser_switch_tab` claims the lease; other clients see the tab as `[busy: <clientId>]` and must use `force: true` to revoke. `browser_release_tab` releases voluntarily.
 - **Lifecycle** — daemon lives while the extension is connected, applies a 60s grace period on disconnect (covers MV3 service-worker sleep), then exits cleanly. Runtime artefacts (PID, secret, logs) live in `.runtime/` (gitignored). The extension's auto-reconnect loop rediscovers via `/discover` across daemon restarts.
 
+### CDP Command Routing
+
+The daemon distinguishes between browser-level and tab-scoped CDP commands:
+
+- **Browser-level commands** (no `sessionId`) — handled locally by `_handleTopLevel` or returned as empty success `{}`. Never forwarded to the extension.
+- **Tab-scoped commands** (with virtual `sessionId`) — forwarded to the extension via `sendToExtensionForClient` with per-client command-id rewriting.
+
+Tab switching uses **backend disposal + reconnection**: `browser_switch_tab` updates leases and calls the extension, then `response.setClose()` disposes the Playwright backend. The next tool call creates a fresh `connectOverCDP` connection, and `_handleSetAutoAttach` selects the target tab with 3-priority selection:
+1. `_lastSwitchedTab` hint (server-level Map surviving client reconnections)
+2. Extension's currently-connected tab
+3. First free non-internal tab (filters `chrome://`, `edge://`, `chrome-extension://` URLs)
+
+### Known Limitations
+
+- **Cooperative-sequential multi-agent** — both agents can be connected simultaneously, but only one can actively use browser tools at a time (Bug 2: virtual-to-real CDP session binding is deferred)
+- **Extension lifecycle requires session reload** — extension disable/re-enable or browser restart recovers the daemon but the MCP process's Playwright connection goes stale
+- **`chrome-extension://` connect page** doesn't survive browser restart or extension disable — must be manually reopened
+
 ### Capability-Gated Tools
 
 These tools require specific capabilities to be enabled in config:
@@ -145,6 +163,7 @@ browser-automation-mcp/
 │   │   │   │   ├── daemon.ts       # Daemon entry — owns :9223 via bind race, HTTP + WS endpoints
 │   │   │   │   └── cdpRelay.ts     # Relay core — per-client session/command-id rewriting, tab leasing
 │   │   │   ├── browserFactory.ts   # Browser launch strategies (headed, headless, CDP, extension)
+│   │   │   ├── extensionContextFactory.ts  # Extension mode browser context (stableClientId, disposed callback)
 │   │   │   ├── protocol.ts         # Extension command/event types
 │   │   │   ├── program.ts          # CLI argument parsing
 │   │   │   └── watchdog.ts         # Connection health monitoring

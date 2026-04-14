@@ -19,13 +19,14 @@
 export const VERSION = 2;
 
 export type ExtensionCommand = {
-	'attachToTab': { params: { tabId?: number } };
-	'forwardCDPCommand': { params: { method: string; sessionId?: string; params?: any } };
+	'attachToTab': { params: { tabId: number } };
+	'forwardCDPCommand': { params: { tabId: number; method: string; sessionId?: string; params?: any } };
 	// Earthling: cross-tab control
 	'listBrowserTabs': { params: {} };
 	'switchToTab': { params: { tabId: number } };
 	'openTab': { params: { url?: string } };
 	'closeTab': { params: { tabId: number } };
+	'detachFromTab': { params: { tabId: number } };
 };
 
 export type ExtensionEvents = {
@@ -35,4 +36,5 @@ export type ExtensionEvents = {
 	'userSelectedTab': { params: { tabId: number; title: string; url: string } };
 	'tabSwitched': { params: { tabId: number; targetInfo: any } };
 	'tabReady': { params: { tabId: number } };
+	'tabDetached': { params: { tabId: number; reason: string } };
 };

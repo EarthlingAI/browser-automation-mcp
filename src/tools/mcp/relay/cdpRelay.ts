@@ -115,6 +115,12 @@ export class CDPRelayServer {
 
   private readonly _leases = new LeaseTable();
 
+  // Survives client WebSocket close → reconnect cycles so _handleSetAutoAttach
+  // knows which tab the client last switched to (the switch disposes the
+  // backend, releasing leases and deleting the ClientConnection; the fresh
+  // connection needs this hint to lease the correct tab).
+  private readonly _lastSwitchedTab = new Map<string, number>();
+
   private _graceTimer: NodeJS.Timeout | null = null;
   private _onIdle: (() => void) | null = null;
 
@@ -203,7 +209,7 @@ export class CDPRelayServer {
   private _onConnection(ws: WebSocket, request: http.IncomingMessage): void {
     const u = new URL(`http://localhost${request.url}`);
     if (u.pathname === this._cdpPath) {
-      this._handlePlaywrightConnection(ws);
+      this._handlePlaywrightConnection(ws, u);
     } else if (u.pathname === this._extensionPath) {
       this._handleExtensionConnection(ws);
     } else {
@@ -228,6 +234,7 @@ export class CDPRelayServer {
         client.onExtensionLost('extension reconnected — previous browser session invalidated');
       this._tabVirtualSession.clear();
       this._leases.clearAll();
+      this._lastSwitchedTab.clear();
     }
 
     const conn = new ExtensionConnection(ws);
@@ -264,6 +271,24 @@ export class CDPRelayServer {
       case 'userSelectedTab':
         debugLogger('User selected tab hint:', (params as any).tabId);
         break;
+      case 'tabDetached': {
+        // Extension lost debugger attachment for a specific tab (e.g. tab
+        // navigated to chrome:// URL, user closed DevTools, etc.).
+        const detachedParams = params as ExtensionEvents['tabDetached']['params'];
+        const detachedTabId = detachedParams.tabId;
+        debugLogger(`Tab ${detachedTabId} debugger detached: ${detachedParams.reason}`);
+        // Notify the owning client so Playwright tears down its Page.
+        for (const c of this._clients.values()) {
+          if (c.isSubscribedToTab(detachedTabId))
+            c.revokeTab(detachedTabId, detachedParams.reason);
+        }
+        const owner = this._leases.ownerOf(detachedTabId);
+        if (owner)
+          this._leases.release(detachedTabId, owner.ownerClientId);
+        // Clean up stale session mappings for this tab.
+        this._cleanupTabSessions(detachedTabId);
+        break;
+      }
       case 'forwardCDPEvent': {
         const cdpParams = params as ExtensionEvents['forwardCDPEvent']['params'];
         const extSid = cdpParams.sessionId;
@@ -312,8 +337,16 @@ export class CDPRelayServer {
 
   // ------------------------------------------------------------------ Playwright
 
-  private _handlePlaywrightConnection(ws: WebSocket): void {
-    const clientId = `c${++this._clientCounter}-${Math.random().toString(36).slice(2, 8)}`;
+  private _handlePlaywrightConnection(ws: WebSocket, url: URL): void {
+    // Client ID stability: accept a requested ID via query param so
+    // reconnecting MCP processes keep the same identity for annotations.
+    const requestedId = url.searchParams.get('clientId');
+    let clientId: string;
+    if (requestedId && !this._clients.has(requestedId)) {
+      clientId = requestedId;
+    } else {
+      clientId = `c${++this._clientCounter}-${Math.random().toString(36).slice(2, 8)}`;
+    }
     const client = new ClientConnection(clientId, ws, this);
     this._clients.set(clientId, client);
     this._cancelGraceTimer();
@@ -335,6 +368,16 @@ export class CDPRelayServer {
 
   leases(): LeaseTable { return this._leases; }
   extension(): ExtensionConnection | null { return this._extension; }
+
+  /** Record which tab a client last switched to (survives reconnection). */
+  setLastSwitchedTab(clientId: string, tabId: number): void { this._lastSwitchedTab.set(clientId, tabId); }
+  /** Consume (read + delete) the last-switched hint for a client. */
+  consumeLastSwitchedTab(clientId: string): number | undefined {
+    const tab = this._lastSwitchedTab.get(clientId);
+    if (tab !== undefined)
+      this._lastSwitchedTab.delete(clientId);
+    return tab;
+  }
 
   /** Tell the given client that a tab was taken from them. */
   revokeClientSubscription(clientId: string, tabId: number, reason: string): void {
@@ -371,16 +414,39 @@ export class CDPRelayServer {
     return this._virtualSession.get(virtualId)?.extSessionId;
   }
 
+  /** Remove all session mappings for a specific tab (on tab close or debugger detach). */
+  _cleanupTabSessions(tabId: number): void {
+    const virtualId = this._tabVirtualSession.get(tabId);
+    if (!virtualId)
+      return;
+    this._tabVirtualSession.delete(tabId);
+    const mapping = this._virtualSession.get(virtualId);
+    if (mapping?.extSessionId)
+      this._extSession.delete(mapping.extSessionId);
+    this._virtualSession.delete(virtualId);
+    // Clear any last-switched hints pointing to the now-gone tab.
+    for (const [cid, tid] of this._lastSwitchedTab) {
+      if (tid === tabId)
+        this._lastSwitchedTab.delete(cid);
+    }
+  }
+
   /** Send command to extension on behalf of a client; returns relayId for response tracking. */
   sendToExtensionForClient(clientId: string, origId: number, origSessionId: string | undefined, method: string, params: any, extSessionId: string | undefined): void {
     if (!this._extension)
       throw new Error('Extension not connected');
     const relayId = this._nextRelayId++;
     this._pendingCmds.set(relayId, { clientId, origId, origSessionId });
+    // Multi-tab: include tabId so the extension routes the command to the
+    // correct chrome.debugger attachment (not just the last-switched tab).
+    const mapping = origSessionId ? this._virtualSession.get(origSessionId) : undefined;
+    const tabId = mapping?.tabId;
+    // Find the client to get its primary tab as fallback (for top-level commands).
+    const fallbackTabId = tabId ?? this._clients.get(clientId)?.primaryTab() ?? undefined;
     this._extension.sendRaw({
       id: relayId,
       method: 'forwardCDPCommand',
-      params: { sessionId: extSessionId, method, params },
+      params: { tabId: fallbackTabId, sessionId: extSessionId, method, params },
     });
   }
 
@@ -493,9 +559,15 @@ class ClientConnection {
           this.sendRaw({ id, sessionId, result: local });
           return;
         }
+        // Unhandled browser-level command (e.g. Target.setDiscoverTargets).
+        // Return empty success rather than forwarding to extension — the
+        // extension's chrome.debugger is tab-scoped and can't service
+        // browser-level CDP commands (would error or execute in wrong context).
+        this.sendRaw({ id, sessionId, result: {} });
+        return;
       }
 
-      // Tab-scoped: translate virtual sessionId to extension sessionId.
+      // Tab-scoped: forward to extension via the client's virtual session mapping.
       const extSessionId = this._relay.resolveExtSessionId(sessionId);
       this._relay.sendToExtensionForClient(this.id, id, sessionId, method, params, extSessionId);
     } catch (e: any) {
@@ -522,19 +594,24 @@ class ClientConnection {
         return {};
       }
       case 'Target.getTargetInfo': {
+        // Playwright sends Target.getTargetInfo during connectOverCDP to probe
+        // the browser target. When no tab is leased yet, return synthetic
+        // browser-level target info so the handshake succeeds.
         if (this._primaryTab === null)
-          return undefined;
+          return { targetInfo: { targetId: 'browser', type: 'browser', title: 'Browser', url: '', attached: true } };
         const tabs = await this._relay.listTabs();
         const tab = tabs.find(t => t.tabId === this._primaryTab);
         if (!tab)
-          return undefined;
+          return { targetInfo: { targetId: 'browser', type: 'browser', title: 'Browser', url: '', attached: true } };
         return {
-          targetId: tab.targetId,
-          type: 'page',
-          title: tab.title,
-          url: tab.url,
-          attached: true,
-          browserContextId: 'default',
+          targetInfo: {
+            targetId: tab.targetId || `tab-${tab.tabId}`,
+            type: 'page',
+            title: tab.title,
+            url: tab.url,
+            attached: true,
+            browserContextId: 'default',
+          },
         };
       }
       // Earthling-custom pseudo-commands used by earthlingTabs.
@@ -571,12 +648,12 @@ class ClientConnection {
         const claim = this.claimTab(tabId, force);
         if (!claim.ok)
           throw new Error(`Tab ${tabId} is leased by client ${claim.ownerId}. Pass force:true to take over.`);
-        // Tell extension to switch debugger attachment. The MCP-side tool
-        // handler calls response.setClose() which disposes this backend
-        // (closing the connectOverCDP WebSocket and releasing leases). The
-        // next tool call creates a fresh backend whose _handleSetAutoAttach
-        // prefers the extension's connected tab — i.e. the one we just
-        // switched to.
+        // Record which tab we switched to at the relay level so it survives
+        // the backend disposal + reconnection cycle. _handleSetAutoAttach on
+        // the fresh ClientConnection will consume this hint to lease the
+        // correct tab instead of falling back to the first free one.
+        this._relay.setLastSwitchedTab(this.id, tabId);
+        // Tell extension to attach to the new tab.
         return await this._relay.callExtensionDirect('switchToTab', { tabId });
       }
       case 'Earthling.releaseTab': {
@@ -594,7 +671,9 @@ class ClientConnection {
           this._relay.revokeClientSubscription(owner.ownerClientId, tabId, 'Tab closed');
           this._relay.leases().release(tabId, owner.ownerClientId);
         }
-        return await this._relay.callExtensionDirect('closeTab', { tabId });
+        this._relay._cleanupTabSessions(tabId);
+        const result = await this._relay.callExtensionDirect('closeTab', { tabId });
+        return result;
       }
       case 'Earthling.whoAmI':
         return { clientId: this.id, primaryTab: this._primaryTab };
@@ -607,22 +686,29 @@ class ClientConnection {
     let tabId = this._primaryTab;
     if (tabId === null) {
       const tabs = await this._relay.listTabs();
-      // Prefer the tab the extension is currently connected to (e.g. after
-      // a tab switch disposed the previous backend). Fall back to first free.
-      const connected = tabs.find((t: any) => t.connected);
-      if (connected) {
-        const claim = this._relay.leases().claim(connected.tabId, this.id, false);
+      // Priority 1: Tab that this client last switched to (survives dispose→reconnect).
+      const hintTab = this._relay.consumeLastSwitchedTab(this.id);
+      if (hintTab !== undefined && tabs.some((t: any) => t.tabId === hintTab)) {
+        const claim = this._relay.leases().claim(hintTab, this.id, false);
         if (claim.ok)
-          tabId = connected.tabId;
+          tabId = hintTab;
       }
+      // Priority 2: Tab the extension is currently connected to.
       if (tabId === null) {
-        // Filter out internal browser pages that Playwright can't snapshot.
+        const connected = tabs.find((t: any) => t.connected);
+        if (connected) {
+          const claim = this._relay.leases().claim(connected.tabId, this.id, false);
+          if (claim.ok)
+            tabId = connected.tabId;
+        }
+      }
+      // Priority 3: First free non-internal tab.
+      if (tabId === null) {
         const INTERNAL_PREFIXES = ['chrome://', 'chrome-extension://', 'edge://', 'about:', 'devtools://'];
         const candidates = tabs
           .filter((t: any) => !INTERNAL_PREFIXES.some(p => (t.url || '').startsWith(p)))
           .map((t: any) => t.tabId)
           .sort((a: number, b: number) => a - b);
-        // Race-safe: sweep candidates and pick the first that claim() accepts.
         for (const id of candidates) {
           const claim = this._relay.leases().claim(id, this.id, false);
           if (claim.ok) { tabId = id; break; }

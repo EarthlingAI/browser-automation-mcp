@@ -10,12 +10,17 @@ class RelayConnection {
 		this._ws = ws;
 		this._closed = false;
 		this.onclose = null;
+		// Multi-tab: track all debugger-attached tabs. Chrome supports
+		// simultaneous chrome.debugger.attach() to multiple tabs.
+		// Entries are ONLY added after chrome.debugger.attach() succeeds.
+		this._debuggees = new Map(); // tabId -> { tabId }
+		// _initialTabId records which tab the relay expects us to debug
+		// first — resolved by _tabPromise, consumed by attachToTab.
+		this._initialTabId = tabId || null;
 		if (tabId) {
-			this._debuggee = { tabId };
 			this._tabPromise = Promise.resolve();
 			this._tabPromiseResolve = () => {};
 		} else {
-			this._debuggee = {};
 			this._tabPromise = new Promise((resolve) => this._tabPromiseResolve = resolve);
 		}
 		this._ws.onmessage = this._onMessage.bind(this);
@@ -27,7 +32,7 @@ class RelayConnection {
 	}
 
 	setTabId(tabId) {
-		this._debuggee = { tabId };
+		this._initialTabId = tabId;
 		this._tabPromiseResolve();
 	}
 
@@ -42,14 +47,15 @@ class RelayConnection {
 		this._closed = true;
 		chrome.debugger.onEvent.removeListener(this._eventListener);
 		chrome.debugger.onDetach.removeListener(this._detachListener);
-		chrome.debugger.detach(this._debuggee).catch(() => {});
+		for (const debuggee of this._debuggees.values())
+			chrome.debugger.detach(debuggee).catch(() => {});
+		this._debuggees.clear();
 		this.onclose?.();
 	}
 
 	_onDebuggerEvent(source, method, params) {
-		if (source.tabId !== this._debuggee.tabId)
+		if (!this._debuggees.has(source.tabId))
 			return;
-		debugLog("Forwarding CDP event:", method, params);
 		this._sendMessage({
 			method: "forwardCDPEvent",
 			params: { sessionId: source.sessionId, tabId: source.tabId, method, params }
@@ -57,10 +63,15 @@ class RelayConnection {
 	}
 
 	_onDebuggerDetach(source, reason) {
-		if (source.tabId !== this._debuggee.tabId)
+		if (!this._debuggees.has(source.tabId))
 			return;
-		this.close(`Debugger detached: ${reason}`);
-		this._debuggee = {};
+		this._debuggees.delete(source.tabId);
+		// Notify the daemon that this specific tab lost its debugger.
+		// Don't close the WebSocket — other tabs may still be attached.
+		this._sendMessage({
+			method: "tabDetached",
+			params: { tabId: source.tabId, reason }
+		});
 	}
 
 	_onMessage(event) {
@@ -91,14 +102,20 @@ class RelayConnection {
 	async _handleCommand(message) {
 		if (message.method === "attachToTab") {
 			await this._tabPromise;
-			debugLog("Attaching debugger to tab:", this._debuggee);
-			try {
-				await chrome.debugger.attach(this._debuggee, "1.3");
-			} catch (e) {
-				// Already attached (e.g. after a tab switch) — continue
-				debugLog("Debugger attach skipped (already attached):", e.message);
+			const tabId = message.params.tabId;
+			const debuggee = { tabId };
+			debugLog("Attaching debugger to tab:", tabId);
+			if (!this._debuggees.has(tabId)) {
+				try {
+					await chrome.debugger.attach(debuggee, "1.3");
+				} catch (e) {
+					if (!e.message?.includes("Already attached"))
+						throw e;
+					debugLog("Debugger attach skipped (already attached):", e.message);
+				}
+				this._debuggees.set(tabId, debuggee);
 			}
-			const result = await chrome.debugger.sendCommand(this._debuggee, "Target.getTargetInfo");
+			const result = await chrome.debugger.sendCommand(debuggee, "Target.getTargetInfo");
 			return { targetInfo: result?.targetInfo };
 		}
 
@@ -122,28 +139,36 @@ class RelayConnection {
 
 		if (message.method === "switchToTab") {
 			const newTabId = message.params.tabId;
-			const oldDebuggee = { ...this._debuggee };
-			// Update _debuggee BEFORE detaching to prevent _onDebuggerDetach
-			// from seeing source.tabId === this._debuggee.tabId and closing the ws.
-			this._debuggee = { tabId: newTabId };
-			// Fire-and-forget detach — guard in _onDebuggerDetach will skip
-			// because source.tabId (old) !== this._debuggee.tabId (new).
-			chrome.debugger.detach(oldDebuggee).catch(() => {});
-			try {
-				await chrome.debugger.attach(this._debuggee, "1.3");
-			} catch (e) {
-				// Already attached (e.g. after rapid switches) — continue
-				debugLog("Debugger attach skipped (already attached):", e.message);
+			const debuggee = { tabId: newTabId };
+			// Multi-tab: attach to the new tab without detaching old ones.
+			// Each tab keeps its debugger attachment independently.
+			if (!this._debuggees.has(newTabId)) {
+				try {
+					await chrome.debugger.attach(debuggee, "1.3");
+				} catch (e) {
+					if (!e.message?.includes("Already attached"))
+						throw e;
+					debugLog("Debugger attach skipped (already attached):", e.message);
+				}
+				this._debuggees.set(newTabId, debuggee);
 			}
-			const result = await chrome.debugger.sendCommand(this._debuggee, "Target.getTargetInfo");
-			// Update bridge state
+			const result = await chrome.debugger.sendCommand(debuggee, "Target.getTargetInfo");
 			await bridge._setConnectedTabId(newTabId);
-			// Notify relay that tab switched
 			this._sendMessage({
 				method: "tabSwitched",
 				params: { tabId: newTabId, targetInfo: result?.targetInfo }
 			});
 			return { targetInfo: result?.targetInfo };
+		}
+
+		if (message.method === "detachFromTab") {
+			const tabId = message.params.tabId;
+			const debuggee = this._debuggees.get(tabId);
+			if (debuggee) {
+				this._debuggees.delete(tabId);
+				await chrome.debugger.detach(debuggee).catch(() => {});
+			}
+			return { detached: !!debuggee };
 		}
 
 		if (message.method === "openTab") {
@@ -152,16 +177,23 @@ class RelayConnection {
 		}
 
 		if (message.method === "closeTab") {
-			await chrome.tabs.remove(message.params.tabId);
+			const closingTabId = message.params.tabId;
+			// Remove from debuggees BEFORE chrome.tabs.remove() to prevent
+			// _onDebuggerDetach from firing tabDetached for an expected close.
+			this._debuggees.delete(closingTabId);
+			// Clear bridge state to prevent _onTabRemoved from closing the ws.
+			if (bridge._connectedTabId === closingTabId)
+				await bridge._setConnectedTabId(null);
+			await chrome.tabs.remove(closingTabId);
 			return {};
 		}
 
-		if (!this._debuggee.tabId)
-			throw new Error("No tab is connected. Please go to the Playwright MCP extension and select the tab you want to connect to.");
 		if (message.method === "forwardCDPCommand") {
-			const { sessionId, method, params } = message.params;
-			debugLog("CDP command:", method, params);
-			const debuggerSession = { ...this._debuggee, sessionId };
+			const { tabId, sessionId, method, params } = message.params;
+			const debuggee = tabId ? this._debuggees.get(tabId) : null;
+			if (!debuggee)
+				throw new Error(tabId ? `No debugger attached to tab ${tabId}` : "No tabId provided in forwardCDPCommand");
+			const debuggerSession = { ...debuggee, sessionId };
 			return await chrome.debugger.sendCommand(debuggerSession, method, params);
 		}
 	}
@@ -497,19 +529,21 @@ class EarthlingBrowserBridge {
 			return;
 		try {
 			const conn = this._activeConnection;
+			const debuggee = { tabId: newTabId };
 
-			// Detach old
-			await chrome.debugger.detach(conn._debuggee).catch(() => {});
+			// Multi-tab: attach to new tab without detaching old ones
+			if (!conn._debuggees.has(newTabId)) {
+				try {
+					await chrome.debugger.attach(debuggee, "1.3");
+				} catch (e) {
+					if (!e.message?.includes("Already attached"))
+						throw e;
+				}
+				conn._debuggees.set(newTabId, debuggee);
+			}
+			const result = await chrome.debugger.sendCommand(debuggee, "Target.getTargetInfo");
 
-			// Attach new
-			conn._debuggee = { tabId: newTabId };
-			await chrome.debugger.attach(conn._debuggee, "1.3");
-			const result = await chrome.debugger.sendCommand(conn._debuggee, "Target.getTargetInfo");
-
-			// Update bridge state
 			await this._setConnectedTabId(newTabId);
-
-			// Notify relay about the switch
 			conn._sendMessage({
 				method: "tabSwitched",
 				params: { tabId: newTabId, targetInfo: result?.targetInfo }
@@ -693,11 +727,11 @@ class EarthlingBrowserBridge {
 			this._preSelectedTabId = null;
 			this._persistState();
 		}
-		if (this._connectedTabId !== tabId)
-			return;
-		this._activeConnection?.close("Browser tab closed");
-		this._activeConnection = undefined;
-		await this._setConnectedTabId(null);
+		if (this._connectedTabId === tabId)
+			await this._setConnectedTabId(null);
+		// Multi-tab: don't close the WebSocket when a tab is removed.
+		// The connection may still have other tabs attached. The closeTab
+		// handler already cleans up _debuggees and bridge state.
 	}
 
 	_onTabActivated(activeInfo) {

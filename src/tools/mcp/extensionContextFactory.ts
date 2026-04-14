@@ -27,7 +27,10 @@ export async function createExtensionBrowser(_config: FullConfig, _clientInfo: C
   const port = parseInt(process.env.BROWSER_AUTOMATION_MCP_RELAY_PORT || '9223', 10);
   const channel = _config.browser?.launchOptions?.channel;
   const info = await acquireDaemon(port, channel);
-  const endpoint = `ws://127.0.0.1:${port}${info.cdpPath}`;
+  // Stable client ID per MCP process — daemon reuses identity across reconnections
+  // so lease annotations stay consistent after browser_switch_tab disposal cycles.
+  const stableClientId = `mcp-${process.pid}`;
+  const endpoint = `ws://127.0.0.1:${port}${info.cdpPath}?clientId=${encodeURIComponent(stableClientId)}`;
   debugLogger(`Connecting to relay daemon at ${endpoint} (pid=${info.pid})`);
   const browser = await playwright.chromium.connectOverCDP(endpoint, { isLocal: true });
   // If the relay daemon dies (grace exit after extension loss, crash, etc.) the
