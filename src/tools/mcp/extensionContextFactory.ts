@@ -16,31 +16,31 @@
 
 import * as playwright from 'playwright-core';
 import { debug } from '../../utilsBundle';
-import { createHttpServer, startHttpServer } from '../../server/utils/network';
-import { CDPRelayServer, getRelay } from './cdpRelay';
+import { acquireDaemon } from './relay/clientAcquirer';
 
 import type { ClientInfo } from '../utils/mcp/server';
 import type { FullConfig } from './config';
 
 const debugLogger = debug('pw:mcp:relay');
 
-export async function createExtensionBrowser(config: FullConfig, clientInfo: ClientInfo): Promise<playwright.Browser> {
-  // Earthling: reuse existing relay after tab switch (avoids creating duplicate relays)
-  let relay = getRelay();
-  if (!relay) {
-    const httpServer = createHttpServer();
-    const relayPort = parseInt(process.env.BROWSER_AUTOMATION_MCP_RELAY_PORT || '9223', 10);
-    await startHttpServer(httpServer, { host: '127.0.0.1', port: relayPort });
-    relay = new CDPRelayServer(
-        httpServer,
-        config.browser.launchOptions.channel || 'chrome',
-        config.browser.userDataDir,
-        config.browser.launchOptions.executablePath);
-    debugLogger(`CDP relay server started on port ${relayPort}, extension endpoint: ${relay.extensionEndpoint()}.`);
-  } else {
-    debugLogger('Reusing existing CDP relay after tab switch.');
-  }
-
-  await relay.ensureExtensionConnectionForMCPContext(clientInfo, false);
-  return await playwright.chromium.connectOverCDP(relay.cdpEndpoint(), { isLocal: true });
+export async function createExtensionBrowser(_config: FullConfig, _clientInfo: ClientInfo): Promise<playwright.Browser> {
+  const port = parseInt(process.env.BROWSER_AUTOMATION_MCP_RELAY_PORT || '9223', 10);
+  const channel = _config.browser?.launchOptions?.channel;
+  const info = await acquireDaemon(port, channel);
+  const endpoint = `ws://127.0.0.1:${port}${info.cdpPath}`;
+  debugLogger(`Connecting to relay daemon at ${endpoint} (pid=${info.pid})`);
+  const browser = await playwright.chromium.connectOverCDP(endpoint, { isLocal: true });
+  // If the relay daemon dies (grace exit after extension loss, crash, etc.) the
+  // underlying ws closes and our cached Browser becomes unusable. There's no
+  // in-place reconnect — every cached page reference is gone. Exit the MCP
+  // server so its supervisor relaunches it; the next tool call re-acquires.
+  browser.on('disconnected', () => {
+    // The underlying ws is dead; every cached page reference is invalid. The
+    // caller in program.ts creates a fresh BrowserBackend per MCP client
+    // lifecycle, so the next reconnect happens when the MCP client reconnects
+    // (or the process restarts). We log but do not exit — exiting silently
+    // would leave the MCP in a broken state with no tool responses.
+    debugLogger('CDP ws disconnected — subsequent tool calls will error until reconnection.');
+  });
+  return browser;
 }

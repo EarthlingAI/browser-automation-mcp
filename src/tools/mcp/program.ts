@@ -104,7 +104,13 @@ export function decorateMCPCommand(command: Command) {
               const browserContext = browser.contexts()[0];
               return new BrowserBackend(config, browserContext, tools);
             },
-            disposed: async () => { }
+            disposed: async (backend) => {
+              // Close the connectOverCDP WebSocket so the daemon releases
+              // this client's leases. The next tool call re-creates the
+              // backend with a fresh connection that leases the correct tab.
+              const browserContext = (backend as BrowserBackend).browserContext;
+              await browserContext.browser()?.close().catch(() => {});
+            }
           };
           await mcpServer.start(serverBackendFactory, config.server);
           return;

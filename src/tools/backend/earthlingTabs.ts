@@ -1,42 +1,52 @@
 /**
  * Earthling custom MCP tools for cross-tab browser automation.
  *
- * These tools extend the standard Playwright MCP with the ability to discover
- * and switch between ALL open browser tabs (not just Playwright-managed ones),
- * enabling the agent to work within the user's authenticated browser session.
+ * Pseudo-CDP commands (`Earthling.*`) are dispatched over the existing
+ * Playwright CDP channel to the relay daemon, so we share the per-process
+ * client identity and lease ownership. Using `browser.newBrowserCDPSession()`
+ * keeps this within public Playwright API.
  */
 
 import { z } from '../../mcpBundle';
 import { defineTool } from './tool';
-import { getRelay } from '../mcp/cdpRelay';
 
 import type { Tool } from './tool';
+
+async function relaySend(context: any, method: string, params: any = {}): Promise<any> {
+	const browserContext = await context.ensureBrowserContext();
+	const browser = browserContext.browser();
+	if (!browser)
+		throw new Error('No browser available to reach the relay.');
+	const cdp = await browser.newBrowserCDPSession();
+	try {
+		return await cdp.send(method as any, params);
+	} finally {
+		await cdp.detach().catch(() => {});
+	}
+}
 
 const listAllTabs = defineTool({
 	capability: 'core',
 	schema: {
 		name: 'browser_list_all_tabs',
 		title: 'List all browser tabs',
-		description: 'List ALL open browser tabs (not just Playwright-managed ones). Returns tab IDs, titles, URLs, and flags (connected, highlighted, active). Use to discover available tabs before switching.',
+		description: 'List ALL open browser tabs (not just Playwright-managed ones). Each tab is annotated with its lease status: [leased-by-you], [busy: <clientId>], or [free]. Use before switching to another tab.',
 		inputSchema: z.object({}),
 		type: 'readOnly',
 	},
 	handle: async (context, _params, response) => {
-		// Earthling: no ensureTab() needed — listing tabs only requires the extension
-		// WebSocket, not a Playwright page. ensureTab() would trigger snapshotForAI()
-		// which times out if the current page is heavy or the debugger is detached.
-		const relay = getRelay();
-		if (!relay?.extensionConnection)
-			throw new Error('Extension not connected. Make sure the Earthling Browser Bridge extension is active.');
-		const tabs = await relay.extensionConnection.send('listBrowserTabs', {});
+		const tabs: any[] = await relaySend(context, 'Earthling.listTabsAnnotated', {});
 		const lines = ['### All Browser Tabs'];
 		for (const t of tabs) {
 			const flags: string[] = [];
 			if (t.connected) flags.push('CONNECTED');
 			if (t.highlighted) flags.push('HIGHLIGHTED');
 			if (t.active) flags.push('active');
+			let leaseLabel = '[free]';
+			if (t.lease === 'you') leaseLabel = '[leased-by-you]';
+			else if (t.lease === 'busy') leaseLabel = `[busy: ${t.ownerId}]`;
 			const f = flags.length ? ' [' + flags.join(', ') + ']' : '';
-			lines.push(`- tabId=${t.tabId}${f}: [${t.title}](${t.url})`);
+			lines.push(`- tabId=${t.tabId} ${leaseLabel}${f}: [${t.title}](${t.url})`);
 		}
 		response.addTextResult(lines.join('\n'));
 	},
@@ -47,26 +57,37 @@ const switchTab = defineTool({
 	schema: {
 		name: 'browser_switch_tab',
 		title: 'Switch to browser tab',
-		description: 'Switch the browser connection to a different tab by tab ID (from browser_list_all_tabs). Detaches current debugger, attaches to the new tab. Call browser_snapshot after switching to see the page content.',
+		description: 'Switch the browser connection to a different tab by tab ID. Acquires an exclusive lease on the tab. If another client holds the lease, the call fails unless `force:true` is passed. Call browser_snapshot after switching.',
 		inputSchema: z.object({
 			tabId: z.number().describe('Tab ID from browser_list_all_tabs'),
+			force: z.boolean().optional().describe('Take over the tab even if another client currently holds its lease. Default false.'),
 		}),
 		type: 'action',
 	},
 	handle: async (context, params, response) => {
-		// Earthling: no ensureTab() needed — switching only requires the extension.
-		// ensureTab() would trigger snapshotForAI() and fail after a prior switch.
-		const relay = getRelay();
-		if (!relay?.extensionConnection)
-			throw new Error('Extension not connected. Make sure the Earthling Browser Bridge extension is active.');
-
-		// Switch debugger to new tab at extension level
-		await relay.extensionConnection.send('switchToTab', { tabId: params.tabId });
-
-		// Signal server.ts to dispose this backend and clear backendPromise.
-		// Next tool call will create fresh Browser → Context → Page for the new tab.
+		await relaySend(context, 'Earthling.switchToTab', { tabId: params.tabId, force: !!params.force });
+		// setClose() tells the MCP server to dispose this backend (closing
+		// the connectOverCDP WebSocket). The next tool call creates a fresh
+		// backend that reconnects and leases the extension's now-connected tab.
 		response.setClose();
 		response.addTextResult(`Switched to tab ${params.tabId}. Use browser_snapshot to see the page content.`);
+	},
+});
+
+const releaseTab = defineTool({
+	capability: 'core',
+	schema: {
+		name: 'browser_release_tab',
+		title: 'Release browser tab lease',
+		description: 'Release your exclusive lease on a tab so other clients can claim it. Safe to call on a tab you do not own (no-op).',
+		inputSchema: z.object({
+			tabId: z.number().describe('Tab ID to release'),
+		}),
+		type: 'action',
+	},
+	handle: async (context, params, response) => {
+		const res = await relaySend(context, 'Earthling.releaseTab', { tabId: params.tabId });
+		response.addTextResult(res?.released ? `Released tab ${params.tabId}.` : `Tab ${params.tabId} was not held by you.`);
 	},
 });
 
@@ -82,10 +103,7 @@ const openTab = defineTool({
 		type: 'action',
 	},
 	handle: async (context, params, response) => {
-		const relay = getRelay();
-		if (!relay?.extensionConnection)
-			throw new Error('Extension not connected. Make sure the Earthling Browser Bridge extension is active.');
-		const result = await relay.extensionConnection.send('openTab', { url: params.url });
+		const result = await relaySend(context, 'Earthling.openTab', { url: params.url });
 		response.addTextResult(`Opened tab ${result.tabId}. Use browser_switch_tab to interact with it.`);
 	},
 });
@@ -95,20 +113,17 @@ const closeTab = defineTool({
 	schema: {
 		name: 'browser_close_tab',
 		title: 'Close a browser tab',
-		description: 'Close a browser tab by tab ID (from browser_list_all_tabs).',
+		description: 'Close a browser tab by tab ID. Also releases any lease held on it.',
 		inputSchema: z.object({
 			tabId: z.number().describe('Tab ID to close'),
 		}),
 		type: 'action',
 	},
 	handle: async (context, params, response) => {
-		const relay = getRelay();
-		if (!relay?.extensionConnection)
-			throw new Error('Extension not connected. Make sure the Earthling Browser Bridge extension is active.');
-		await relay.extensionConnection.send('closeTab', { tabId: params.tabId });
+		await relaySend(context, 'Earthling.closeTab', { tabId: params.tabId });
 		response.addTextResult(`Closed tab ${params.tabId}.`);
 	},
 });
 
-const earthlingTabs: Tool<any>[] = [listAllTabs, switchTab, openTab, closeTab];
+const earthlingTabs: Tool<any>[] = [listAllTabs, switchTab, openTab, closeTab, releaseTab];
 export default earthlingTabs;

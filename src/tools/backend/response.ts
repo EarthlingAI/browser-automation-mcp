@@ -194,12 +194,6 @@ export class Response {
     if (this._context.config.codegen !== 'none' && this._code.length)
       addSection('Ran Playwright code', this._code, 'js');
 
-    // Earthling: skip snapshot when backend is about to be disposed (e.g. after tab switch).
-    // The Playwright page references the OLD tab whose debugger was already detached,
-    // so snapshotForAI() would hang until timeout.
-    // Earthling: skip ALL page access when backend is about to be disposed (tab switch).
-    // The Playwright page references the OLD tab whose debugger was already detached,
-    // so any page access (snapshotForAI, page.title, etc.) would hang or throw.
     let tabSnapshot: any;
     if (!this._isClose) {
       tabSnapshot = this._context.currentTab() ? await this._context.currentTabOrDie().captureSnapshot(this._includeSnapshotSelector, this._clientWorkspace) : undefined;

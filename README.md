@@ -70,10 +70,21 @@ The `--extension` flag enables the Earthling Browser Bridge extension connection
 
 | Tool | Description |
 |------|-------------|
-| `browser_list_all_tabs` | List ALL open browser tabs (not just Playwright-managed) via the extension |
-| `browser_switch_tab` | Switch debugger connection to a different tab by tab ID |
+| `browser_list_all_tabs` | List ALL open browser tabs (not just Playwright-managed) via the extension. Annotates each tab with lease state: `[leased-by-you]`, `[busy: <clientId>]`, or `[free]` |
+| `browser_switch_tab` | Claim a tab lease and switch this client's CDP session to it. Pass `force: true` to revoke another client's lease |
+| `browser_release_tab` | Release the tab lease held by this client |
 | `browser_open_tab` | Open a new browser tab, optionally with a URL |
 | `browser_close_tab` | Close a browser tab by tab ID |
+
+## Multi-agent architecture
+
+The CDP relay is a **standalone daemon** (`dist/relay-daemon.js`), lazy-spawned by the first MCP process that needs it and shared by all subsequent ones. Multiple agents (MCP clients) can drive different tabs in the same browser concurrently.
+
+- **Port ownership** — the daemon owns `127.0.0.1:9223` via a TCP bind race (no lockfile). Override with `BROWSER_AUTOMATION_MCP_RELAY_PORT`.
+- **Endpoints** — HTTP `/discover`, `/health`, `/shutdown`; WebSocket `/cdp/<uuid>` (N MCP clients) and `/extension/<uuid>` (single extension).
+- **Per-client isolation** — the daemon rewrites CDP `sessionId`s and command `id`s per client so concurrent agents don't collide.
+- **Tab leasing** — one agent per tab. `browser_switch_tab` claims the lease; other clients see the tab as `[busy: <clientId>]` and must use `force: true` to revoke. `browser_release_tab` releases voluntarily.
+- **Lifecycle** — daemon lives while the extension is connected, applies a 60s grace period on disconnect (covers MV3 service-worker sleep), then exits cleanly. Runtime artefacts (PID, secret, logs) live in `.runtime/` (gitignored). The extension's auto-reconnect loop rediscovers via `/discover` across daemon restarts.
 
 ### Capability-Gated Tools
 
@@ -130,7 +141,9 @@ browser-automation-mcp/
 │   │   ├── mcp/                    # MCP server layer
 │   │   │   ├── index.ts            # createConnection — wires config + tools + browser → server
 │   │   │   ├── config.ts           # Config resolution (CLI, env vars, config file, defaults)
-│   │   │   ├── cdpRelay.ts         # WebSocket bridge for Chrome Extension communication
+│   │   │   ├── relay/              # Standalone CDP relay daemon (lazy-spawned, shared by all MCP clients)
+│   │   │   │   ├── daemon.ts       # Daemon entry — owns :9223 via bind race, HTTP + WS endpoints
+│   │   │   │   └── cdpRelay.ts     # Relay core — per-client session/command-id rewriting, tab leasing
 │   │   │   ├── browserFactory.ts   # Browser launch strategies (headed, headless, CDP, extension)
 │   │   │   ├── protocol.ts         # Extension command/event types
 │   │   │   ├── program.ts          # CLI argument parsing

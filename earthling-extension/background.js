@@ -52,7 +52,7 @@ class RelayConnection {
 		debugLog("Forwarding CDP event:", method, params);
 		this._sendMessage({
 			method: "forwardCDPEvent",
-			params: { sessionId: source.sessionId, method, params }
+			params: { sessionId: source.sessionId, tabId: source.tabId, method, params }
 		});
 	}
 
@@ -122,11 +122,19 @@ class RelayConnection {
 
 		if (message.method === "switchToTab") {
 			const newTabId = message.params.tabId;
-			// Detach from current tab
-			await chrome.debugger.detach(this._debuggee).catch(() => {});
-			// Attach to new tab
+			const oldDebuggee = { ...this._debuggee };
+			// Update _debuggee BEFORE detaching to prevent _onDebuggerDetach
+			// from seeing source.tabId === this._debuggee.tabId and closing the ws.
 			this._debuggee = { tabId: newTabId };
-			await chrome.debugger.attach(this._debuggee, "1.3");
+			// Fire-and-forget detach — guard in _onDebuggerDetach will skip
+			// because source.tabId (old) !== this._debuggee.tabId (new).
+			chrome.debugger.detach(oldDebuggee).catch(() => {});
+			try {
+				await chrome.debugger.attach(this._debuggee, "1.3");
+			} catch (e) {
+				// Already attached (e.g. after rapid switches) — continue
+				debugLog("Debugger attach skipped (already attached):", e.message);
+			}
 			const result = await chrome.debugger.sendCommand(this._debuggee, "Target.getTargetInfo");
 			// Update bridge state
 			await bridge._setConnectedTabId(newTabId);
@@ -197,9 +205,18 @@ class EarthlingBrowserBridge {
 		chrome.action.onClicked.addListener(this._onActionClicked.bind(this));
 
 		chrome.alarms.onAlarm.addListener((alarm) => {
-			if (alarm.name === "autoConnectRetry")
-				this._startAutoConnect();
+			if (alarm.name === "autoConnectRetry" || alarm.name === "keepAlive") {
+				// keepAlive fires every 30s regardless of connection state — wakes the
+				// MV3 service worker so it can re-establish a dropped ws before the
+				// daemon's grace timer elapses. No-op if already connected.
+				if (!this._activeConnection)
+					this._startAutoConnect();
+			}
 		});
+
+		// Persistent SW-wake alarm so we reconnect even if the ws silently dies
+		// while the SW is asleep. Min allowed period is 0.5 min = 30s.
+		chrome.alarms.create("keepAlive", { periodInMinutes: 0.5 });
 
 		chrome.storage.onChanged.addListener((changes, area) => {
 			if (area === "local" && changes.relayConfig)

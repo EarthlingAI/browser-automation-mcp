@@ -27,11 +27,14 @@ const packageJsonPlugin = {
 
 async function build() {
 	const result = await esbuild.build({
-		entryPoints: [path.join(repoRoot, 'dev.ts')],
+		entryPoints: {
+			'index': path.join(repoRoot, 'dev.ts'),
+			'relay-daemon': path.join(repoRoot, 'src', 'tools', 'mcp', 'relay', 'daemon.ts'),
+		},
 		bundle: true,
 		platform: 'node',
 		target: 'node18',
-		outfile: path.join(repoRoot, 'dist', 'index.js'),
+		outdir: path.join(repoRoot, 'dist'),
 		format: 'cjs',
 		external: [
 			// Client API — stays as npm dependency
@@ -57,7 +60,8 @@ async function build() {
 	console.log(text);
 
 	const outSize = (fs.statSync(path.join(repoRoot, 'dist', 'index.js')).size / 1024 / 1024).toFixed(1);
-	console.log(`\nBuild complete: dist/index.js (${outSize} MB)`);
+	const relaySize = (fs.statSync(path.join(repoRoot, 'dist', 'relay-daemon.js')).size / 1024 / 1024).toFixed(1);
+	console.log(`\nBuild complete: dist/index.js (${outSize} MB), dist/relay-daemon.js (${relaySize} MB)`);
 }
 
 build().catch(err => {

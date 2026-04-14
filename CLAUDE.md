@@ -32,7 +32,9 @@ earthling-extension/       # Earthling Browser Bridge extension source
 scripts/                   # Build tooling (esbuild)
 ```
 
-The tool layer (`backend/`) is pure Playwright logic with no MCP awareness. The MCP layer (`mcp/`) wires tools to the MCP SDK server. `earthlingTabs.ts` in `backend/` is the only Earthling-custom addition — it communicates with the browser extension via `cdpRelay.ts` for cross-tab automation.
+The tool layer (`backend/`) is pure Playwright logic with no MCP awareness. The MCP layer (`mcp/`) wires tools to the MCP SDK server. `earthlingTabs.ts` in `backend/` is the only Earthling-custom addition — it communicates with the browser extension through the CDP relay daemon.
+
+The **CDP relay is a standalone singleton daemon** (`mcp/relay/daemon.ts`, built to `dist/relay-daemon.js`), not an in-process component. MCP processes are clients: the first one to need it lazy-spawns the daemon (TCP bind race on `127.0.0.1:9223`, no lockfile); subsequent MCP processes connect as additional clients. The daemon multiplexes one browser extension to N MCP clients with per-client CDP `sessionId`/command-`id` rewriting and per-tab leasing, so multiple agents can drive different tabs concurrently. Lifecycle: daemon exits 60s after the extension disconnects (grace covers MV3 service-worker sleep). Runtime state in `.runtime/` (PID, secret, logs — gitignored).
 
 ## Key Invariants
 
@@ -41,6 +43,7 @@ The tool layer (`backend/`) is pure Playwright logic with no MCP awareness. The 
 3. **`skillOnly: true` tools are hidden from MCP** — they exist in the codebase but are filtered out by `filteredTools` for normal MCP usage. Only exposed in skill mode.
 4. **Response always includes code** — every tool handler calls `response.addCode()` with equivalent Playwright code, enabling test code generation alongside execution.
 5. **Extension tools bypass `ensureTab()`** — `earthlingTabs.ts` tools communicate directly with the extension WebSocket, not through Playwright pages. They must not call `context.ensureTab()`.
+6. **The relay is a singleton daemon; MCP processes are clients.** Never re-introduce in-process relay bindings — an MCP process must not bind `9223` itself. All extension communication goes through the shared daemon over `/cdp/<uuid>`. Per-tab leasing is enforced at the daemon; clients request/release via `browser_switch_tab` (with optional `force`) and `browser_release_tab`.
 
 ## Conventions
 
