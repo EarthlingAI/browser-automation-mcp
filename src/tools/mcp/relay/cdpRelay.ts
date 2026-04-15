@@ -37,6 +37,7 @@ import { debug, ws, wsServer } from '../../../utilsBundle';
 import { registry } from '../../../server/registry/index';
 import { ManualPromise } from '../../../utils/isomorphic/manualPromise';
 
+import { DEFAULT_RELAY_PORT } from './constants';
 import { LeaseTable } from './leases';
 
 import type websocket from 'ws';
@@ -185,7 +186,7 @@ export class CDPRelayServer {
         throw new Error(`"${this._browserChannel}" executable not found.`);
     }
     const addr = this._httpServer.address();
-    const port = typeof addr === 'object' && addr ? addr.port : 9223;
+    const port = typeof addr === 'object' && addr ? addr.port : DEFAULT_RELAY_PORT;
     const mcpRelayEndpoint = `ws://127.0.0.1:${port}${this._extensionPath}`;
     const url = new URL('chrome-extension://ifoggnihepkfpokholefpgpcgiikkeke/connect.html');
     url.searchParams.set('mcpRelayUrl', mcpRelayEndpoint);

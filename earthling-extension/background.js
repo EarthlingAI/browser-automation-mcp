@@ -789,6 +789,7 @@ class EarthlingBrowserBridge {
 		let config = await this._getRelayConfig();
 		if (!config) {
 			// Set default config on first run or after update
+			// Canonical default: tools/browser-automation-mcp/src/tools/mcp/relay/constants.ts (DEFAULT_RELAY_PORT). Keep in sync.
 			config = { host: "127.0.0.1", port: 9223 };
 			await chrome.storage.local.set({ relayConfig: config });
 			debugLog("Default relay config set:", config);

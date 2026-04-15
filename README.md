@@ -80,7 +80,7 @@ The `--extension` flag enables the Earthling Browser Bridge extension connection
 
 The CDP relay is a **standalone daemon** (`dist/relay-daemon.js`), lazy-spawned by the first MCP process that needs it and shared by all subsequent ones. Multiple agents (MCP clients) can drive different tabs in the same browser concurrently.
 
-- **Port ownership** — the daemon owns `127.0.0.1:9223` via a TCP bind race (no lockfile). Override with `BROWSER_AUTOMATION_MCP_RELAY_PORT`.
+- **Port ownership** — the daemon owns `127.0.0.1:9223` via a TCP bind race (no lockfile). Override with `BROWSER_AUTOMATION_MCP_RELAY_PORT`. The default port constant lives in `src/tools/mcp/relay/constants.ts` (`DEFAULT_RELAY_PORT`) and is shared across the daemon, extension-context factory, and CDP relay; the Chrome extension mirrors the literal with a comment pointing back to that file.
 - **Endpoints** — HTTP `/discover`, `/health`, `/shutdown`; WebSocket `/cdp/<uuid>` (N MCP clients) and `/extension/<uuid>` (single extension).
 - **Per-client isolation** — the daemon rewrites CDP `sessionId`s and command `id`s per client so concurrent agents don't collide.
 - **Tab leasing** — one agent per tab. `browser_switch_tab` claims the lease; other clients see the tab as `[busy: <clientId>]` and must use `force: true` to revoke. `browser_release_tab` releases voluntarily.

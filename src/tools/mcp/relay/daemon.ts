@@ -34,6 +34,7 @@ import { spawn } from 'child_process';
 import { debug } from '../../../utilsBundle';
 import { ensureRuntimeDir, LOG_FILE, PID_FILE, SECRET_FILE } from './paths';
 import { CDPRelayServer } from './cdpRelay';
+import { DEFAULT_RELAY_PORT } from './constants';
 
 const debugLogger = debug('pw:mcp:relay:daemon');
 
@@ -45,7 +46,7 @@ type Args = {
 };
 
 function parseArgs(argv: string[]): Args {
-  const args: Args = { port: 9223, channel: 'chrome' };
+  const args: Args = { port: DEFAULT_RELAY_PORT, channel: 'chrome' };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => argv[++i];

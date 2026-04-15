@@ -17,6 +17,7 @@
 import * as playwright from 'playwright-core';
 import { debug } from '../../utilsBundle';
 import { acquireDaemon } from './relay/clientAcquirer';
+import { DEFAULT_RELAY_PORT } from './relay/constants';
 
 import type { ClientInfo } from '../utils/mcp/server';
 import type { FullConfig } from './config';
@@ -24,7 +25,7 @@ import type { FullConfig } from './config';
 const debugLogger = debug('pw:mcp:relay');
 
 export async function createExtensionBrowser(_config: FullConfig, _clientInfo: ClientInfo): Promise<playwright.Browser> {
-  const port = parseInt(process.env.BROWSER_AUTOMATION_MCP_RELAY_PORT || '9223', 10);
+  const port = parseInt(process.env.BROWSER_AUTOMATION_MCP_RELAY_PORT || String(DEFAULT_RELAY_PORT), 10);
   const channel = _config.browser?.launchOptions?.channel;
   const info = await acquireDaemon(port, channel);
   // Stable client ID per MCP process — daemon reuses identity across reconnections
