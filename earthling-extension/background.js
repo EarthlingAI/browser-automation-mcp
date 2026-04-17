@@ -1,4 +1,12 @@
+// Debug ring buffer — queryable via Earthling.getDebugLog pseudo-CDP command.
+const DEBUG_LOG_MAX = 200;
+const _debugRingBuffer = [];
+
 function debugLog(...args) {
+	const entry = { ts: Date.now(), msg: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') };
+	_debugRingBuffer.push(entry);
+	if (_debugRingBuffer.length > DEBUG_LOG_MAX)
+		_debugRingBuffer.shift();
 	console.log("[Earthling]", ...args);
 }
 
@@ -188,6 +196,10 @@ class RelayConnection {
 			return {};
 		}
 
+		if (message.method === "getDebugLog") {
+			return [..._debugRingBuffer];
+		}
+
 		if (message.method === "forwardCDPCommand") {
 			const { tabId, sessionId, method, params } = message.params;
 			const debuggee = tabId ? this._debuggees.get(tabId) : null;
@@ -221,6 +233,10 @@ class EarthlingBrowserBridge {
 		this._preSelectedTabId = null;
 		this._pendingTabSelection = new Map();
 		this._autoConnectActive = false;
+		// Debounce state: tracks when the connection was lost to avoid
+		// unnecessary auto-reconnect during dispose→reconnect cycles (~2-5s).
+		this._connectionLostAt = null;
+		this._badgeClearTimer = null;
 
 		// Restore persisted state (survives service worker restarts in MV3)
 		// Store the promise so interception handlers can await it after wake
@@ -238,11 +254,18 @@ class EarthlingBrowserBridge {
 
 		chrome.alarms.onAlarm.addListener((alarm) => {
 			if (alarm.name === "autoConnectRetry" || alarm.name === "keepAlive") {
-				// keepAlive fires every 30s regardless of connection state — wakes the
-				// MV3 service worker so it can re-establish a dropped ws before the
-				// daemon's grace timer elapses. No-op if already connected.
-				if (!this._activeConnection)
-					this._startAutoConnect();
+				if (!this._activeConnection) {
+					if (!this._connectionLostAt)
+						this._connectionLostAt = Date.now();
+					// Only auto-reconnect after 10s of no connection.
+					// Dispose→reconnect cycles complete in ~2-5s.
+					if (Date.now() - this._connectionLostAt > 10_000) {
+						debugLog("keepAlive: connection lost >10s, starting auto-connect");
+						this._startAutoConnect();
+					}
+				} else {
+					this._connectionLostAt = null;
+				}
 			}
 		});
 
@@ -356,7 +379,8 @@ class EarthlingBrowserBridge {
 				await this._connectToRelay(tab.id, mcpRelayUrl, targetTab.id);
 
 				// Connect to the target tab (sets up lifecycle handlers, badges, etc.)
-				await this._connectTab(tab.id, targetTab.id, targetTab.windowId, mcpRelayUrl);
+				// activateTab=true: user-initiated connection, bring tab to focus.
+				await this._connectTab(tab.id, targetTab.id, targetTab.windowId, mcpRelayUrl, true);
 
 				// Close the connect page tab before it renders
 				await chrome.tabs.remove(tab.id);
@@ -645,9 +669,9 @@ class EarthlingBrowserBridge {
 		}
 	}
 
-	async _connectTab(selectorTabId, tabId, windowId, mcpRelayUrl) {
+	async _connectTab(selectorTabId, tabId, windowId, mcpRelayUrl, activateTab = false) {
 		try {
-			debugLog(`Connecting tab ${tabId} to relay at ${mcpRelayUrl}`);
+			debugLog(`Connecting tab ${tabId} (activate=${activateTab})`);
 			try {
 				this._activeConnection?.close("Another connection is requested");
 			} catch (error) {
@@ -660,19 +684,25 @@ class EarthlingBrowserBridge {
 			this._pendingTabSelection.delete(selectorTabId);
 			this._activeConnection.setTabId(tabId);
 			this._activeConnection.onclose = () => {
-				debugLog("MCP connection closed — will auto-reconnect");
+				debugLog("MCP connection closed");
 				this._activeConnection = undefined;
 				void this._setConnectedTabId(null);
-				// Auto-reconnect when relay disconnects (e.g., engine restart)
-				this._startAutoConnect();
+				// Don't auto-reconnect immediately — let keepAlive handle it
+				// after the debounce. Dispose→reconnect cycles will re-establish
+				// the connection within ~2-5s via the MCP server.
+				if (!this._connectionLostAt)
+					this._connectionLostAt = Date.now();
 			};
 			if (this._preSelectedTabId === tabId)
 				this._preSelectedTabId = null;
-			await Promise.all([
-				this._setConnectedTabId(tabId),  // also persists state
-				chrome.tabs.update(tabId, { active: true }),
-				chrome.windows.update(windowId, { focused: true })
-			]);
+			const promises = [this._setConnectedTabId(tabId)];
+			if (activateTab) {
+				promises.push(chrome.tabs.update(tabId, { active: true }));
+				promises.push(chrome.windows.update(windowId, { focused: true }));
+			}
+			await Promise.all(promises);
+			// Reset debounce timestamp — we're connected now.
+			this._connectionLostAt = null;
 			// Signal relay that tab is attached and ready for Playwright commands
 			this._activeConnection._sendMessage({
 				method: "tabReady",
@@ -689,10 +719,27 @@ class EarthlingBrowserBridge {
 	async _setConnectedTabId(tabId) {
 		const oldTabId = this._connectedTabId;
 		this._connectedTabId = tabId;
-		if (oldTabId && oldTabId !== tabId)
-			await this._updateBadge(oldTabId, { text: "" });
-		if (tabId)
+		if (tabId === null) {
+			// Defer badge clear — dispose→reconnect will re-set within ~2s.
+			if (this._badgeClearTimer)
+				clearTimeout(this._badgeClearTimer);
+			this._badgeClearTimer = setTimeout(async () => {
+				if (this._connectedTabId === null && oldTabId) {
+					// Still null after 2s — genuinely disconnected.
+					await this._updateBadge(oldTabId, { text: "" });
+				}
+				this._badgeClearTimer = null;
+			}, 2000);
+		} else {
+			// Reconnected — cancel pending badge clear.
+			if (this._badgeClearTimer) {
+				clearTimeout(this._badgeClearTimer);
+				this._badgeClearTimer = null;
+			}
+			if (oldTabId && oldTabId !== tabId)
+				await this._updateBadge(oldTabId, { text: "" });
 			await this._updateBadge(tabId, { text: "\u2713", color: "#4CAF50", title: "Connected to MCP client" });
+		}
 		await this._persistState();
 		this._broadcastStatusChange();
 	}
@@ -759,7 +806,7 @@ class EarthlingBrowserBridge {
 	}
 
 	_onTabUpdated(tabId, changeInfo, tab) {
-		if (this._connectedTabId === tabId)
+		if (this._connectedTabId === tabId && changeInfo.url)
 			void this._setConnectedTabId(tabId);
 		if (this._preSelectedTabId === tabId && changeInfo.status === "complete")
 			void this._updateBadge(tabId, {
@@ -832,7 +879,7 @@ class EarthlingBrowserBridge {
 			// Use _connectTab which sets up lifecycle, sends tabReady
 			await this._connectTab(selectorId, targetTab.id, targetTab.windowId, wsUrl);
 
-			debugLog("Auto-connected to relay at", wsUrl, "tab:", targetTab.id, targetTab.title);
+			debugLog("Auto-connected to relay at", wsUrl, "tab:", targetTab.id, targetTab.title, "(no tab activation)");
 			chrome.alarms.clear("autoConnectRetry");
 		} catch (e) {
 			debugLog("Auto-connect failed:", e.message, "— will retry");

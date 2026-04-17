@@ -45,6 +45,9 @@ The **CDP relay is a standalone singleton daemon** (`mcp/relay/daemon.ts`, built
 5. **Extension tools bypass `ensureTab()`** — `earthlingTabs.ts` tools communicate directly with the extension WebSocket, not through Playwright pages. They must not call `context.ensureTab()`.
 6. **The relay is a singleton daemon; MCP processes are clients.** Never re-introduce in-process relay bindings — an MCP process must not bind `9223` itself. All extension communication goes through the shared daemon over `/cdp/<uuid>`. Per-tab leasing is enforced at the daemon; clients request/release via `browser_switch_tab` (with optional `force`) and `browser_release_tab`.
 7. **Browser-level vs tab-level CDP routing** — the daemon's `_handleMessage` handles all top-level CDP commands (no `sessionId`) locally or returns `{}`. Only tab-scoped commands (with a virtual `sessionId`) are forwarded to the extension via `sendToExtensionForClient`. The extension's `chrome.debugger` is tab-scoped and cannot service browser-level commands like `Target.setDiscoverTargets`.
+8. **Dispose→reconnect is intentional** — Playwright's CRPage↔CDPSession binding is immutable. `browser_switch_tab` disposes the backend via `response.setClose()` and the next tool call creates a fresh backend via `connectOverCDP`. This pattern is architecturally correct; bugs from side effects are fixed at the daemon/extension layers.
+9. **Extension is passive** — the extension never proactively activates tabs or steals user focus. `_connectTab` takes an `activateTab` parameter (default `false`). Only user-initiated connections pass `true`.
+10. **Smart reconnect on SW restart** — `_handleExtensionConnection` queries the reconnected extension for surviving tabs before deciding to flush client state. SW restart (tabs alive) skips flush; browser restart (tabs dead) flushes.
 
 ## Conventions
 
@@ -56,6 +59,12 @@ The **CDP relay is a standalone singleton daemon** (`mcp/relay/daemon.ts`, built
 - **Tool schema fields:** `name` (snake_case with `browser_` prefix), `title`, `description`, `inputSchema`, `type` (input/action/readOnly/assertion)
 - **Capability annotation** on every tool — determines visibility based on server config
 - **Apache 2.0 license header** on all upstream files
+
+## Debug Logging
+
+- **Daemon logs** go to `.runtime/relay-daemon.log` via the `debug` module (`pw:mcp:relay` namespace). Every state transition in `cdpRelay.ts` is logged: extension connect/disconnect, client connect/disconnect, `setAutoAttach` priority branch, `switchToTab`, `closeTab`, `onExtensionLost`, grace timer events.
+- **Extension ring buffer** — `background.js` maintains a 200-entry ring buffer (`_debugRingBuffer`). Query via `Earthling.getDebugLog` pseudo-CDP command through the daemon. Logs: `_connectTab`, `_setConnectedTabId`, `_attemptAutoConnect`, keepAlive, switchToTab, attachToTab.
+- **Response timing** — `response.ts` logs `captureSnapshot` start/completion with duration via `requestDebug`.
 
 ## Extending the Server
 

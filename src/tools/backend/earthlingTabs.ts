@@ -120,7 +120,12 @@ const closeTab = defineTool({
 		type: 'action',
 	},
 	handle: async (context, params, response) => {
+		// Check if we're closing our own primary tab — if so, dispose the
+		// backend to avoid captureSnapshot on a dead page (30s hang).
+		const whoami = await relaySend(context, 'Earthling.whoAmI', {});
 		await relaySend(context, 'Earthling.closeTab', { tabId: params.tabId });
+		if (whoami.primaryTab === params.tabId)
+			response.setClose();
 		response.addTextResult(`Closed tab ${params.tabId}.`);
 	},
 });

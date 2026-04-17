@@ -61,7 +61,16 @@ const goBack = defineTabTool({
   },
 
   handle: async (tab, params, response) => {
-    await tab.page.goBack(tab.navigationTimeoutOptions);
+    try {
+      await tab.page.goBack(tab.navigationTimeoutOptions);
+    } catch (e: any) {
+      if (e.message?.includes('Timeout') || e.name === 'TimeoutError') {
+        // Navigation completed but page didn't fire 'load' — non-fatal
+        // (common with SPAs, bfcache, and some page transitions).
+      } else {
+        throw e;
+      }
+    }
     response.setIncludeSnapshot();
     response.addCode(`await page.goBack();`);
   },
@@ -79,7 +88,15 @@ const goForward = defineTabTool({
   },
 
   handle: async (tab, params, response) => {
-    await tab.page.goForward(tab.navigationTimeoutOptions);
+    try {
+      await tab.page.goForward(tab.navigationTimeoutOptions);
+    } catch (e: any) {
+      if (e.message?.includes('Timeout') || e.name === 'TimeoutError') {
+        // Navigation completed but page didn't fire 'load' — non-fatal.
+      } else {
+        throw e;
+      }
+    }
     response.setIncludeSnapshot();
     response.addCode(`await page.goForward();`);
   },
@@ -97,7 +114,15 @@ const reload = defineTabTool({
   },
 
   handle: async (tab, params, response) => {
-    await tab.page.reload(tab.navigationTimeoutOptions);
+    try {
+      await tab.page.reload(tab.navigationTimeoutOptions);
+    } catch (e: any) {
+      if (e.message?.includes('Timeout') || e.name === 'TimeoutError') {
+        // Reload completed but page didn't fire 'load' — non-fatal.
+      } else {
+        throw e;
+      }
+    }
     response.setIncludeSnapshot();
     response.addCode(`await page.reload();`);
   },

@@ -34,6 +34,14 @@ export async function createExtensionBrowser(_config: FullConfig, _clientInfo: C
   const endpoint = `ws://127.0.0.1:${port}${info.cdpPath}?clientId=${encodeURIComponent(stableClientId)}`;
   debugLogger(`Connecting to relay daemon at ${endpoint} (pid=${info.pid})`);
   const browser = await playwright.chromium.connectOverCDP(endpoint, { isLocal: true });
+  // Settle: wait for the page to be ready after connection. Prevents transient
+  // timeouts (e.g. take_screenshot) when the page hasn't fully settled yet.
+  const contexts = browser.contexts();
+  if (contexts.length > 0) {
+    const pages = contexts[0].pages();
+    if (pages.length > 0)
+      await pages[0].waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
+  }
   // If the relay daemon dies (grace exit after extension loss, crash, etc.) the
   // underlying ws closes and our cached Browser becomes unusable. There's no
   // in-place reconnect — every cached page reference is gone. Exit the MCP

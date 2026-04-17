@@ -220,29 +220,93 @@ export class CDPRelayServer {
 
   // ------------------------------------------------------------------ Extension
 
-  private _handleExtensionConnection(ws: WebSocket): void {
+  private async _handleExtensionConnection(ws: WebSocket): Promise<void> {
     if (this._extension) {
       ws.close(1000, 'Another extension connection already established');
       return;
     }
     this._cancelGraceTimer();
 
-    // Extension reconnect (e.g. after browser restart): flush stale state.
-    // Old tab IDs no longer exist in the new browser session.
+    const conn = new ExtensionConnection(ws);
+    // Wire handlers FIRST so tabReady/responses aren't missed during async probe.
+    conn.onmessage = this._handleExtensionMessage.bind(this);
+    conn.onresponse = this._handleExtensionResponse.bind(this);
+
+    // Smart reconnect: distinguish SW sleep→wake (tabs alive) from browser
+    // restart (tabs dead) by probing the extension for surviving tabs.
     if (this._tabVirtualSession.size > 0 || this._leases.all().length > 0) {
-      debugLogger('Extension reconnected — flushing stale leases and virtual sessions');
-      for (const client of this._clients.values())
-        client.onExtensionLost('extension reconnected — previous browser session invalidated');
-      this._tabVirtualSession.clear();
-      this._leases.clearAll();
-      this._lastSwitchedTab.clear();
+      const leaseCount = this._leases.all().length;
+      const virtualCount = this._tabVirtualSession.size;
+      debugLogger(`Extension reconnected — probing for surviving tabs (leases=${leaseCount}, virtualSessions=${virtualCount})`);
+      try {
+        const tabs: any[] = await Promise.race([
+          conn.send('listBrowserTabs', {}),
+          new Promise<never>((_, rej) => setTimeout(() => rej(new Error('probe timeout')), 5000)),
+        ]);
+        const liveTabIds = new Set(tabs.map((t: any) => t.tabId));
+        const leasedTabIds = this._leases.all().map(l => l.tabId);
+        const surviving = leasedTabIds.filter(id => liveTabIds.has(id));
+
+        if (surviving.length > 0) {
+          // SW restart — tabs alive. Re-attach debugger, keep client state.
+          debugLogger(`SW restart detected — ${surviving.length}/${leasedTabIds.length} leased tabs survived, re-attaching`);
+          // Clear stale ext-side session mappings (those died with the SW).
+          this._extSession.clear();
+          this._virtualSession.clear();
+          // Re-attach debugger to surviving tabs and re-bind sessions.
+          for (const tabId of surviving) {
+            try {
+              const { sessionId: extSid } = await conn.send('attachToTab', { tabId });
+              const virtualId = this._tabVirtualSession.get(tabId);
+              if (extSid && virtualId)
+                this.bindExtSession(extSid, virtualId, tabId);
+              debugLogger(`  Re-attached tab ${tabId} (extSid=${extSid || 'none'})`);
+            } catch (e) {
+              debugLogger(`  Failed to reattach tab ${tabId}: ${e}`);
+              const owner = this._leases.ownerOf(tabId);
+              if (owner) {
+                this.revokeClientSubscription(owner.ownerClientId, tabId, 'tab lost during SW restart');
+                this._leases.release(tabId, owner.ownerClientId);
+              }
+            }
+          }
+          // Clean up leases for tabs that no longer exist.
+          for (const tabId of leasedTabIds) {
+            if (!liveTabIds.has(tabId)) {
+              debugLogger(`  Tab ${tabId} gone — revoking lease`);
+              const owner = this._leases.ownerOf(tabId);
+              if (owner) {
+                this.revokeClientSubscription(owner.ownerClientId, tabId, 'tab gone after SW restart');
+                this._leases.release(tabId, owner.ownerClientId);
+              }
+              this._tabVirtualSession.delete(tabId);
+            }
+          }
+        } else {
+          // Browser restart — flush everything.
+          debugLogger('Browser restart detected — flushing all client state');
+          for (const client of this._clients.values())
+            client.onExtensionLost('browser restart — previous session invalidated');
+          this._tabVirtualSession.clear();
+          this._leases.clearAll();
+          this._lastSwitchedTab.clear();
+        }
+      } catch (e) {
+        // Probe failed (timeout or extension error) — flush as safe default.
+        debugLogger(`Extension probe failed (${e}) — flushing as safe default`);
+        for (const client of this._clients.values())
+          client.onExtensionLost('extension reconnect probe failed');
+        this._tabVirtualSession.clear();
+        this._leases.clearAll();
+        this._lastSwitchedTab.clear();
+      }
     }
 
-    const conn = new ExtensionConnection(ws);
     this._extension = conn;
     conn.onclose = (c, reason) => {
       if (this._extension !== c)
         return;
+      debugLogger(`Extension WebSocket closed: reason="${reason}", leases=${this._leases.all().length}, clients=${this._clients.size}`);
       this._extension = null;
       this._extensionReadyPromise = new ManualPromise();
       void this._extensionReadyPromise.catch(() => {});
@@ -253,8 +317,6 @@ export class CDPRelayServer {
       this._virtualSession.clear();
       this._startGraceTimer(reason);
     };
-    conn.onmessage = this._handleExtensionMessage.bind(this);
-    conn.onresponse = this._handleExtensionResponse.bind(this);
     debugLogger('Extension WebSocket connected, waiting for tabReady...');
   }
 
@@ -462,14 +524,18 @@ export class CDPRelayServer {
     debugLogger(`Starting ${GRACE_PERIOD_MS}ms grace timer (${reason}).`);
     this._graceTimer = setTimeout(() => {
       this._graceTimer = null;
-      if (this._extension !== null)
-        return;  // extension recovered — nothing to do
+      if (this._extension !== null) {
+        debugLogger('Grace timer fired but extension already reconnected — no action');
+        return;
+      }
       // Grace expired with no extension. Notify clients NOW with detach so
       // Playwright tears down its page state, then drop leases + tab maps.
+      debugLogger(`Grace timer expired — flushing ${this._clients.size} clients, ${this._leases.all().length} leases`);
       for (const client of this._clients.values())
         client.onExtensionLost(reason);
       this._tabVirtualSession.clear();
       this._leases.clearAll();
+      this._lastSwitchedTab.clear();
       if (this._clients.size === 0)
         this._onIdle?.();
     }, GRACE_PERIOD_MS);
@@ -539,6 +605,7 @@ class ClientConnection {
   }
 
   onExtensionLost(reason: string) {
+    debugLogger(`[${this.id}] onExtensionLost: reason="${reason}", tabs=[${[...this._subscribedTabs].join(',')}], primary=${this._primaryTab}`);
     for (const tabId of this._subscribedTabs) {
       const virtualId = this._relay.virtualSessionForTab(tabId);
       this.sendRaw({
@@ -639,12 +706,13 @@ class ClientConnection {
       case 'Earthling.switchToTab': {
         const force = !!(params && params.force);
         const tabId: number = params?.tabId;
+        const existingOwner = this._relay.leases().ownerOf(tabId);
+        debugLogger(`[${this.id}] switchToTab: tabId=${tabId}, force=${force}, currentOwner=${existingOwner?.ownerClientId ?? 'none'}, myPrimary=${this._primaryTab}`);
         // On force-takeover, revoke the current owner's subscription so they
         // stop seeing events for a tab they no longer own.
         if (force) {
-          const existing = this._relay.leases().ownerOf(tabId);
-          if (existing && existing.ownerClientId !== this.id)
-            this._relay.revokeClientSubscription(existing.ownerClientId, tabId, `Lease revoked by ${this.id}`);
+          if (existingOwner && existingOwner.ownerClientId !== this.id)
+            this._relay.revokeClientSubscription(existingOwner.ownerClientId, tabId, `Lease revoked by ${this.id}`);
         }
         const claim = this.claimTab(tabId, force);
         if (!claim.ok)
@@ -654,6 +722,7 @@ class ClientConnection {
         // the fresh ClientConnection will consume this hint to lease the
         // correct tab instead of falling back to the first free one.
         this._relay.setLastSwitchedTab(this.id, tabId);
+        debugLogger(`[${this.id}] switchToTab: claimed tab ${tabId}, setting lastSwitchedTab hint`);
         // Tell extension to attach to the new tab.
         return await this._relay.callExtensionDirect('switchToTab', { tabId });
       }
@@ -665,19 +734,24 @@ class ClientConnection {
         return await this._relay.callExtensionDirect('openTab', params || {});
       case 'Earthling.closeTab': {
         const tabId: number = params?.tabId;
+        const owner = this._relay.leases().ownerOf(tabId);
+        debugLogger(`[${this.id}] closeTab: tabId=${tabId}, owner=${owner?.ownerClientId ?? 'none'}, myPrimary=${this._primaryTab}`);
         this.releaseTab(tabId);
         // Revoke any other client's lease on the closed tab to prevent orphans.
-        const owner = this._relay.leases().ownerOf(tabId);
-        if (owner) {
-          this._relay.revokeClientSubscription(owner.ownerClientId, tabId, 'Tab closed');
-          this._relay.leases().release(tabId, owner.ownerClientId);
+        const remainingOwner = this._relay.leases().ownerOf(tabId);
+        if (remainingOwner) {
+          this._relay.revokeClientSubscription(remainingOwner.ownerClientId, tabId, 'Tab closed');
+          this._relay.leases().release(tabId, remainingOwner.ownerClientId);
         }
         this._relay._cleanupTabSessions(tabId);
         const result = await this._relay.callExtensionDirect('closeTab', { tabId });
+        debugLogger(`[${this.id}] closeTab: tab ${tabId} closed successfully`);
         return result;
       }
       case 'Earthling.whoAmI':
         return { clientId: this.id, primaryTab: this._primaryTab };
+      case 'Earthling.getDebugLog':
+        return await this._relay.callExtensionDirect('getDebugLog', {});
     }
     return undefined;
   }
@@ -685,22 +759,30 @@ class ClientConnection {
   private async _handleSetAutoAttach(): Promise<void> {
     // If already leased a tab, re-emit attachedToTarget for it.
     let tabId = this._primaryTab;
+    if (tabId !== null) {
+      debugLogger(`[${this.id}] setAutoAttach: re-emitting for existing primary tab ${tabId}`);
+    }
     if (tabId === null) {
       const tabs = await this._relay.listTabs();
+      debugLogger(`[${this.id}] setAutoAttach: finding tab (${tabs.length} browser tabs, leases=${this._relay.leases().all().length})`);
       // Priority 1: Tab that this client last switched to (survives dispose→reconnect).
       const hintTab = this._relay.consumeLastSwitchedTab(this.id);
       if (hintTab !== undefined && tabs.some((t: any) => t.tabId === hintTab)) {
         const claim = this._relay.leases().claim(hintTab, this.id, false);
-        if (claim.ok)
+        if (claim.ok) {
           tabId = hintTab;
+          debugLogger(`[${this.id}] setAutoAttach: leased hint tab ${tabId}`);
+        }
       }
       // Priority 2: Tab the extension is currently connected to.
       if (tabId === null) {
         const connected = tabs.find((t: any) => t.connected);
         if (connected) {
           const claim = this._relay.leases().claim(connected.tabId, this.id, false);
-          if (claim.ok)
+          if (claim.ok) {
             tabId = connected.tabId;
+            debugLogger(`[${this.id}] setAutoAttach: leased connected tab ${tabId}`);
+          }
         }
       }
       // Priority 3: First free non-internal tab.
@@ -712,11 +794,23 @@ class ClientConnection {
           .sort((a: number, b: number) => a - b);
         for (const id of candidates) {
           const claim = this._relay.leases().claim(id, this.id, false);
-          if (claim.ok) { tabId = id; break; }
+          if (claim.ok) {
+            tabId = id;
+            debugLogger(`[${this.id}] setAutoAttach: leased first free tab ${tabId}`);
+            break;
+          }
         }
       }
-      if (tabId === null)
-        throw new Error('No free tab available to lease');
+      // Priority 4: No free tab — open a new blank tab for this client.
+      if (tabId === null) {
+        debugLogger(`[${this.id}] setAutoAttach: no free tab — auto-opening blank tab`);
+        const newTab = await this._relay.callExtensionDirect('openTab', { url: 'about:blank' });
+        tabId = newTab.tabId;
+        const claim = this._relay.leases().claim(tabId, this.id, false);
+        if (!claim.ok)
+          throw new Error(`Failed to claim newly opened tab ${tabId}`);
+        debugLogger(`[${this.id}] setAutoAttach: opened and leased blank tab ${tabId}`);
+      }
       this._primaryTab = tabId;
     }
     this._subscribedTabs.add(tabId);

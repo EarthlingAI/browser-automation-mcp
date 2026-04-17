@@ -25,7 +25,7 @@ const requests = defineTabTool({
   schema: {
     name: 'browser_network_requests',
     title: 'List network requests',
-    description: 'Returns all network requests since loading the page',
+    description: 'Returns network requests captured since the browser connected to this tab. The initial page load may not be captured — navigate or reload to see all requests.',
     inputSchema: z.object({
       includeStatic: z.boolean().default(false).describe('Whether to include successful static resources like images, fonts, scripts, etc. Defaults to false.'),
       filename: z.string().optional().describe('Filename to save the network requests to. If not provided, requests are returned as text.'),

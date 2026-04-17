@@ -43,20 +43,35 @@ const runCode = defineTabTool({
       __end__,
     };
     vm.createContext(context);
-    await tab.waitForCompletion(async () => {
-      const snippet = `(async () => {
-        try {
-          const result = await (${params.code})(page);
-          __end__.resolve(JSON.stringify(result));
-        } catch (e) {
-          __end__.reject(e);
-        }
-      })()`;
-      await vm.runInContext(snippet, context);
-      const result = await __end__;
-      if (typeof result === 'string')
-        response.addTextResult(result);
-    });
+    const RUN_CODE_TIMEOUT_MS = 30_000;
+    // Wrap the entire waitForCompletion in Promise.race so the timeout cuts
+    // through all internal waits (network idle, load state, modal checks).
+    // Placing the timeout inside the callback doesn't work because
+    // waitForCompletion adds its own post-callback waits that can block.
+    await Promise.race([
+      tab.waitForCompletion(async () => {
+        const snippet = `(async () => {
+          try {
+            const result = await (${params.code})(page);
+            __end__.resolve(JSON.stringify(result));
+          } catch (e) {
+            __end__.reject(e);
+          }
+        })()`;
+        // Fire-and-forget: do NOT await vm.runInContext — it returns the IIFE's
+        // Promise which hangs forever if the user code hangs.
+        vm.runInContext(snippet, context);
+        const result = await __end__;
+        if (typeof result === 'string')
+          response.addTextResult(result);
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(
+          `browser_run_code timed out after ${RUN_CODE_TIMEOUT_MS / 1000}s. ` +
+          `The code may contain an infinite loop, a selector that never matches, or a long-running operation.`
+        )), RUN_CODE_TIMEOUT_MS)
+      ),
+    ]);
   },
 });
 

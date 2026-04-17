@@ -38,11 +38,11 @@ The `--extension` flag enables the Earthling Browser Bridge extension connection
 | `browser_close` | Close the current page |
 | `browser_resize` | Resize the browser window |
 | `browser_evaluate` | Execute JavaScript on the page or a specific element |
-| `browser_run_code` | Run a Playwright code snippet with full `page` API access |
+| `browser_run_code` | Run a Playwright code snippet with full `page` API access. Runs with a 30-second timeout — returns a clear error if the code hangs |
 | `browser_take_screenshot` | Capture a PNG/JPEG screenshot of the viewport, full page, or element |
 | `browser_wait_for` | Wait for text to appear/disappear or a time delay |
 | `browser_console_messages` | Return console messages (filterable by level) |
-| `browser_network_requests` | List network requests since page load |
+| `browser_network_requests` | List network requests since page load. The initial page load may not be captured — navigate or reload to see all requests |
 | `browser_file_upload` | Upload files to a file chooser dialog |
 | `browser_handle_dialog` | Accept or dismiss a browser dialog (alert, confirm, prompt) |
 
@@ -51,7 +51,7 @@ The `--extension` flag enables the Earthling Browser Bridge extension connection
 | Tool | Description |
 |------|-------------|
 | `browser_navigate` | Navigate to a URL |
-| `browser_navigate_back` | Go back in history |
+| `browser_navigate_back` | Go back in history. Timeout-tolerant — catches navigation timeout errors gracefully (common with SPAs and bfcache) |
 
 ### Tabs
 
@@ -228,3 +228,8 @@ npm run wtest
 ```
 
 Tests live in `packages/playwright-mcp/tests/` and use Playwright Test.
+
+## Troubleshooting
+
+- **Daemon logs** — the CDP relay daemon logs to `.runtime/relay-daemon.log` via the `debug` module (`pw:mcp:relay` namespace). Check this file for extension connect/disconnect events, client routing issues, and tab lease conflicts.
+- **Extension debug ring buffer** — the extension's `background.js` maintains a 200-entry ring buffer. Query it via the `Earthling.getDebugLog` pseudo-CDP command through the daemon to inspect recent extension activity (tab connections, auto-connect attempts, keepAlive, debugger attach/detach).

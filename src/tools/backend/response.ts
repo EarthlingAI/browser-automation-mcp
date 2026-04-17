@@ -196,7 +196,10 @@ export class Response {
 
     let tabSnapshot: any;
     if (!this._isClose) {
+      const snapshotStart = Date.now();
+      requestDebug(`captureSnapshot: starting (tool=${this.toolName}, includeSnapshot=${this._includeSnapshot})`);
       tabSnapshot = this._context.currentTab() ? await this._context.currentTabOrDie().captureSnapshot(this._includeSnapshotSelector, this._clientWorkspace) : undefined;
+      requestDebug(`captureSnapshot: completed in ${Date.now() - snapshotStart}ms`);
       const tabHeaders = await Promise.all(this._context.tabs().map(tab => tab.headerSnapshot()));
       if (this._includeSnapshot !== 'none' || tabHeaders.some(header => header.changed)) {
         if (tabHeaders.length !== 1)

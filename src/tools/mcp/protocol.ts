@@ -27,6 +27,7 @@ export type ExtensionCommand = {
 	'openTab': { params: { url?: string } };
 	'closeTab': { params: { tabId: number } };
 	'detachFromTab': { params: { tabId: number } };
+	'getDebugLog': { params: {} };
 };
 
 export type ExtensionEvents = {
