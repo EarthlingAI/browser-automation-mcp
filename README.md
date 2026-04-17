@@ -98,11 +98,14 @@ Tab switching uses **backend disposal + reconnection**: `browser_switch_tab` upd
 2. Extension's currently-connected tab
 3. First free non-internal tab (filters `chrome://`, `edge://`, `chrome-extension://` URLs)
 
+### Transparent Reconnect
+
+The MCP backend auto-reconnects when the CDP WebSocket dies (daemon respawn, extension disable/enable, browser restart). `BrowserBackend` captures a reconnect factory closure at creation time and checks `browser.isConnected()` before each tool dispatch; if disconnected, or if a tool call fails with a disconnect-shaped error (`Target.*closed`, `Connection closed`, `browser has been closed`, `Session closed`), it disposes the stale context, re-invokes the factory with 3-attempt exponential backoff (1s, 2s), rebuilds the `Context`, and retries the tool call once. The MCP SDK never sees a dispose — agents experience at most a ~30s one-shot latency on the tool call that happened to coincide with the disconnect.
+
 ### Known Limitations
 
-- **Cooperative-sequential multi-agent** — both agents can be connected simultaneously, but only one can actively use browser tools at a time (Bug 2: virtual-to-real CDP session binding is deferred)
-- **Extension lifecycle requires session reload** — extension disable/re-enable or browser restart recovers the daemon but the MCP process's Playwright connection goes stale
-- **`chrome-extension://` connect page** doesn't survive browser restart or extension disable — must be manually reopened
+- **Multi-agent concurrency is partially validated** — per-tab virtual↔real CDP session binding works for iframes/workers (Phase 2), but page-level `sessionId` is not capturable (`chrome.debugger.attach({tabId})` IS the page session — no child "page" target exists to auto-attach to). Tab-scoped concurrency routes through the daemon by tabId; end-to-end multi-agent stress test remains unvalidated under autonomous conditions.
+- **`browser_switch_tab` latency** — tab switch incurs a dispose→reconnect cycle (~2–5s). This is intentional: Playwright's `CRPage`↔`CDPSession` binding is immutable without non-trivial internals patches. Elimination was investigated and deferred (see `memory/topic/browser-mcp-tab-switch-fixes.md`).
 
 ### Capability-Gated Tools
 
@@ -173,8 +176,7 @@ browser-automation-mcp/
 │   └── skill/                      # Skill definitions
 ├── earthling-extension/            # Earthling Browser Bridge Chrome extension
 │   ├── manifest.json
-│   ├── background.js               # Extension service worker
-│   ├── connect.html / connect.js   # Connection UI
+│   ├── background.js               # Extension service worker (auto-connects on SW startup)
 │   └── status.html / status.js     # Status UI
 ├── packages/
 │   ├── playwright-mcp/             # Published @playwright/mcp package
@@ -231,5 +233,23 @@ Tests live in `packages/playwright-mcp/tests/` and use Playwright Test.
 
 ## Troubleshooting
 
-- **Daemon logs** — the CDP relay daemon logs to `.runtime/relay-daemon.log` via the `debug` module (`pw:mcp:relay` namespace). Check this file for extension connect/disconnect events, client routing issues, and tab lease conflicts.
-- **Extension debug ring buffer** — the extension's `background.js` maintains a 200-entry ring buffer. Query it via the `Earthling.getDebugLog` pseudo-CDP command through the daemon to inspect recent extension activity (tab connections, auto-connect attempts, keepAlive, debugger attach/detach).
+### Debug Logs
+
+Three structured JSONL files in `.runtime/debug/` (gitignored) capture cross-layer events for end-to-end correlation. Every line is a single JSON object with shared fields (`ts`, `layer`, `event`, optional `clientId`, `tabId`, `virtualSessionId`, `realSessionId`, `detail`).
+
+| File | Layer | What's captured |
+|------|-------|-----------------|
+| `daemon.jsonl` | CDP relay daemon | Extension WS open/close, per-client connect/disconnect, tab lease ops, `cdp.out` commands forwarded to extension, `cdp.response.{in,delivered,orphan}`, session routing (virtual↔real), grace timer |
+| `extension.jsonl` | Chrome extension service worker | Auto-connect lifecycle, debuggee attach/detach, `Target.attachedToTarget` child-session captures, tab open/switch/close, WS relay open/close/message. Batched POST to daemon's `/debug/extension` endpoint |
+| `mcp.jsonl` | MCP process(es) | `mcp.connectOverCDP.{start,success,fail}`, `mcp.browser.disconnected`, `mcp.backend.{create,disposed}`, `mcp.backend.reconnect.{start,success,fail}` |
+
+Correlate a single tool call across all three files by filtering on `clientId` (mcp-<pid>) or `tabId`. To tail live:
+
+```bash
+tail -f tools/browser-automation-mcp/.runtime/debug/{daemon,extension,mcp}.jsonl
+```
+
+### Other
+
+- **Daemon text log** — `.runtime/relay-daemon.log` via the `debug` module (`pw:mcp:relay` namespace). Redundant with `daemon.jsonl` for most purposes but preserves the upstream Playwright MCP logging format.
+- **Extension debug ring buffer** — the extension's `background.js` maintains a 200-entry in-memory ring buffer. Query it via the `Earthling.getDebugLog` pseudo-CDP command through the daemon if the SW has flushed its JSONL batches but you need the latest in-flight entries.

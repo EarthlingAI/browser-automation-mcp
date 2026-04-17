@@ -18,6 +18,7 @@ import * as playwright from 'playwright-core';
 import { debug } from '../../utilsBundle';
 import { acquireDaemon } from './relay/clientAcquirer';
 import { DEFAULT_RELAY_PORT } from './relay/constants';
+import { mcpJsonl } from './relay/debugJsonl';
 
 import type { ClientInfo } from '../utils/mcp/server';
 import type { FullConfig } from './config';
@@ -27,13 +28,27 @@ const debugLogger = debug('pw:mcp:relay');
 export async function createExtensionBrowser(_config: FullConfig, _clientInfo: ClientInfo): Promise<playwright.Browser> {
   const port = parseInt(process.env.BROWSER_AUTOMATION_MCP_RELAY_PORT || String(DEFAULT_RELAY_PORT), 10);
   const channel = _config.browser?.launchOptions?.channel;
-  const info = await acquireDaemon(port, channel);
+  const stableClientId = `mcp-${process.pid}`;
+  mcpJsonl('mcp.connectOverCDP.start', { clientId: stableClientId, detail: { port, channel, pid: process.pid } });
+  let info;
+  try {
+    info = await acquireDaemon(port, channel);
+  } catch (e: any) {
+    mcpJsonl('mcp.connectOverCDP.fail', { clientId: stableClientId, detail: { stage: 'acquireDaemon', error: String(e?.message || e) } });
+    throw e;
+  }
   // Stable client ID per MCP process — daemon reuses identity across reconnections
   // so lease annotations stay consistent after browser_switch_tab disposal cycles.
-  const stableClientId = `mcp-${process.pid}`;
   const endpoint = `ws://127.0.0.1:${port}${info.cdpPath}?clientId=${encodeURIComponent(stableClientId)}`;
   debugLogger(`Connecting to relay daemon at ${endpoint} (pid=${info.pid})`);
-  const browser = await playwright.chromium.connectOverCDP(endpoint, { isLocal: true });
+  let browser;
+  try {
+    browser = await playwright.chromium.connectOverCDP(endpoint, { isLocal: true });
+  } catch (e: any) {
+    mcpJsonl('mcp.connectOverCDP.fail', { clientId: stableClientId, detail: { stage: 'connectOverCDP', error: String(e?.message || e), endpoint } });
+    throw e;
+  }
+  mcpJsonl('mcp.connectOverCDP.success', { clientId: stableClientId, detail: { endpoint, daemonPid: info.pid } });
   // Settle: wait for the page to be ready after connection. Prevents transient
   // timeouts (e.g. take_screenshot) when the page hasn't fully settled yet.
   const contexts = browser.contexts();
@@ -53,6 +68,7 @@ export async function createExtensionBrowser(_config: FullConfig, _clientInfo: C
     // (or the process restarts). We log but do not exit — exiting silently
     // would leave the MCP in a broken state with no tool responses.
     debugLogger('CDP ws disconnected — subsequent tool calls will error until reconnection.');
+    mcpJsonl('mcp.browser.disconnected', { clientId: stableClientId });
   });
   return browser;
 }

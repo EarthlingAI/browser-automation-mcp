@@ -19,7 +19,7 @@
 export const VERSION = 2;
 
 export type ExtensionCommand = {
-	'attachToTab': { params: { tabId: number } };
+	'attachToTab': { params: { tabId: number }; result: { targetInfo: any; sessionId?: string } };
 	'forwardCDPCommand': { params: { tabId: number; method: string; sessionId?: string; params?: any } };
 	// Earthling: cross-tab control
 	'listBrowserTabs': { params: {} };

@@ -7,7 +7,57 @@ function debugLog(...args) {
 	_debugRingBuffer.push(entry);
 	if (_debugRingBuffer.length > DEBUG_LOG_MAX)
 		_debugRingBuffer.shift();
+	// Mirror free-form logs into the JSONL pipeline as `log` events.
+	_queueJsonl({ event: 'log', detail: { msg: entry.msg } });
 	console.log("[Earthling]", ...args);
+}
+
+// Structured JSONL logging — POSTed in batches to daemon /debug/extension.
+const _jsonlBatch = [];
+let _jsonlSeq = 0;
+let _jsonlFlushTimer = null;
+const JSONL_BATCH_MAX = 50;
+const JSONL_FLUSH_MS = 500;
+
+function debugJsonl(event, fields = {}) {
+	_queueJsonl({ event, ...fields });
+}
+
+function _queueJsonl(fields) {
+	_jsonlSeq += 1;
+	const line = { ts: Date.now(), layer: 'extension', seq: _jsonlSeq, ...fields };
+	_jsonlBatch.push(line);
+	if (_jsonlBatch.length >= JSONL_BATCH_MAX) {
+		_flushJsonl();
+	} else if (!_jsonlFlushTimer) {
+		_jsonlFlushTimer = setTimeout(_flushJsonl, JSONL_FLUSH_MS);
+	}
+}
+
+async function _flushJsonl() {
+	if (_jsonlFlushTimer) { clearTimeout(_jsonlFlushTimer); _jsonlFlushTimer = null; }
+	if (!_jsonlBatch.length) return;
+	const batch = _jsonlBatch.splice(0, _jsonlBatch.length);
+	try {
+		const cfg = await chrome.storage.local.get("relayConfig");
+		const rc = cfg.relayConfig;
+		if (!rc) return;
+		const url = `http://${rc.host}:${rc.port}/debug/extension`;
+		await fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(batch),
+			keepalive: true,
+		});
+	} catch {
+		// Fire-and-forget; drop on failure. The in-memory ring buffer remains
+		// queryable via Earthling.getDebugLog as a fallback.
+	}
+}
+
+// Flush on SW suspend so we don't lose the tail of a session.
+if (chrome.runtime.onSuspend) {
+	chrome.runtime.onSuspend.addListener(() => { void _flushJsonl(); });
 }
 
 // Module-level bridge reference for RelayConnection access
@@ -22,6 +72,15 @@ class RelayConnection {
 		// simultaneous chrome.debugger.attach() to multiple tabs.
 		// Entries are ONLY added after chrome.debugger.attach() succeeds.
 		this._debuggees = new Map(); // tabId -> { tabId }
+		// Per-tab child CDP sessionIds captured from Target.attachedToTarget events
+		// (flat mode). The page's root session is tracked separately on the tab
+		// record; this set holds iframe/worker sub-sessions for routing.
+		this._tabChildSessions = new Map(); // tabId -> Set<sessionId>
+		// Per-tab root page sessionId captured during attachToTab.
+		this._tabRootSession = new Map(); // tabId -> sessionId
+		// Pending attachedToTarget waiters keyed by tabId.
+		// Each entry: { resolve(sessionId), timer }
+		this._attachWaiters = new Map();
 		// _initialTabId records which tab the relay expects us to debug
 		// first — resolved by _tabPromise, consumed by attachToTab.
 		this._initialTabId = tabId || null;
@@ -58,12 +117,49 @@ class RelayConnection {
 		for (const debuggee of this._debuggees.values())
 			chrome.debugger.detach(debuggee).catch(() => {});
 		this._debuggees.clear();
+		this._tabChildSessions.clear();
+		this._tabRootSession.clear();
+		for (const waiter of this._attachWaiters.values()) {
+			if (waiter.timer) clearTimeout(waiter.timer);
+			if (!waiter.resolved) waiter.resolve(null);
+		}
+		this._attachWaiters.clear();
 		this.onclose?.();
 	}
 
 	_onDebuggerEvent(source, method, params) {
 		if (!this._debuggees.has(source.tabId))
 			return;
+		// Capture real CDP sessionIds emitted via Target.attachedToTarget in flat
+		// mode. These include the tab's root page session and all iframe/worker
+		// sub-sessions. The root page session is what resolves attachToTab; child
+		// sessions are tracked so daemon commands targeting them can be routed.
+		if (method === "Target.attachedToTarget" && params?.sessionId) {
+			const childSid = params.sessionId;
+			const targetType = params.targetInfo?.type;
+			let set = this._tabChildSessions.get(source.tabId);
+			if (!set) { set = new Set(); this._tabChildSessions.set(source.tabId, set); }
+			set.add(childSid);
+			debugJsonl('debugger.event.sessionCaptured', {
+				tabId: source.tabId,
+				realSessionId: childSid,
+				detail: { targetType, parentSessionId: source.sessionId || null, waitersPending: this._attachWaiters.has(source.tabId) }
+			});
+			// Resolve the attachToTab waiter on the first page target seen for
+			// this tab. Iframe/worker targets are tracked but don't resolve.
+			const waiter = this._attachWaiters.get(source.tabId);
+			if (waiter && targetType === 'page' && !waiter.resolved) {
+				waiter.resolved = true;
+				this._tabRootSession.set(source.tabId, childSid);
+				if (waiter.timer) clearTimeout(waiter.timer);
+				this._attachWaiters.delete(source.tabId);
+				waiter.resolve(childSid);
+			}
+		}
+		if (method === "Target.detachedFromTarget" && params?.sessionId) {
+			const set = this._tabChildSessions.get(source.tabId);
+			if (set) set.delete(params.sessionId);
+		}
 		this._sendMessage({
 			method: "forwardCDPEvent",
 			params: { sessionId: source.sessionId, tabId: source.tabId, method, params }
@@ -74,6 +170,17 @@ class RelayConnection {
 		if (!this._debuggees.has(source.tabId))
 			return;
 		this._debuggees.delete(source.tabId);
+		this._tabChildSessions.delete(source.tabId);
+		this._tabRootSession.delete(source.tabId);
+		// Resolve any pending attachToTab waiter for this tab with null so the
+		// caller sees "no sessionId captured" rather than hanging.
+		const waiter = this._attachWaiters.get(source.tabId);
+		if (waiter && !waiter.resolved) {
+			waiter.resolved = true;
+			if (waiter.timer) clearTimeout(waiter.timer);
+			this._attachWaiters.delete(source.tabId);
+			waiter.resolve(null);
+		}
 		// Notify the daemon that this specific tab lost its debugger.
 		// Don't close the WebSocket — other tabs may still be attached.
 		this._sendMessage({
@@ -113,9 +220,11 @@ class RelayConnection {
 			const tabId = message.params.tabId;
 			const debuggee = { tabId };
 			debugLog("Attaching debugger to tab:", tabId);
+			let freshAttach = false;
 			if (!this._debuggees.has(tabId)) {
 				try {
 					await chrome.debugger.attach(debuggee, "1.3");
+					freshAttach = true;
 				} catch (e) {
 					if (!e.message?.includes("Already attached"))
 						throw e;
@@ -123,8 +232,67 @@ class RelayConnection {
 				}
 				this._debuggees.set(tabId, debuggee);
 			}
+			debugJsonl('debuggee.attach', { tabId, detail: { freshAttach } });
+
+			// Capture the real CDP sessionId for the tab's page target. In flat
+			// mode, Target.setAutoAttach on the tab-level debuggee causes Chrome
+			// to emit Target.attachedToTarget for the page target (and any
+			// iframes/workers), each carrying a real sessionId that can be used
+			// with chrome.debugger.sendCommand({ tabId, sessionId }, ...).
+			//
+			// Order matters: register the waiter BEFORE issuing setAutoAttach so
+			// we don't race the event listener.
+			let realSessionId = this._tabRootSession.get(tabId) || null;
+			if (!realSessionId) {
+				const waitPromise = new Promise((resolve) => {
+					const existing = this._attachWaiters.get(tabId);
+					if (existing) {
+						// Piggy-back on the in-flight waiter.
+						const prev = existing.resolve;
+						existing.resolve = (sid) => { prev(sid); resolve(sid); };
+						return;
+					}
+					const waiter = { resolve, resolved: false, timer: null };
+					waiter.timer = setTimeout(() => {
+						if (waiter.resolved) return;
+						waiter.resolved = true;
+						this._attachWaiters.delete(tabId);
+						debugJsonl('debugger.event.sessionCaptureTimeout', { tabId });
+						resolve(null);
+					}, 2000);
+					this._attachWaiters.set(tabId, waiter);
+				});
+
+				try {
+					await chrome.debugger.sendCommand(debuggee, "Target.setAutoAttach", {
+						autoAttach: true,
+						waitForDebuggerOnStart: false,
+						flatten: true,
+					});
+					debugJsonl('autoAttach.set', { tabId, detail: { ok: true } });
+				} catch (e) {
+					debugJsonl('autoAttach.set', { tabId, detail: { ok: false, error: String(e?.message || e) } });
+					debugLog("Target.setAutoAttach failed:", e);
+				}
+
+				// Playwright's documented workaround for Chromium's auto-attach
+				// timing bug — force a dummy command on the same session to make
+				// the pending attachedToTarget events flush.
+				try {
+					await chrome.debugger.sendCommand(debuggee, "Target.getTargetInfo");
+				} catch (_) {
+					/* ignore */
+				}
+
+				realSessionId = await waitPromise;
+			}
 			const result = await chrome.debugger.sendCommand(debuggee, "Target.getTargetInfo");
-			return { targetInfo: result?.targetInfo };
+			debugJsonl('attachToTab.return', {
+				tabId,
+				realSessionId: realSessionId || undefined,
+				detail: { captured: !!realSessionId }
+			});
+			return { targetInfo: result?.targetInfo, sessionId: realSessionId || undefined };
 		}
 
 		if (message.method === "listBrowserTabs") {
@@ -174,6 +342,8 @@ class RelayConnection {
 			const debuggee = this._debuggees.get(tabId);
 			if (debuggee) {
 				this._debuggees.delete(tabId);
+				this._tabChildSessions.delete(tabId);
+				this._tabRootSession.delete(tabId);
 				await chrome.debugger.detach(debuggee).catch(() => {});
 			}
 			return { detached: !!debuggee };
@@ -189,6 +359,8 @@ class RelayConnection {
 			// Remove from debuggees BEFORE chrome.tabs.remove() to prevent
 			// _onDebuggerDetach from firing tabDetached for an expected close.
 			this._debuggees.delete(closingTabId);
+			this._tabChildSessions.delete(closingTabId);
+			this._tabRootSession.delete(closingTabId);
 			// Clear bridge state to prevent _onTabRemoved from closing the ws.
 			if (bridge._connectedTabId === closingTabId)
 				await bridge._setConnectedTabId(null);
@@ -205,8 +377,25 @@ class RelayConnection {
 			const debuggee = tabId ? this._debuggees.get(tabId) : null;
 			if (!debuggee)
 				throw new Error(tabId ? `No debugger attached to tab ${tabId}` : "No tabId provided in forwardCDPCommand");
-			const debuggerSession = { ...debuggee, sessionId };
-			return await chrome.debugger.sendCommand(debuggerSession, method, params);
+			// Chrome 125+ flat-mode 4-arg form: pass sessionId as part of the
+			// DebuggerSession object so commands route to the specified child
+			// session (page, iframe, worker). If sessionId is undefined, the
+			// command targets the tab's top-level session.
+			const debuggerSession = sessionId ? { ...debuggee, sessionId } : debuggee;
+			debugJsonl('debugger.command.send', {
+				tabId,
+				realSessionId: sessionId,
+				method,
+				dir: 'out',
+			});
+			try {
+				const result = await chrome.debugger.sendCommand(debuggerSession, method, params);
+				debugJsonl('debugger.command.recv', { tabId, realSessionId: sessionId, method, dir: 'in' });
+				return result;
+			} catch (e) {
+				debugJsonl('debugger.command.recv', { tabId, realSessionId: sessionId, method, dir: 'in', detail: { error: String(e?.message || e) } });
+				throw e;
+			}
 		}
 	}
 
@@ -241,11 +430,10 @@ class EarthlingBrowserBridge {
 		// Restore persisted state (survives service worker restarts in MV3)
 		// Store the promise so interception handlers can await it after wake
 		this._stateReady = this._restoreState();
-		// Auto-connect is triggered by connect.html?autoConnect=true from the relay.
-		// Background auto-connect (polling) is deferred — only starts after first successful connection
-		// to avoid conflicting with the connect.html flow.
+		// Auto-connect is driven entirely by the `keepAlive` alarm below, which
+		// calls _attemptAutoConnect -> /discover on the daemon's loopback port.
+		// No user-visible "connect tab" is required.
 
-		chrome.tabs.onCreated.addListener(this._onTabCreated.bind(this));
 		chrome.tabs.onRemoved.addListener(this._onTabRemoved.bind(this));
 		chrome.tabs.onUpdated.addListener(this._onTabUpdated.bind(this));
 		chrome.tabs.onActivated.addListener(this._onTabActivated.bind(this));
@@ -281,123 +469,6 @@ class EarthlingBrowserBridge {
 		// Context menu setup — create on every service worker start (not just onInstalled)
 		this._createContextMenus();
 		chrome.contextMenus.onClicked.addListener(this._onContextMenuClicked.bind(this));
-	}
-
-	_onTabCreated(tab) {
-		const url = tab.pendingUrl || tab.url;
-		if (!url) return;
-		const connectUrl = chrome.runtime.getURL("connect.html");
-		if (!url.startsWith(connectUrl)) return;
-
-		this._handleConnectPageCreated(tab, url);
-	}
-
-	async _handleConnectPageCreated(tab, url) {
-		await this._stateReady;
-
-		let parsedUrl;
-		try {
-			parsedUrl = new URL(url);
-		} catch (_) {
-			return; // Malformed URL — let the page handle it
-		}
-		const mcpRelayUrl = parsedUrl.searchParams.get("mcpRelayUrl");
-		if (!mcpRelayUrl) return; // Let the page load and show its error
-
-		// Validate loopback
-		try {
-			const relayHost = new URL(mcpRelayUrl).hostname;
-			if (!["127.0.0.1", "[::1]", "::1", "localhost"].includes(relayHost))
-				return; // Let the page handle the error
-		} catch (_) {
-			return;
-		}
-
-		const autoConnect = parsedUrl.searchParams.get("autoConnect") === "true";
-
-		// When autoConnect=true and no tab is pre-selected, auto-select the best tab.
-		// Retry with delay because Chrome session restore can take several seconds
-		// after a fresh launch — tabs may not exist yet.
-		if (autoConnect && !this._preSelectedTabId) {
-			let bestTab = null;
-			for (let attempt = 0; attempt < 5 && !bestTab; attempt++) {
-				if (attempt > 0) await new Promise(r => setTimeout(r, 2000));
-				const allTabs = await chrome.tabs.query({});
-				bestTab = allTabs.find(t =>
-					t.id !== tab.id && t.url &&
-					!t.url.startsWith("chrome://") && !t.url.startsWith("edge://") &&
-					!t.url.startsWith("chrome-extension://") && t.url !== "about:blank"
-				) || allTabs.find(t =>
-					t.id !== tab.id && t.url &&
-					!t.url.startsWith("chrome://") && !t.url.startsWith("edge://") &&
-					!t.url.startsWith("chrome-extension://")
-				);
-				if (!bestTab && attempt === 0)
-					debugLog("No suitable tabs yet, waiting for Chrome session restore...");
-			}
-			// If still no tabs after retrying (e.g. fresh Chrome, "Restore pages?" dialog
-			// blocking), create a new blank tab so the agent has something to work with.
-			if (!bestTab) {
-				debugLog("No suitable tabs found — creating a new tab for auto-connect");
-				bestTab = await chrome.tabs.create({ url: "about:blank", active: false });
-			}
-			if (bestTab) {
-				this._preSelectedTabId = bestTab.id;
-				debugLog("Auto-selected tab for connect:", bestTab.id, bestTab.title || bestTab.url);
-			}
-			// Fall through to the pre-selected tab auto-connect below
-		}
-
-		// AUTO-CONNECT PATH: pick a tab automatically — bypass connect page entirely
-		if (autoConnect || this._preSelectedTabId) {
-			try {
-				let targetTab;
-				if (this._preSelectedTabId) {
-					targetTab = await chrome.tabs.get(this._preSelectedTabId);
-				} else {
-					// Pick the first non-chrome, non-extension active tab
-					const allTabs = await chrome.tabs.query({ active: true, currentWindow: true });
-					targetTab = allTabs.find(t =>
-						t.id !== tab.id && t.url &&
-						!t.url.startsWith("chrome://") && !t.url.startsWith("edge://") &&
-						!t.url.startsWith("chrome-extension://")
-					);
-					// Fallback: any non-chrome tab
-					if (!targetTab) {
-						const allNonChrome = await chrome.tabs.query({});
-						targetTab = allNonChrome.find(t =>
-							t.id !== tab.id && t.url &&
-							!t.url.startsWith("chrome://") && !t.url.startsWith("edge://") &&
-							!t.url.startsWith("chrome-extension://")
-						);
-					}
-				}
-				if (!targetTab) throw new Error("No suitable tab found for auto-connect");
-
-				// Pass targetTabId to _connectToRelay so the RelayConnection is
-				// created with the tab ID already set — avoids race with attachToTab
-				await this._connectToRelay(tab.id, mcpRelayUrl, targetTab.id);
-
-				// Connect to the target tab (sets up lifecycle handlers, badges, etc.)
-				// activateTab=true: user-initiated connection, bring tab to focus.
-				await this._connectTab(tab.id, targetTab.id, targetTab.windowId, mcpRelayUrl, true);
-
-				// Close the connect page tab before it renders
-				await chrome.tabs.remove(tab.id);
-				debugLog("Auto-connected to tab:", targetTab.id, targetTab.title || targetTab.url);
-				return;
-			} catch (error) {
-				debugLog("Auto-connect failed, falling through to manual:", error.message);
-			}
-		}
-
-		// MANUAL SELECTION PATH: close any existing connect page tabs (dedup)
-		const connectUrl2 = chrome.runtime.getURL("connect.html");
-		const existingTabs = await chrome.tabs.query({});
-		for (const t of existingTabs) {
-			if (t.id !== tab.id && t.url?.startsWith(connectUrl2))
-				chrome.tabs.remove(t.id).catch(() => {});
-		}
 	}
 
 	async _restoreState() {
@@ -638,7 +709,7 @@ class EarthlingBrowserBridge {
 	}
 
 	async _connectToRelay(selectorTabId, mcpRelayUrl, targetTabId) {
-		// Guard: prevent dual-connect race between _handleConnectPageCreated and connect.js
+		// Guard: prevent dual-connect race between auto-connect and alarm retries
 		if (this._pendingTabSelection.has(selectorTabId)) {
 			debugLog("Pending connection already exists for selector", selectorTabId, "— reusing");
 			return;
@@ -900,6 +971,11 @@ class EarthlingBrowserBridge {
 }
 
 bridge = new EarthlingBrowserBridge();
+
+// Kick off auto-connect immediately on SW startup (previously triggered by
+// the connect.html tab). Fire-and-forget — _attemptAutoConnect self-retries
+// via _scheduleAutoConnectRetry if the daemon isn't reachable yet.
+bridge._startAutoConnect().catch(() => {});
 
 chrome.runtime.onInstalled.addListener(async (details) => {
 	if (details.reason === "install") {

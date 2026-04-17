@@ -35,6 +35,7 @@ import { debug } from '../../../utilsBundle';
 import { ensureRuntimeDir, LOG_FILE, PID_FILE, SECRET_FILE } from './paths';
 import { CDPRelayServer } from './cdpRelay';
 import { DEFAULT_RELAY_PORT } from './constants';
+import { appendExtensionJsonl } from './debugJsonl';
 
 const debugLogger = debug('pw:mcp:relay:daemon');
 
@@ -114,6 +115,25 @@ async function main() {
         clients: relay?.clientCount() ?? 0,
         leases: relay?.leaseSnapshot() ?? [],
       }));
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/debug/extension') {
+      // Extension mirrors its ring-buffer entries here in batches.
+      const chunks: Buffer[] = [];
+      req.on('data', (c: Buffer) => chunks.push(c));
+      req.on('end', () => {
+        try {
+          const body = Buffer.concat(chunks).toString('utf8');
+          const parsed = JSON.parse(body);
+          const entries = Array.isArray(parsed) ? parsed : [parsed];
+          for (const entry of entries)
+            appendExtensionJsonl(entry);
+          res.writeHead(204); res.end();
+        } catch (e: any) {
+          res.writeHead(400); res.end(String(e?.message || e));
+        }
+      });
+      req.on('error', () => { try { res.writeHead(400); res.end('bad request'); } catch {} });
       return;
     }
     if (req.method === 'POST' && url.pathname === '/shutdown') {

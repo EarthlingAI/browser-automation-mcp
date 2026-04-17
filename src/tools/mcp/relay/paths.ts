@@ -55,6 +55,13 @@ export const PID_FILE = path.join(RUNTIME_DIR, 'relay-daemon.pid');
 export const SECRET_FILE = path.join(RUNTIME_DIR, 'relay-daemon.secret');
 export const LOG_FILE = path.join(RUNTIME_DIR, 'relay-daemon.log');
 
+// Structured JSONL debug logs (one file per layer)
+export const DEBUG_DIR = path.join(RUNTIME_DIR, 'debug');
+export const DAEMON_JSONL = path.join(DEBUG_DIR, 'daemon.jsonl');
+export const EXTENSION_JSONL = path.join(DEBUG_DIR, 'extension.jsonl');
+export const MCP_JSONL = path.join(DEBUG_DIR, 'mcp.jsonl');
+
 export function ensureRuntimeDir(): void {
   fs.mkdirSync(RUNTIME_DIR, { recursive: true });
+  fs.mkdirSync(DEBUG_DIR, { recursive: true });
 }

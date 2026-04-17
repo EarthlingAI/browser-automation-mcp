@@ -23,6 +23,7 @@ import { createBrowser } from './browserFactory';
 import { BrowserBackend } from '../backend/browserBackend';
 import { filteredTools } from '../backend/tools';
 import { testDebug } from './log';
+import { mcpJsonl } from './relay/debugJsonl';
 
 import type { Command } from '../../utilsBundle';
 import type { ClientInfo } from '../utils/mcp/server';
@@ -100,11 +101,18 @@ export function decorateMCPCommand(command: Command) {
             version,
             toolSchemas: tools.map(tool => tool.schema),
             create: async (clientInfo: ClientInfo) => {
+              mcpJsonl('mcp.backend.create', { clientId: `mcp-${process.pid}`, detail: { clientName: clientInfo?.name } });
               const browser = await createBrowser(config, clientInfo);
               const browserContext = browser.contexts()[0];
-              return new BrowserBackend(config, browserContext, tools);
+              // Phase 3: capture config+clientInfo in a reconnect closure so
+              // BrowserBackend can transparently re-acquire the Browser when
+              // the underlying CDP WebSocket dies (extension disable/enable,
+              // browser restart, daemon respawn).
+              const reconnectFactory = () => createBrowser(config, clientInfo);
+              return new BrowserBackend(config, browserContext, tools, reconnectFactory);
             },
             disposed: async (backend) => {
+              mcpJsonl('mcp.backend.disposed', { clientId: `mcp-${process.pid}` });
               // Close the connectOverCDP WebSocket so the daemon releases
               // this client's leases. The next tool call re-creates the
               // backend with a fresh connection that leases the correct tab.

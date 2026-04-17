@@ -37,8 +37,8 @@ import { debug, ws, wsServer } from '../../../utilsBundle';
 import { registry } from '../../../server/registry/index';
 import { ManualPromise } from '../../../utils/isomorphic/manualPromise';
 
-import { DEFAULT_RELAY_PORT } from './constants';
 import { LeaseTable } from './leases';
+import { daemonJsonl } from './debugJsonl';
 
 import type websocket from 'ws';
 import type { WebSocket, WebSocketServer } from '../../../utilsBundle';
@@ -73,6 +73,8 @@ type PendingCmd = {
   clientId: string;
   origId: number;
   origSessionId?: string;
+  method?: string;
+  realSessionId?: string;
 };
 
 const GRACE_PERIOD_MS = 60_000;
@@ -185,19 +187,17 @@ export class CDPRelayServer {
       if (!executablePath)
         throw new Error(`"${this._browserChannel}" executable not found.`);
     }
-    const addr = this._httpServer.address();
-    const port = typeof addr === 'object' && addr ? addr.port : DEFAULT_RELAY_PORT;
-    const mcpRelayEndpoint = `ws://127.0.0.1:${port}${this._extensionPath}`;
-    const url = new URL('chrome-extension://ifoggnihepkfpokholefpgpcgiikkeke/connect.html');
-    url.searchParams.set('mcpRelayUrl', mcpRelayEndpoint);
-    url.searchParams.set('autoConnect', 'true');
+    // The extension auto-connects on its service worker startup via /discover
+    // on the daemon's loopback port — no connect URL needed. Launch the browser
+    // to about:blank; the extension discovers the daemon and establishes the
+    // WebSocket independently.
     const args: string[] = [];
     if (this._userDataDir)
       args.push(`--user-data-dir=${this._userDataDir}`);
     args.push('--silent-debugger-extension-api');
     if (os.platform() === 'linux' && this._browserChannel === 'chromium')
       args.push('--no-sandbox');
-    args.push(url.toString());
+    args.push('about:blank');
     const child = spawn(executablePath, args, {
       windowsHide: true,
       detached: true,
@@ -222,9 +222,11 @@ export class CDPRelayServer {
 
   private async _handleExtensionConnection(ws: WebSocket): Promise<void> {
     if (this._extension) {
+      daemonJsonl('ws.ext.rejected', { detail: { reason: 'duplicate connection' } });
       ws.close(1000, 'Another extension connection already established');
       return;
     }
+    daemonJsonl('ws.ext.open', { detail: { leases: this._leases.all().length, clients: this._clients.size } });
     this._cancelGraceTimer();
 
     const conn = new ExtensionConnection(ws);
@@ -238,6 +240,7 @@ export class CDPRelayServer {
       const leaseCount = this._leases.all().length;
       const virtualCount = this._tabVirtualSession.size;
       debugLogger(`Extension reconnected — probing for surviving tabs (leases=${leaseCount}, virtualSessions=${virtualCount})`);
+      daemonJsonl('ext.reconnect.probe.start', { detail: { leases: leaseCount, virtualSessions: virtualCount } });
       try {
         const tabs: any[] = await Promise.race([
           conn.send('listBrowserTabs', {}),
@@ -246,10 +249,12 @@ export class CDPRelayServer {
         const liveTabIds = new Set(tabs.map((t: any) => t.tabId));
         const leasedTabIds = this._leases.all().map(l => l.tabId);
         const surviving = leasedTabIds.filter(id => liveTabIds.has(id));
+        daemonJsonl('ext.reconnect.probe.result', { detail: { live: tabs.length, leased: leasedTabIds.length, surviving: surviving.length } });
 
         if (surviving.length > 0) {
           // SW restart — tabs alive. Re-attach debugger, keep client state.
           debugLogger(`SW restart detected — ${surviving.length}/${leasedTabIds.length} leased tabs survived, re-attaching`);
+          daemonJsonl('ext.reconnect.sw_restart', { detail: { surviving, all: leasedTabIds } });
           // Clear stale ext-side session mappings (those died with the SW).
           this._extSession.clear();
           this._virtualSession.clear();
@@ -261,8 +266,10 @@ export class CDPRelayServer {
               if (extSid && virtualId)
                 this.bindExtSession(extSid, virtualId, tabId);
               debugLogger(`  Re-attached tab ${tabId} (extSid=${extSid || 'none'})`);
+              daemonJsonl('ext.reattach.ok', { tabId, virtualSessionId: virtualId, realSessionId: extSid });
             } catch (e) {
               debugLogger(`  Failed to reattach tab ${tabId}: ${e}`);
+              daemonJsonl('ext.reattach.fail', { tabId, detail: { error: String(e) } });
               const owner = this._leases.ownerOf(tabId);
               if (owner) {
                 this.revokeClientSubscription(owner.ownerClientId, tabId, 'tab lost during SW restart');
@@ -285,6 +292,7 @@ export class CDPRelayServer {
         } else {
           // Browser restart — flush everything.
           debugLogger('Browser restart detected — flushing all client state');
+          daemonJsonl('ext.reconnect.browser_restart', { detail: { leasedTabIds } });
           for (const client of this._clients.values())
             client.onExtensionLost('browser restart — previous session invalidated');
           this._tabVirtualSession.clear();
@@ -294,6 +302,7 @@ export class CDPRelayServer {
       } catch (e) {
         // Probe failed (timeout or extension error) — flush as safe default.
         debugLogger(`Extension probe failed (${e}) — flushing as safe default`);
+        daemonJsonl('ext.reconnect.probe.fail', { detail: { error: String(e) } });
         for (const client of this._clients.values())
           client.onExtensionLost('extension reconnect probe failed');
         this._tabVirtualSession.clear();
@@ -307,6 +316,7 @@ export class CDPRelayServer {
       if (this._extension !== c)
         return;
       debugLogger(`Extension WebSocket closed: reason="${reason}", leases=${this._leases.all().length}, clients=${this._clients.size}`);
+      daemonJsonl('ws.ext.close', { detail: { reason, leases: this._leases.all().length, clients: this._clients.size } });
       this._extension = null;
       this._extensionReadyPromise = new ManualPromise();
       void this._extensionReadyPromise.catch(() => {});
@@ -366,6 +376,32 @@ export class CDPRelayServer {
           tabId = cdpParams.tabId;
           virtualId = this._tabVirtualSession.get(tabId);
         }
+        // Track child sessions (iframes, workers) as they auto-attach. Subsequent
+        // commands from Playwright addressed to these real sessionIds route via
+        // _extSession lookup in sendToExtensionForClient.
+        if (cdpParams.method === 'Target.attachedToTarget' && cdpParams.tabId !== undefined) {
+          const childSid: string | undefined = cdpParams.params?.sessionId;
+          if (childSid && !this._extSession.has(childSid)) {
+            // Child sessions have no virtualId — Playwright uses the real id directly.
+            this._extSession.set(childSid, { virtualId: childSid, tabId: cdpParams.tabId });
+            daemonJsonl('session.childBind', {
+              tabId: cdpParams.tabId,
+              realSessionId: childSid,
+              detail: {
+                targetType: cdpParams.params?.targetInfo?.type,
+                parentSessionId: extSid || null,
+              },
+            });
+          }
+        }
+        if (cdpParams.method === 'Target.detachedFromTarget' && cdpParams.params?.sessionId) {
+          const goneSid: string = cdpParams.params.sessionId;
+          const entry = this._extSession.get(goneSid);
+          if (entry && entry.virtualId === goneSid) {
+            this._extSession.delete(goneSid);
+            daemonJsonl('session.childUnbind', { tabId: entry.tabId, realSessionId: goneSid });
+          }
+        }
         if (virtualId === undefined || tabId === undefined) {
           // Unknown origin — broadcast raw (rare, pre-lease events).
           for (const c of this._clients.values())
@@ -385,17 +421,36 @@ export class CDPRelayServer {
 
   private _handleExtensionResponse(id: number, result: any, error?: string) {
     const pending = this._pendingCmds.get(id);
-    if (!pending)
+    if (!pending) {
+      daemonJsonl('cdp.response.orphan', { detail: { relayId: id, error } });
       return;
+    }
     this._pendingCmds.delete(id);
+    daemonJsonl('cdp.response.in', {
+      clientId: pending.clientId,
+      virtualSessionId: pending.origSessionId,
+      realSessionId: pending.realSessionId,
+      method: pending.method,
+      dir: 'in',
+      detail: { relayId: id, origId: pending.origId, error },
+    });
     const client = this._clients.get(pending.clientId);
-    if (!client)
+    if (!client) {
+      daemonJsonl('cdp.response.orphan', { clientId: pending.clientId, detail: { reason: 'client gone', relayId: id } });
       return;
+    }
     if (error) {
       client.sendRaw({ id: pending.origId, sessionId: pending.origSessionId, error: { message: error } });
     } else {
       client.sendRaw({ id: pending.origId, sessionId: pending.origSessionId, result });
     }
+    daemonJsonl('cdp.response.delivered', {
+      clientId: pending.clientId,
+      virtualSessionId: pending.origSessionId,
+      realSessionId: pending.realSessionId,
+      method: pending.method,
+      detail: { relayId: id, origId: pending.origId },
+    });
   }
 
   // ------------------------------------------------------------------ Playwright
@@ -414,6 +469,7 @@ export class CDPRelayServer {
     this._clients.set(clientId, client);
     this._cancelGraceTimer();
     debugLogger(`Playwright client connected: ${clientId} (total=${this._clients.size})`);
+    daemonJsonl('client.connect', { clientId, detail: { totalClients: this._clients.size } });
     // Ensure the extension is paired — launches the browser on first-ever connect.
     void this.ensureBrowserLaunched().catch(err => debugLogger(`ensureBrowserLaunched failed: ${err}`));
     ws.on('close', (code: number, reason: Buffer) => {
@@ -422,6 +478,7 @@ export class CDPRelayServer {
       const released = this._leases.releaseAllFor(clientId);
       this._clients.delete(clientId);
       debugLogger(`Playwright client disconnected: ${clientId} (released tabs: ${released.join(',')})`);
+      daemonJsonl('client.disconnect', { clientId, detail: { code, releasedTabs: released, remaining: this._clients.size } });
       if (this._clients.size === 0 && this._extension === null)
         this._startGraceTimer();
     });
@@ -468,6 +525,7 @@ export class CDPRelayServer {
   bindExtSession(extSessionId: string, virtualId: string, tabId: number) {
     this._extSession.set(extSessionId, { virtualId, tabId });
     this._virtualSession.set(virtualId, { extSessionId, tabId });
+    daemonJsonl('session.bind', { tabId, virtualSessionId: virtualId, realSessionId: extSessionId });
   }
 
   /** Translate virtual sessionId -> extension sessionId (or undefined for top-level). */
@@ -479,14 +537,16 @@ export class CDPRelayServer {
 
   /** Remove all session mappings for a specific tab (on tab close or debugger detach). */
   _cleanupTabSessions(tabId: number): void {
+    // Drop any real (child) sessions bound to this tab (iframes/workers).
+    for (const [sid, entry] of Array.from(this._extSession.entries())) {
+      if (entry.tabId === tabId)
+        this._extSession.delete(sid);
+    }
     const virtualId = this._tabVirtualSession.get(tabId);
-    if (!virtualId)
-      return;
-    this._tabVirtualSession.delete(tabId);
-    const mapping = this._virtualSession.get(virtualId);
-    if (mapping?.extSessionId)
-      this._extSession.delete(mapping.extSessionId);
-    this._virtualSession.delete(virtualId);
+    if (virtualId) {
+      this._tabVirtualSession.delete(tabId);
+      this._virtualSession.delete(virtualId);
+    }
     // Clear any last-switched hints pointing to the now-gone tab.
     for (const [cid, tid] of this._lastSwitchedTab) {
       if (tid === tabId)
@@ -499,17 +559,54 @@ export class CDPRelayServer {
     if (!this._extension)
       throw new Error('Extension not connected');
     const relayId = this._nextRelayId++;
-    this._pendingCmds.set(relayId, { clientId, origId, origSessionId });
     // Multi-tab: include tabId so the extension routes the command to the
     // correct chrome.debugger attachment (not just the last-switched tab).
-    const mapping = origSessionId ? this._virtualSession.get(origSessionId) : undefined;
-    const tabId = mapping?.tabId;
+    //
+    // origSessionId can be one of:
+    //   (a) virtual sessionId (pw-tab-N) — maps via _virtualSession to {tabId, extSessionId}
+    //   (b) real ext sessionId (iframe/worker captured from a forwarded
+    //       Target.attachedToTarget event) — maps via _extSession to {tabId, virtualId}
+    //   (c) undefined — top-level browser-scoped command
+    let tabId: number | undefined;
+    let sessionIdForExt: string | undefined;
+    if (origSessionId) {
+      const vmap = this._virtualSession.get(origSessionId);
+      if (vmap) {
+        // Case (a): virtual id → use resolved extSessionId (may be undefined
+        // for the root page session pre-capture; the extension treats missing
+        // sessionId as the tab's top-level session).
+        tabId = vmap.tabId;
+        sessionIdForExt = extSessionId;
+      } else {
+        const emap = this._extSession.get(origSessionId);
+        if (emap) {
+          // Case (b): real child session id flowing back through. Pass the id
+          // to the extension as-is — chrome.debugger.sendCommand routes to
+          // that child session in flat mode.
+          tabId = emap.tabId;
+          sessionIdForExt = origSessionId;
+        } else {
+          // Unknown sessionId — fall back to current behaviour.
+          sessionIdForExt = extSessionId;
+        }
+      }
+    }
     // Find the client to get its primary tab as fallback (for top-level commands).
     const fallbackTabId = tabId ?? this._clients.get(clientId)?.primaryTab() ?? undefined;
+    this._pendingCmds.set(relayId, { clientId, origId, origSessionId, method, realSessionId: sessionIdForExt });
+    daemonJsonl('cdp.out', {
+      clientId,
+      tabId: fallbackTabId,
+      virtualSessionId: origSessionId,
+      realSessionId: sessionIdForExt,
+      method,
+      dir: 'out',
+      detail: { relayId, origId, resolvedVia: origSessionId ? (this._virtualSession.has(origSessionId) ? 'virtual' : (this._extSession.has(origSessionId) ? 'real' : 'unknown')) : 'none' },
+    });
     this._extension.sendRaw({
       id: relayId,
       method: 'forwardCDPCommand',
-      params: { tabId: fallbackTabId, sessionId: extSessionId, method, params },
+      params: { tabId: fallbackTabId, sessionId: sessionIdForExt, method, params },
     });
   }
 
@@ -522,15 +619,18 @@ export class CDPRelayServer {
   private _startGraceTimer(reason: string = 'idle') {
     this._cancelGraceTimer();
     debugLogger(`Starting ${GRACE_PERIOD_MS}ms grace timer (${reason}).`);
+    daemonJsonl('grace.start', { detail: { reason, graceMs: GRACE_PERIOD_MS } });
     this._graceTimer = setTimeout(() => {
       this._graceTimer = null;
       if (this._extension !== null) {
         debugLogger('Grace timer fired but extension already reconnected — no action');
+        daemonJsonl('grace.cancel', { detail: { reason: 'extension reconnected' } });
         return;
       }
       // Grace expired with no extension. Notify clients NOW with detach so
       // Playwright tears down its page state, then drop leases + tab maps.
       debugLogger(`Grace timer expired — flushing ${this._clients.size} clients, ${this._leases.all().length} leases`);
+      daemonJsonl('grace.expire', { detail: { clients: this._clients.size, leases: this._leases.all().length } });
       for (const client of this._clients.values())
         client.onExtensionLost(reason);
       this._tabVirtualSession.clear();
@@ -606,6 +706,10 @@ class ClientConnection {
 
   onExtensionLost(reason: string) {
     debugLogger(`[${this.id}] onExtensionLost: reason="${reason}", tabs=[${[...this._subscribedTabs].join(',')}], primary=${this._primaryTab}`);
+    daemonJsonl('client.extensionLost', {
+      clientId: this.id,
+      detail: { reason, tabs: [...this._subscribedTabs], primary: this._primaryTab },
+    });
     for (const tabId of this._subscribedTabs) {
       const virtualId = this._relay.virtualSessionForTab(tabId);
       this.sendRaw({
@@ -805,7 +909,7 @@ class ClientConnection {
       if (tabId === null) {
         debugLogger(`[${this.id}] setAutoAttach: no free tab — auto-opening blank tab`);
         const newTab = await this._relay.callExtensionDirect('openTab', { url: 'about:blank' });
-        tabId = newTab.tabId;
+        tabId = newTab.tabId as number;
         const claim = this._relay.leases().claim(tabId, this.id, false);
         if (!claim.ok)
           throw new Error(`Failed to claim newly opened tab ${tabId}`);
@@ -813,13 +917,29 @@ class ClientConnection {
       }
       this._primaryTab = tabId;
     }
-    this._subscribedTabs.add(tabId);
+    const activeTabId: number = tabId;
+    this._subscribedTabs.add(activeTabId);
 
     // Attach via extension (binds the extension sessionId for this tab if not already).
-    const { targetInfo, sessionId: extSessionId } = await this._relay.callExtensionDirect('attachToTab', { tabId } as any);
-    const virtualId = this._relay.virtualSessionForTab(tabId);
+    const attachResult = await this._relay.callExtensionDirect('attachToTab', { tabId: activeTabId } as any);
+    const targetInfo = attachResult?.targetInfo;
+    const extSessionId: string | undefined = attachResult?.sessionId;
+    const virtualId = this._relay.virtualSessionForTab(activeTabId);
+    daemonJsonl('session.autoAttach.extAttach', {
+      clientId: this.id,
+      tabId: activeTabId,
+      virtualSessionId: virtualId,
+      realSessionId: extSessionId,
+      detail: { hasSessionId: !!extSessionId },
+    });
     if (extSessionId)
-      this._relay.bindExtSession(extSessionId, virtualId, tabId);
+      this._relay.bindExtSession(extSessionId, virtualId, activeTabId);
+    daemonJsonl('session.autoAttach.emit', {
+      clientId: this.id,
+      tabId: activeTabId,
+      virtualSessionId: virtualId,
+      realSessionId: extSessionId,
+    });
 
     this.sendRaw({
       method: 'Target.attachedToTarget',
