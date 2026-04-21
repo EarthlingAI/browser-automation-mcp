@@ -307,9 +307,7 @@ class RelayConnection {
 				title: tab.title || "",
 				url: tab.url || "",
 				windowId: tab.windowId,
-				active: tab.active,
-				highlighted: tab.id === bridge._preSelectedTabId,
-				connected: tab.id === bridge._connectedTabId
+				active: tab.active
 			}));
 		}
 
@@ -329,7 +327,6 @@ class RelayConnection {
 				this._debuggees.set(newTabId, debuggee);
 			}
 			const result = await chrome.debugger.sendCommand(debuggee, "Target.getTargetInfo");
-			await bridge._setConnectedTabId(newTabId);
 			this._sendMessage({
 				method: "tabSwitched",
 				params: { tabId: newTabId, targetInfo: result?.targetInfo }
@@ -350,7 +347,7 @@ class RelayConnection {
 		}
 
 		if (message.method === "openTab") {
-			const tab = await chrome.tabs.create({ url: message.params.url || "about:blank" });
+			const tab = await chrome.tabs.create({ url: message.params.url || "about:blank", active: false });
 			return { tabId: tab.id, title: tab.title, url: tab.url };
 		}
 
@@ -361,9 +358,6 @@ class RelayConnection {
 			this._debuggees.delete(closingTabId);
 			this._tabChildSessions.delete(closingTabId);
 			this._tabRootSession.delete(closingTabId);
-			// Clear bridge state to prevent _onTabRemoved from closing the ws.
-			if (bridge._connectedTabId === closingTabId)
-				await bridge._setConnectedTabId(null);
 			await chrome.tabs.remove(closingTabId);
 			return {};
 		}
@@ -418,27 +412,15 @@ async function getBlocklist() {
 class EarthlingBrowserBridge {
 	constructor() {
 		this._activeConnection = undefined;
-		this._connectedTabId = null;
-		this._preSelectedTabId = null;
 		this._pendingTabSelection = new Map();
 		this._autoConnectActive = false;
 		// Debounce state: tracks when the connection was lost to avoid
 		// unnecessary auto-reconnect during dispose→reconnect cycles (~2-5s).
 		this._connectionLostAt = null;
-		this._badgeClearTimer = null;
-
-		// Restore persisted state (survives service worker restarts in MV3)
-		// Store the promise so interception handlers can await it after wake
-		this._stateReady = this._restoreState();
-		// Auto-connect is driven entirely by the `keepAlive` alarm below, which
-		// calls _attemptAutoConnect -> /discover on the daemon's loopback port.
-		// No user-visible "connect tab" is required.
 
 		chrome.tabs.onRemoved.addListener(this._onTabRemoved.bind(this));
-		chrome.tabs.onUpdated.addListener(this._onTabUpdated.bind(this));
 		chrome.tabs.onActivated.addListener(this._onTabActivated.bind(this));
 		chrome.runtime.onMessage.addListener(this._onMessage.bind(this));
-		chrome.action.onClicked.addListener(this._onActionClicked.bind(this));
 
 		chrome.alarms.onAlarm.addListener((alarm) => {
 			if (alarm.name === "autoConnectRetry" || alarm.name === "keepAlive") {
@@ -471,80 +453,11 @@ class EarthlingBrowserBridge {
 		chrome.contextMenus.onClicked.addListener(this._onContextMenuClicked.bind(this));
 	}
 
-	async _restoreState() {
-		try {
-			const result = await chrome.storage.local.get("bridgeState");
-			const state = result.bridgeState;
-			if (!state) return;
-
-			// Restore pre-selected tab (verify it still exists)
-			if (state.preSelectedTabId) {
-				try {
-					await chrome.tabs.get(state.preSelectedTabId);
-					this._preSelectedTabId = state.preSelectedTabId;
-					debugLog("Restored pre-selected tab:", this._preSelectedTabId);
-				} catch (_) {
-					// Tab no longer exists
-				}
-			}
-
-			// Note: _connectedTabId is NOT restored because the WebSocket/debugger
-			// connections don't survive service worker restart. Clear stale state.
-			if (state.connectedTabId) {
-				await chrome.storage.local.set({
-					bridgeState: { ...state, connectedTabId: null }
-				});
-			}
-		} catch (error) {
-			debugLog("Failed to restore state:", error);
-		}
-	}
-
-	async _persistState() {
-		try {
-			await chrome.storage.local.set({
-				bridgeState: {
-					preSelectedTabId: this._preSelectedTabId,
-					connectedTabId: this._connectedTabId
-				}
-			});
-		} catch (error) {
-			debugLog("Failed to persist state:", error);
-		}
-	}
-
 	_onMessage(message, sender, sendResponse) {
 		switch (message.type) {
-			case "connectToMCPRelay":
-				this._connectToRelay(sender.tab.id, message.mcpRelayUrl).then(
-					() => sendResponse({ success: true }),
-					(error) => sendResponse({ success: false, error: error.message })
-				);
-				return true;
 			case "getTabs":
 				this._getTabs().then(
 					(tabs) => sendResponse({ success: true, tabs, currentTabId: sender.tab?.id }),
-					(error) => sendResponse({ success: false, error: error.message })
-				);
-				return true;
-			case "connectToTab": {
-				const tabId = message.tabId || sender.tab?.id;
-				const windowId = message.windowId || sender.tab?.windowId;
-				this._connectTab(sender.tab.id, tabId, windowId, message.mcpRelayUrl).then(
-					() => sendResponse({ success: true }),
-					(error) => sendResponse({ success: false, error: error.message })
-				);
-				return true;
-			}
-			case "getConnectionStatus":
-				sendResponse({
-					connectedTabId: this._connectedTabId,
-					preSelectedTabId: this._preSelectedTabId
-				});
-				return false;
-			case "disconnect":
-				this._disconnect().then(
-					() => sendResponse({ success: true }),
 					(error) => sendResponse({ success: false, error: error.message })
 				);
 				return true;
@@ -570,100 +483,12 @@ class EarthlingBrowserBridge {
 		return false;
 	}
 
-	async _onActionClicked(tab) {
-		if (!tab?.id || tab.url?.startsWith("chrome://") || tab.url?.startsWith("edge://"))
-			return;
-
-		const blocklist = await getBlocklist();
-		if (blocklist.includes(tab.id))
-			return;
-
-		// Case 1: Connected to THIS tab → disconnect
-		if (this._connectedTabId === tab.id) {
-			await this._disconnect();
-			debugLog("Disconnected tab via icon click:", tab.id);
-			return;
-		}
-
-		// Case 2: Connected to ANOTHER tab → send hint to agent
-		if (this._connectedTabId && this._activeConnection) {
-			this._activeConnection._sendMessage({
-				method: "userSelectedTab",
-				params: { tabId: tab.id, title: tab.title || "", url: tab.url || "" }
-			});
-			await this._updateBadge(tab.id, { text: "\u25CF", color: "#2196F3", title: "Hinted to Earthling agent" });
-			setTimeout(() => this._updateBadge(tab.id, { text: "" }).catch(() => {}), 3000);
-			debugLog("Sent tab hint to agent:", tab.id);
-			return;
-		}
-
-		// Case 3: Pre-selected THIS tab → deselect
-		if (this._preSelectedTabId === tab.id) {
-			this._preSelectedTabId = null;
-			await this._updateBadge(tab.id, { text: "" });
-			await this._persistState();
-			debugLog("Deselected tab:", tab.id);
-			return;
-		}
-
-		// Case 4: Nothing connected → pre-select
-		if (this._preSelectedTabId)
-			await this._updateBadge(this._preSelectedTabId, { text: "" });
-
-		this._preSelectedTabId = tab.id;
-		await this._updateBadge(tab.id, {
-			text: "\u25CF", color: "#2196F3",
-			title: "Tab pre-selected for Earthling agent"
-		});
-		await this._persistState();
-		debugLog("Pre-selected tab:", tab.id);
-	}
-
-	async _hotSwapTab(newTabId) {
-		if (!this._activeConnection)
-			return;
-		try {
-			const conn = this._activeConnection;
-			const debuggee = { tabId: newTabId };
-
-			// Multi-tab: attach to new tab without detaching old ones
-			if (!conn._debuggees.has(newTabId)) {
-				try {
-					await chrome.debugger.attach(debuggee, "1.3");
-				} catch (e) {
-					if (!e.message?.includes("Already attached"))
-						throw e;
-				}
-				conn._debuggees.set(newTabId, debuggee);
-			}
-			const result = await chrome.debugger.sendCommand(debuggee, "Target.getTargetInfo");
-
-			await this._setConnectedTabId(newTabId);
-			conn._sendMessage({
-				method: "tabSwitched",
-				params: { tabId: newTabId, targetInfo: result?.targetInfo }
-			});
-			debugLog("Hot-swapped to tab:", newTabId);
-		} catch (error) {
-			debugLog("Hot-swap failed:", error);
-			await this._disconnect();
-		}
-	}
-
 	async _onContextMenuClicked(info, tab) {
 		if (!tab?.id) return;
 		if (info.menuItemId === "earthling-block-tab") {
 			await this._blockTab(tab.id);
-			await this._updateBadge(tab.id, { text: "\u2715", color: "#F44336", title: "Blocked from Earthling agent" });
-			if (this._connectedTabId === tab.id)
-				await this._disconnect();
-			if (this._preSelectedTabId === tab.id) {
-				this._preSelectedTabId = null;
-				await this._persistState();
-			}
 		} else if (info.menuItemId === "earthling-unblock-tab") {
 			await this._unblockTab(tab.id);
-			await this._updateBadge(tab.id, { text: "" });
 		}
 	}
 
@@ -740,15 +565,14 @@ class EarthlingBrowserBridge {
 		}
 	}
 
-	async _connectTab(selectorTabId, tabId, windowId, mcpRelayUrl, activateTab = false) {
+	async _connectTab(selectorTabId, tabId) {
 		try {
-			debugLog(`Connecting tab ${tabId} (activate=${activateTab})`);
+			debugLog(`Connecting tab ${tabId}`);
 			try {
 				this._activeConnection?.close("Another connection is requested");
 			} catch (error) {
 				debugLog("Error closing active connection:", error);
 			}
-			await this._setConnectedTabId(null);
 			this._activeConnection = this._pendingTabSelection.get(selectorTabId)?.connection;
 			if (!this._activeConnection)
 				throw new Error("No active MCP relay connection");
@@ -757,21 +581,12 @@ class EarthlingBrowserBridge {
 			this._activeConnection.onclose = () => {
 				debugLog("MCP connection closed");
 				this._activeConnection = undefined;
-				void this._setConnectedTabId(null);
 				// Don't auto-reconnect immediately — let keepAlive handle it
 				// after the debounce. Dispose→reconnect cycles will re-establish
 				// the connection within ~2-5s via the MCP server.
 				if (!this._connectionLostAt)
 					this._connectionLostAt = Date.now();
 			};
-			if (this._preSelectedTabId === tabId)
-				this._preSelectedTabId = null;
-			const promises = [this._setConnectedTabId(tabId)];
-			if (activateTab) {
-				promises.push(chrome.tabs.update(tabId, { active: true }));
-				promises.push(chrome.windows.update(windowId, { focused: true }));
-			}
-			await Promise.all(promises);
 			// Reset debounce timestamp — we're connected now.
 			this._connectionLostAt = null;
 			// Signal relay that tab is attached and ready for Playwright commands
@@ -781,51 +596,9 @@ class EarthlingBrowserBridge {
 			});
 			debugLog("Connected to MCP bridge, tabReady sent");
 		} catch (error) {
-			await this._setConnectedTabId(null);
 			debugLog(`Failed to connect tab ${tabId}:`, error.message);
 			throw error;
 		}
-	}
-
-	async _setConnectedTabId(tabId) {
-		const oldTabId = this._connectedTabId;
-		this._connectedTabId = tabId;
-		if (tabId === null) {
-			// Defer badge clear — dispose→reconnect will re-set within ~2s.
-			if (this._badgeClearTimer)
-				clearTimeout(this._badgeClearTimer);
-			this._badgeClearTimer = setTimeout(async () => {
-				if (this._connectedTabId === null && oldTabId) {
-					// Still null after 2s — genuinely disconnected.
-					await this._updateBadge(oldTabId, { text: "" });
-				}
-				this._badgeClearTimer = null;
-			}, 2000);
-		} else {
-			// Reconnected — cancel pending badge clear.
-			if (this._badgeClearTimer) {
-				clearTimeout(this._badgeClearTimer);
-				this._badgeClearTimer = null;
-			}
-			if (oldTabId && oldTabId !== tabId)
-				await this._updateBadge(oldTabId, { text: "" });
-			await this._updateBadge(tabId, { text: "\u2713", color: "#4CAF50", title: "Connected to MCP client" });
-		}
-		await this._persistState();
-		this._broadcastStatusChange();
-	}
-
-	_broadcastStatusChange() {
-		chrome.runtime.sendMessage({ type: "connectionStatusChanged" }).catch(() => {});
-	}
-
-	async _updateBadge(tabId, { text, color, title }) {
-		try {
-			await chrome.action.setBadgeText({ tabId, text });
-			await chrome.action.setTitle({ tabId, title: title || "" });
-			if (color)
-				await chrome.action.setBadgeBackgroundColor({ tabId, color });
-		} catch (error) {}
 	}
 
 	async _onTabRemoved(tabId) {
@@ -841,49 +614,15 @@ class EarthlingBrowserBridge {
 			pendingConnection.close("Browser tab closed");
 			return;
 		}
-		if (this._preSelectedTabId === tabId) {
-			this._preSelectedTabId = null;
-			this._persistState();
-		}
-		if (this._connectedTabId === tabId)
-			await this._setConnectedTabId(null);
 		// Multi-tab: don't close the WebSocket when a tab is removed.
 		// The connection may still have other tabs attached. The closeTab
-		// handler already cleans up _debuggees and bridge state.
+		// handler already cleans up _debuggees on the connection.
 	}
 
 	_onTabActivated(activeInfo) {
 		// Update context menu visibility for the active tab
 		this._updateContextMenu(activeInfo.tabId);
-
-		for (const [tabId, pending] of this._pendingTabSelection) {
-			if (tabId === activeInfo.tabId) {
-				if (pending.timerId) {
-					clearTimeout(pending.timerId);
-					pending.timerId = undefined;
-				}
-				continue;
-			}
-			if (!pending.timerId) {
-				pending.timerId = setTimeout(() => {
-					const existed = this._pendingTabSelection.delete(tabId);
-					if (existed) {
-						pending.connection.close("Tab has been inactive for 5 seconds");
-						chrome.tabs.sendMessage(tabId, { type: "connectionTimeout" });
-					}
-				}, 5000);
-			}
-		}
-	}
-
-	_onTabUpdated(tabId, changeInfo, tab) {
-		if (this._connectedTabId === tabId && changeInfo.url)
-			void this._setConnectedTabId(tabId);
-		if (this._preSelectedTabId === tabId && changeInfo.status === "complete")
-			void this._updateBadge(tabId, {
-				text: "\u25CF", color: "#2196F3",
-				title: "Tab pre-selected for Earthling agent"
-			});
+		debugJsonl('tab.userActivated', { tabId: activeInfo.tabId });
 	}
 
 	async _getTabs() {
@@ -895,12 +634,6 @@ class EarthlingBrowserBridge {
 			tab.url && !["chrome:", "edge:", "devtools:"].some(scheme => tab.url.startsWith(scheme))
 			&& !blocklist.includes(tab.id)
 		);
-	}
-
-	async _disconnect() {
-		this._activeConnection?.close("User disconnected");
-		this._activeConnection = undefined;
-		await this._setConnectedTabId(null);
 	}
 
 	async _startAutoConnect() {
@@ -948,9 +681,9 @@ class EarthlingBrowserBridge {
 			await this._connectToRelay(selectorId, wsUrl, targetTab.id);
 
 			// Use _connectTab which sets up lifecycle, sends tabReady
-			await this._connectTab(selectorId, targetTab.id, targetTab.windowId, wsUrl);
+			await this._connectTab(selectorId, targetTab.id);
 
-			debugLog("Auto-connected to relay at", wsUrl, "tab:", targetTab.id, targetTab.title, "(no tab activation)");
+			debugLog("Auto-connected to relay at", wsUrl, "tab:", targetTab.id, targetTab.title);
 			chrome.alarms.clear("autoConnectRetry");
 		} catch (e) {
 			debugLog("Auto-connect failed:", e.message, "— will retry");

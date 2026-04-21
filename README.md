@@ -70,9 +70,9 @@ The `--extension` flag enables the Earthling Browser Bridge extension connection
 
 | Tool | Description |
 |------|-------------|
-| `browser_list_all_tabs` | List ALL open browser tabs (not just Playwright-managed) via the extension. Annotates each tab with lease state: `[leased-by-you]`, `[busy: <clientId>]`, or `[free]` |
-| `browser_switch_tab` | Claim a tab lease and switch this client's CDP session to it. Pass `force: true` to revoke another client's lease |
-| `browser_release_tab` | Release the tab lease held by this client |
+| `browser_list_all_tabs` | List ALL open browser tabs (not just Playwright-managed) via the extension. Annotates each tab with lease state (`[leased-by-you]`, `[busy: <clientId>]`, or `[free]`) and `[active]` when Chrome has focus on it. Pure read — never silently claims a tab |
+| `browser_switch_tab` | Claim a tab lease and switch this client's CDP session to it. Pass `force: true` to revoke another client's lease. Returns the transition it performed: tab `claimed`, prior tab `released` (if any), and `revokedFrom` client id when forced |
+| `browser_release_tab` | Release the tab lease held by this client and detach the CDP debugger on that tab. Reports `(CDP debugger detached.)` when detach succeeds |
 | `browser_open_tab` | Open a new browser tab, optionally with a URL |
 | `browser_close_tab` | Close a browser tab by tab ID |
 
@@ -83,7 +83,9 @@ The CDP relay is a **standalone daemon** (`dist/relay-daemon.js`), lazy-spawned 
 - **Port ownership** — the daemon owns `127.0.0.1:9223` via a TCP bind race (no lockfile). Override with `BROWSER_AUTOMATION_MCP_RELAY_PORT`. The default port constant lives in `src/tools/mcp/relay/constants.ts` (`DEFAULT_RELAY_PORT`) and is shared across the daemon, extension-context factory, and CDP relay; the Chrome extension mirrors the literal with a comment pointing back to that file.
 - **Endpoints** — HTTP `/discover`, `/health`, `/shutdown`; WebSocket `/cdp/<uuid>` (N MCP clients) and `/extension/<uuid>` (single extension).
 - **Per-client isolation** — the daemon rewrites CDP `sessionId`s and command `id`s per client so concurrent agents don't collide.
-- **Tab leasing** — one agent per tab. `browser_switch_tab` claims the lease; other clients see the tab as `[busy: <clientId>]` and must use `force: true` to revoke. `browser_release_tab` releases voluntarily.
+- **Tab leasing** — one agent per tab. `browser_switch_tab` claims the lease; other clients see the tab as `[busy: <clientId>]` and must use `force: true` to revoke. `browser_release_tab` releases voluntarily and detaches the CDP debugger on that tab. Client-WS close also detaches the debugger on every tab it was holding, so orphan attachments do not survive the client.
+- **Atomic force-switch** — the daemon uses a two-phase reserve → call-extension → commit flow. During the in-flight window, other clients polling `browser_list_all_tabs` never see the contested tab as `[free]`; it flips from `[busy: A]` straight to `[busy: B]` on commit (or stays with `A` if the extension call fails or times out).
+- **Preemption announcement** — when a client is preempted via `force: true`, the daemon sends an `Earthling.tabPreempted` CDP event on the loser's WS. The loser sees a line in its next tool response's `Events` section: `Your lease on tab N was preempted by client <id> (reason: force-switch).`
 - **Lifecycle** — daemon lives while the extension is connected, applies a 60s grace period on disconnect (covers MV3 service-worker sleep), then exits cleanly. Runtime artefacts (PID, secret, logs) live in `.runtime/` (gitignored). The extension's auto-reconnect loop rediscovers via `/discover` across daemon restarts.
 
 ### CDP Command Routing
@@ -93,14 +95,19 @@ The daemon distinguishes between browser-level and tab-scoped CDP commands:
 - **Browser-level commands** (no `sessionId`) — handled locally by `_handleTopLevel` or returned as empty success `{}`. Never forwarded to the extension.
 - **Tab-scoped commands** (with virtual `sessionId`) — forwarded to the extension via `sendToExtensionForClient` with per-client command-id rewriting.
 
-Tab switching uses **backend disposal + reconnection**: `browser_switch_tab` updates leases and calls the extension, then `response.setClose()` disposes the Playwright backend. The next tool call creates a fresh `connectOverCDP` connection, and `_handleSetAutoAttach` selects the target tab with 3-priority selection:
-1. `_lastSwitchedTab` hint (server-level Map surviving client reconnections)
-2. Extension's currently-connected tab
-3. First free non-internal tab (filters `chrome://`, `edge://`, `chrome-extension://` URLs)
+Tab switching uses **backend disposal + reconnection**: `browser_switch_tab` updates leases and calls the extension, then `response.setClose()` disposes the Playwright backend. The next tool call creates a fresh `connectOverCDP` connection, and `_handleSetAutoAttach` selects the target tab with a two-step chain:
+1. `_lastSwitchedTab` hint (server-level Map surviving client reconnections).
+2. Auto-open a fresh blank tab when no hint exists (first-ever activation of a session).
+
+There is no silent-claim fallback — listing tabs or connecting does not acquire a tab. The client must call `browser_switch_tab` explicitly.
 
 ### Transparent Reconnect
 
 The MCP backend auto-reconnects when the CDP WebSocket dies (daemon respawn, extension disable/enable, browser restart). `BrowserBackend` captures a reconnect factory closure at creation time and checks `browser.isConnected()` before each tool dispatch; if disconnected, or if a tool call fails with a disconnect-shaped error (`Target.*closed`, `Connection closed`, `browser has been closed`, `Session closed`), it disposes the stale context, re-invokes the factory with 3-attempt exponential backoff (1s, 2s), rebuilds the `Context`, and retries the tool call once. The MCP SDK never sees a dispose — agents experience at most a ~30s one-shot latency on the tool call that happened to coincide with the disconnect.
+
+### Action Timeouts
+
+Every action tool (`browser_click`, `browser_type`, `browser_fill_form`, `browser_hover`, `browser_drag`, `browser_select_option`, `browser_file_upload`, `browser_press_key`, `browser_mouse_*`) is bounded by a 30s default budget (60s for `browser_fill_form`, which iterates N fields). On expiry the tool throws an error containing `exceeded 30000ms budget` and a hint to call `browser_snapshot` to verify page state. Underneath, Playwright's `ProgressController` applies a 120s hard ceiling to every operation — callers that pass `timeout=0` (nominal "infinite") still get a bounded deadline. No tool call can hang forever regardless of how pathological the page is.
 
 ### Known Limitations
 

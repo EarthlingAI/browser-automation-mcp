@@ -15,7 +15,7 @@
  */
 
 import { z } from '../../mcpBundle';
-import { assertWithinMaxTimeout } from './utils';
+import { assertWithinMaxTimeout, withActionBudget } from './utils';
 import { formatObjectOrVoid } from '../../utils/isomorphic/stringUtils';
 import { defineTabTool } from './tool';
 
@@ -36,9 +36,9 @@ const mouseMove = defineTabTool({
     response.addCode(`// Move mouse to (${params.x}, ${params.y})`);
     response.addCode(`await page.mouse.move(${params.x}, ${params.y});`);
 
-    await tab.waitForCompletion(async () => {
+    await withActionBudget('browser_mouse_move_xy', () => tab.waitForCompletion(async () => {
       await tab.page.mouse.move(params.x, params.y);
-    });
+    }));
   },
 });
 
@@ -139,9 +139,9 @@ const mouseClick = defineTabTool({
     response.addCode(`// Click mouse at coordinates (${params.x}, ${params.y})`);
     response.addCode(`await page.mouse.click(${params.x}, ${params.y}${optionsArg});`);
 
-    await tab.waitForCompletion(async () => {
+    await withActionBudget('browser_mouse_click_xy', () => tab.waitForCompletion(async () => {
       await tab.page.mouse.click(params.x, params.y, options);
-    });
+    }));
   },
 });
 
@@ -169,12 +169,12 @@ const mouseDrag = defineTabTool({
     response.addCode(`await page.mouse.move(${params.endX}, ${params.endY});`);
     response.addCode(`await page.mouse.up();`);
 
-    await tab.waitForCompletion(async () => {
+    await withActionBudget('browser_mouse_drag_xy', () => tab.waitForCompletion(async () => {
       await tab.page.mouse.move(params.startX, params.startY);
       await tab.page.mouse.down();
       await tab.page.mouse.move(params.endX, params.endY);
       await tab.page.mouse.up();
-    });
+    }));
   },
 });
 

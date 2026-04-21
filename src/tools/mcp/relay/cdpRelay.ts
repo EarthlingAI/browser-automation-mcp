@@ -478,9 +478,16 @@ export class CDPRelayServer {
       if (this._clients.get(clientId) !== client)
         return;
       const released = this._leases.releaseAllFor(clientId);
+      const cancelledPending = this._leases.cancelPendingFor(clientId);
       this._clients.delete(clientId);
-      debugLogger(`Playwright client disconnected: ${clientId} (released tabs: ${released.join(',')})`);
-      daemonJsonl('client.disconnect', { clientId, detail: { code, releasedTabs: released, remaining: this._clients.size } });
+      debugLogger(`Playwright client disconnected: ${clientId} (released tabs: ${released.join(',')}, cancelled pending: ${cancelledPending.join(',')})`);
+      daemonJsonl('client.disconnect', { clientId, detail: { code, releasedTabs: released, cancelledPending, remaining: this._clients.size } });
+      // Detach CDP from each released tab so orphan debugger attachments die
+      // with the client. Fire-and-forget with a 2s cage.
+      for (const tabId of released) {
+        this._cleanupTabSessions(tabId);
+        this._extension?.send('detachFromTab', { tabId } as any, 2_000).catch(() => {});
+      }
       if (this._clients.size === 0 && this._extension === null)
         this._startGraceTimer();
     });
@@ -506,6 +513,10 @@ export class CDPRelayServer {
     const c = this._clients.get(clientId);
     if (c)
       c.revokeTab(tabId, reason);
+  }
+
+  clientById(clientId: string): ClientConnection | undefined {
+    return this._clients.get(clientId);
   }
 
   async listTabs(): Promise<TabInfo[]> {
@@ -819,28 +830,71 @@ class ClientConnection {
         const force = !!(params && params.force);
         const tabId: number = params?.tabId;
         const existingOwner = this._relay.leases().ownerOf(tabId);
-        debugLogger(`[${this.id}] switchToTab: tabId=${tabId}, force=${force}, currentOwner=${existingOwner?.ownerClientId ?? 'none'}, myPrimary=${this._primaryTab}`);
-        // On force-takeover, revoke the current owner's subscription so they
-        // stop seeing events for a tab they no longer own.
-        if (force) {
-          if (existingOwner && existingOwner.ownerClientId !== this.id)
-            this._relay.revokeClientSubscription(existingOwner.ownerClientId, tabId, `Lease revoked by ${this.id}`);
+        const oldOwnerId = existingOwner && existingOwner.ownerClientId !== this.id ? existingOwner.ownerClientId : null;
+        const oldPrimary = this._primaryTab;
+        debugLogger(`[${this.id}] switchToTab: tabId=${tabId}, force=${force}, currentOwner=${existingOwner?.ownerClientId ?? 'none'}, myPrimary=${oldPrimary}`);
+
+        if (existingOwner && existingOwner.ownerClientId !== this.id && !force)
+          throw new Error(`Tab ${tabId} is leased by client ${existingOwner.ownerClientId}. Pass force:true to take over.`);
+
+        // Phase 1: reserve. The pending entry is invisible to ownerOf/all, so
+        // concurrent list_all_tabs still sees tab as held by oldOwner.
+        this._relay.leases().reservePending(tabId, this.id, oldOwnerId);
+        daemonJsonl('lease.pending.reserve', { clientId: this.id, tabId, detail: { oldOwner: oldOwnerId, force } });
+
+        // Phase 2: call extension to actually attach.
+        let extResult: any;
+        try {
+          extResult = await this._relay.callExtensionDirect('switchToTab', { tabId });
+        } catch (e) {
+          this._relay.leases().cancelPending(tabId);
+          daemonJsonl('lease.pending.cancel', { clientId: this.id, tabId, detail: { reason: 'extension failure', error: String(e) } });
+          throw e;
         }
-        const claim = this.claimTab(tabId, force);
-        if (!claim.ok)
-          throw new Error(`Tab ${tabId} is leased by client ${claim.ownerId}. Pass force:true to take over.`);
-        // Record which tab we switched to at the relay level so it survives
-        // the backend disposal + reconnection cycle. _handleSetAutoAttach on
-        // the fresh ClientConnection will consume this hint to lease the
-        // correct tab instead of falling back to the first free one.
+
+        // If our WS closed during the await, the ws.on('close') handler
+        // already cancelled this pending reservation — abort without revoking
+        // oldOwner's lease.
+        if (!this._relay.leases().hasPending(tabId)) {
+          daemonJsonl('lease.pending.cancel', { clientId: this.id, tabId, detail: { reason: 'client disconnected during switch' } });
+          throw new Error(`Switch aborted: client disconnected before commit`);
+        }
+
+        // Phase 3: commit. Notify loser BEFORE detach so the preemption event
+        // lands first in ordering over the same WS. `sessionId: BROWSER_SESSION_ID`
+        // is load-bearing: it routes the event to the peer's `browser.newBrowserCDPSession()`
+        // where the preemption listener lives. Drop the sessionId and Playwright
+        // routes to the root session — silently eaten, no listener reachable.
+        if (oldOwnerId) {
+          const loser = this._relay.clientById(oldOwnerId);
+          if (loser) {
+            loser.sendRaw({ sessionId: BROWSER_SESSION_ID, method: 'Earthling.tabPreempted', params: { tabId, revokedBy: this.id, reason: 'force-switch' } } as any);
+            daemonJsonl('lease.takeover.notified', { clientId: oldOwnerId, tabId, detail: { revokedBy: this.id } });
+          }
+          this._relay.revokeClientSubscription(oldOwnerId, tabId, `Lease revoked by ${this.id}`);
+          this._relay.leases().release(tabId, oldOwnerId);
+        }
+
+        // Release this client's previous primary (if any and distinct).
+        let releasedPrior: number | null = null;
+        if (oldPrimary !== null && oldPrimary !== tabId) {
+          this._relay.leases().release(oldPrimary, this.id);
+          this._subscribedTabs.delete(oldPrimary);
+          releasedPrior = oldPrimary;
+        }
+
+        this._relay.leases().commitPending(tabId);
+        daemonJsonl('lease.pending.commit', { clientId: this.id, tabId });
+        this._primaryTab = tabId;
+        this._subscribedTabs.add(tabId);
         this._relay.setLastSwitchedTab(this.id, tabId);
-        debugLogger(`[${this.id}] switchToTab: claimed tab ${tabId}, setting lastSwitchedTab hint`);
-        // Tell extension to attach to the new tab.
-        return await this._relay.callExtensionDirect('switchToTab', { tabId });
+        debugLogger(`[${this.id}] switchToTab: committed tab ${tabId} (released prior=${releasedPrior}, revoked from=${oldOwnerId})`);
+
+        return { ...extResult, released: releasedPrior, revokedFrom: oldOwnerId, claimed: tabId, force };
       }
       case 'Earthling.releaseTab': {
         const tabId: number = params?.tabId;
-        return { released: this.releaseTab(tabId) };
+        return await this.releaseTabWithDetach(tabId);
       }
       case 'Earthling.openTab':
         return await this._relay.callExtensionDirect('openTab', params || {});
@@ -886,34 +940,7 @@ class ClientConnection {
           debugLogger(`[${this.id}] setAutoAttach: leased hint tab ${tabId}`);
         }
       }
-      // Priority 2: Tab the extension is currently connected to.
-      if (tabId === null) {
-        const connected = tabs.find((t: any) => t.connected);
-        if (connected) {
-          const claim = this._relay.leases().claim(connected.tabId, this.id, false);
-          if (claim.ok) {
-            tabId = connected.tabId;
-            debugLogger(`[${this.id}] setAutoAttach: leased connected tab ${tabId}`);
-          }
-        }
-      }
-      // Priority 3: First free non-internal tab.
-      if (tabId === null) {
-        const INTERNAL_PREFIXES = ['chrome://', 'chrome-extension://', 'edge://', 'about:', 'devtools://'];
-        const candidates = tabs
-          .filter((t: any) => !INTERNAL_PREFIXES.some(p => (t.url || '').startsWith(p)))
-          .map((t: any) => t.tabId)
-          .sort((a: number, b: number) => a - b);
-        for (const id of candidates) {
-          const claim = this._relay.leases().claim(id, this.id, false);
-          if (claim.ok) {
-            tabId = id;
-            debugLogger(`[${this.id}] setAutoAttach: leased first free tab ${tabId}`);
-            break;
-          }
-        }
-      }
-      // Priority 4: No free tab — open a new blank tab for this client.
+      // Priority 2: No hint — open a new blank tab for this client.
       if (tabId === null) {
         debugLogger(`[${this.id}] setAutoAttach: no free tab — auto-opening blank tab`);
         const newTab = await this._relay.callExtensionDirect('openTab', { url: 'about:blank' });
@@ -959,21 +986,6 @@ class ClientConnection {
     });
   }
 
-  /** Public: claim a specific tab (used by earthlingTabs.browser_switch_tab). */
-  claimTab(tabId: number, force: boolean): { ok: true } | { ok: false; ownerId: string } {
-    const res = this._relay.leases().claim(tabId, this.id, force);
-    if (!res.ok)
-      return { ok: false, ownerId: res.owner.ownerClientId };
-    // Release old primary if different.
-    if (this._primaryTab !== null && this._primaryTab !== tabId) {
-      this._relay.leases().release(this._primaryTab, this.id);
-      this._subscribedTabs.delete(this._primaryTab);
-    }
-    this._primaryTab = tabId;
-    this._subscribedTabs.add(tabId);
-    return { ok: true };
-  }
-
   releaseTab(tabId: number): boolean {
     const ok = this._relay.leases().release(tabId, this.id);
     if (ok) {
@@ -982,6 +994,23 @@ class ClientConnection {
         this._primaryTab = null;
     }
     return ok;
+  }
+
+  async releaseTabWithDetach(tabId: number): Promise<{ released: boolean; detached: boolean }> {
+    const released = this.releaseTab(tabId);
+    if (!released)
+      return { released: false, detached: false };
+    this._relay._cleanupTabSessions(tabId);
+    let detached = false;
+    let detachError: string | undefined;
+    try {
+      await this._relay.extension()?.send('detachFromTab', { tabId } as any, 2_000);
+      detached = true;
+    } catch (e) {
+      detachError = e instanceof Error ? e.message : String(e);
+    }
+    daemonJsonl('ext.detach.on-release', { clientId: this.id, tabId, detail: { detached, error: detachError } });
+    return { released: true, detached };
   }
 
   primaryTab(): number | null { return this._primaryTab; }

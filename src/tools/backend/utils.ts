@@ -53,6 +53,35 @@ export async function withTimeoutMarker<T>(
 }
 
 /**
+ * Fire a CDP detach without letting it stall teardown. Playwright's
+ * CDPSession.detach() can hang indefinitely (neither resolve nor reject) when
+ * the session's underlying target has been swapped out from under it — e.g.
+ * during the atomic tab-switch commit in `Earthling.switchToTab`.
+ * `.catch(() => {})` only handles rejections; a never-settling promise
+ * bypasses it entirely. This helper races the detach against a deadline and
+ * resolves either way.
+ */
+export async function safeDetach(cdp: { detach(): Promise<void> } | undefined, timeoutMs: number = 500): Promise<void> {
+  if (!cdp)
+    return;
+  await Promise.race([
+    cdp.detach().catch(() => {}),
+    new Promise<void>(resolve => setTimeout(resolve, timeoutMs)),
+  ]);
+}
+
+/**
+ * Hard budget for action tools; on timeout, throws with a snapshot-retry hint.
+ */
+export async function withActionBudget<T>(label: string, fn: () => Promise<T>, budgetMs: number = 30_000): Promise<T> {
+  const clampedBudget = Math.min(budgetMs, MAX_TOOL_WAIT_MS);
+  const outcome = await withTimeoutMarker<T>(label, fn, clampedBudget, () => undefined as unknown as T);
+  if (outcome.timedOut)
+    throw new Error(`${label} exceeded ${clampedBudget}ms budget — the action may not have completed. Call browser_snapshot to verify page state.`);
+  return outcome.result;
+}
+
+/**
  * Validate a caller-supplied timeout against MAX_TOOL_WAIT_MS. Returns the
  * value (unchanged) if within cap. Throws with a clear message pointing
  * agents at the polling pattern if over cap. Pass undefined to opt out.

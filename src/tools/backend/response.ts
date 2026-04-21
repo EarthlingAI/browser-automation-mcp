@@ -30,6 +30,26 @@ import type { Context, FilenameTemplate } from './context';
 export const requestDebug = debug('pw:mcp:request');
 
 /**
+ * Very generous safety net for filesystem I/O on the response path. Normal
+ * local writes complete in <10ms; 10s only fires if the volume is wedged.
+ * On timeout we skip the write and log — the text response still goes out.
+ */
+const FILE_WRITE_BUDGET_MS = 10_000;
+
+async function safeWriteFile(file: string, data: Buffer | string, encoding: BufferEncoding | undefined): Promise<boolean> {
+  const writePromise = typeof data === 'string'
+    ? fs.promises.writeFile(file, data, encoding ?? 'utf-8')
+    : fs.promises.writeFile(file, data);
+  const outcome = await Promise.race([
+    writePromise.then(() => 'ok' as const).catch(e => { requestDebug(`writeFile failed: ${String(e?.message || e)}`); return 'err' as const; }),
+    new Promise<'timeout'>(resolve => setTimeout(() => resolve('timeout'), FILE_WRITE_BUDGET_MS)),
+  ]);
+  if (outcome === 'timeout')
+    requestDebug(`writeFile timed out after ${FILE_WRITE_BUDGET_MS}ms: ${file}`);
+  return outcome === 'ok';
+}
+
+/**
  * Post-action snapshot budget. The outer Response._build budget is the
  * belt-and-braces ceiling; the inner Tab.captureSnapshot race uses a slightly
  * shorter budget (SNAPSHOT_TIMEOUT_MS - 500) so the inner layer rejects first
@@ -108,9 +128,9 @@ export class Response {
 
   async addFileResult(resolvedFile: ResolvedFile, data: Buffer | string | null) {
     if (typeof data === 'string')
-      await fs.promises.writeFile(resolvedFile.fileName, data, 'utf-8');
+      await safeWriteFile(resolvedFile.fileName, data, 'utf-8');
     else if (data)
-      await fs.promises.writeFile(resolvedFile.fileName, data);
+      await safeWriteFile(resolvedFile.fileName, data, undefined);
     this.addTextResult(resolvedFile.printableLink);
   }
 
@@ -288,7 +308,7 @@ export class Response {
       const userRequestedFile = this._context.config.outputMode === 'file' || !!this._includeSnapshotFileName;
       if (userRequestedFile) {
         const resolvedFile = await this.resolveClientFile({ prefix: 'page', ext: 'yml', suggestedFilename: this._includeSnapshotFileName }, 'Snapshot');
-        await fs.promises.writeFile(resolvedFile.fileName, snapshot, 'utf-8');
+        await safeWriteFile(resolvedFile.fileName, snapshot, 'utf-8');
         addSection('Snapshot', [resolvedFile.printableLink]);
       } else if (typeof snapshot === 'string' && Buffer.byteLength(snapshot, 'utf8') > INLINE_SNAPSHOT_MAX_BYTES) {
         // Auto-save oversized inline snapshots to disk and leave a pointer.
@@ -296,7 +316,7 @@ export class Response {
         const ts = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
         const fileTemplate: FilenameTemplate = { prefix: `snapshots/${ts}_${this.toolName}`, ext: 'md' };
         const resolvedFile = await this.resolveClientFile(fileTemplate, 'Snapshot');
-        await fs.promises.writeFile(resolvedFile.fileName, snapshot, 'utf-8');
+        await safeWriteFile(resolvedFile.fileName, snapshot, 'utf-8');
         addSection('Snapshot', [`[snapshot too large (${sizeKB} KB) — saved to ${resolvedFile.relativeName}. Call browser_snapshot with filename= to request a persistent copy.]`]);
       } else {
         addSection('Snapshot', [snapshot], 'yaml');
@@ -319,6 +339,8 @@ export class Response {
         }
       }
     }
+    for (const evt of this._context.drainPendingEvents())
+      text.push(`- ${evt}`);
     if (text.length)
       addSection('Events', text);
     return sections;

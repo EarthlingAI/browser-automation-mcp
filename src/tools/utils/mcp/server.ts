@@ -21,6 +21,15 @@ import * as mcpBundle from '../../../mcpBundle';
 
 import { startMcpHttpServer } from './http';
 import { toMcpTool } from './tool';
+import { withTimeoutMarker } from '../../backend/utils';
+
+/**
+ * Belt-and-braces cap on how long the MCP CallTool handler will wait for the
+ * backend dispose chain to finish before returning the tool result anyway.
+ * Normal dispose is <50ms; a 5s budget ensures a stalled teardown step
+ * (e.g. a never-resolving CDPSession.detach) cannot freeze the agent.
+ */
+const DISPOSE_BUDGET_MS = 5_000;
 
 import type { CallToolResult, CallToolRequest, Root } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
@@ -127,7 +136,14 @@ export function createServer(name: string, version: string, factory: ServerBacke
       const backend = await backendPromise;
       const toolResult = await backend.callTool(request.params.name, request.params.arguments || {}, progress);
       if (toolResult.isClose) {
-        await backendManager.disposeBackend(backend).catch(serverDebug);
+        const disposePromise = backendManager.disposeBackend(backend).catch(serverDebug);
+        const outcome = await withTimeoutMarker('disposeBackend', () => disposePromise, DISPOSE_BUDGET_MS, () => undefined);
+        if (outcome.timedOut) {
+          // Fire-and-forget: the in-flight dispose will eventually settle on
+          // its own; we just won't block the tool response on it. The backend
+          // may leak, but the agent is always unblocked within the budget.
+          serverDebug('disposeBackend timed out after', DISPOSE_BUDGET_MS, 'ms — continuing (backend may leak)');
+        }
         backendPromise = undefined;
         delete toolResult.isClose;
       }

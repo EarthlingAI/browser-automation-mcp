@@ -63,13 +63,17 @@ export class ProgressController {
   }
 
   async run<T>(task: (progress: Progress) => Promise<T>, timeout?: number): Promise<T> {
-    const deadline = timeout ? monotonicTime() + timeout : 0;
+    // External constraint: MCP tool calls must complete in bounded time or the MCP SDK loses track of the call.
+    // Clamp timeout=0 ("infinite") to HARD_CEILING_MS so no Playwright operation can hang indefinitely.
+    const HARD_CEILING_MS = 120_000;
+    const effectiveTimeout = (timeout && timeout > 0) ? Math.min(timeout, HARD_CEILING_MS) : HARD_CEILING_MS;
+    const deadline = monotonicTime() + effectiveTimeout;
     assert(this._state === 'before');
     this._state = 'running';
     let timer: NodeJS.Timeout | undefined;
 
     const progress: Progress = {
-      timeout: timeout ?? 0,
+      timeout: effectiveTimeout,
       deadline,
       disableTimeout: () => {
         clearTimeout(timer);
@@ -96,19 +100,17 @@ export class ProgressController {
       signal: this._controller.signal,
     };
 
-    if (deadline) {
-      const timeoutError = new TimeoutError(`Timeout ${timeout}ms exceeded.`);
-      timer = setTimeout(() => {
-        // TODO: migrate this to "progress.disableTimeout()".
-        if (this.metadata.pauseStartTime && !this.metadata.pauseEndTime)
-          return;
-        if (this._state === 'running') {
-          this._state = { error: timeoutError };
-          this._forceAbortPromise.reject(timeoutError);
-          this._controller.abort(timeoutError);
-        }
-      }, deadline - monotonicTime());
-    }
+    const timeoutError = new TimeoutError(`Timeout ${effectiveTimeout}ms exceeded.`);
+    timer = setTimeout(() => {
+      // TODO: migrate this to "progress.disableTimeout()".
+      if (this.metadata.pauseStartTime && !this.metadata.pauseEndTime)
+        return;
+      if (this._state === 'running') {
+        this._state = { error: timeoutError };
+        this._forceAbortPromise.reject(timeoutError);
+        this._controller.abort(timeoutError);
+      }
+    }, deadline - monotonicTime());
 
     try {
       const result = await task(progress);

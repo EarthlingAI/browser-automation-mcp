@@ -22,6 +22,7 @@ import { escapeWithQuotes } from '../../utils/isomorphic/stringUtils';
 import { selectors } from 'playwright-core';
 
 import { Tab } from './tab';
+import { safeDetach } from './utils';
 import { disposeAll } from '../../server/utils/disposable';
 import { eventsHelper } from '../../server/utils/eventsHelper';
 
@@ -104,6 +105,8 @@ export class Context {
   private _disposables: Disposable[] = [];
 
   private _runningToolName: string | undefined;
+  private _pendingEvents: string[] = [];
+  private _preemptionCdp: playwright.CDPSession | undefined;
 
   constructor(browserContext: playwright.BrowserContext, options: ContextOptions) {
     this.config = options.config;
@@ -115,11 +118,28 @@ export class Context {
 
   async dispose() {
     await disposeAll(this._disposables);
+    // Fire-and-forget: the detach can hang when the browser-level target was
+    // swapped under us (Phase-3 atomic tab switch). Null the field first so
+    // any concurrent reader sees `undefined`, then let safeDetach race the
+    // detach against a bounded timer in the background.
+    const cdp = this._preemptionCdp;
+    this._preemptionCdp = undefined;
+    void safeDetach(cdp, 500);
     for (const tab of this._tabs)
       await tab.dispose();
     this._tabs.length = 0;
     this._currentTab = undefined;
     await this.stopVideoRecording();
+  }
+
+  addPendingEvent(msg: string): void {
+    this._pendingEvents.push(msg);
+  }
+
+  drainPendingEvents(): string[] {
+    const out = this._pendingEvents;
+    this._pendingEvents = [];
+    return out;
   }
 
   tabs(): Tab[] {
@@ -305,6 +325,28 @@ export class Context {
     for (const page of browserContext.pages())
       this._onPageCreated(page);
     this._disposables.push(eventsHelper.addEventListener(browserContext, 'page', page => this._onPageCreated(page)));
+
+    // Listen for lease-preemption events from the relay daemon on a persistent
+    // browser-level CDP session. Best-effort: if the browser disconnects
+    // mid-attach we silently skip — the tool layer handles transparent reconnect.
+    const browser = browserContext.browser();
+    if (browser) {
+      try {
+        const cdp = await browser.newBrowserCDPSession();
+        this._preemptionCdp = cdp;
+        cdp.on('Earthling.tabPreempted' as any, (params: any) => {
+          const msg = `Your lease on tab ${params?.tabId} was preempted by client ${params?.revokedBy} (reason: ${params?.reason ?? 'unknown'}).`;
+          this._pendingEvents.push(msg);
+        });
+        // Eagerly drop our reference if the browser disconnects — covers the
+        // extension-lost / browser-killed / daemon-respawn paths where
+        // Playwright fires 'disconnected'. The switch_tab path doesn't trigger
+        // this; the fire-and-forget in dispose() covers that case.
+        browser.on('disconnected', () => { this._preemptionCdp = undefined; });
+      } catch {
+        /* best-effort */
+      }
+    }
 
     return browserContext;
   }

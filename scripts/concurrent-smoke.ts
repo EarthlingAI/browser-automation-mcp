@@ -22,7 +22,8 @@ import { DEFAULT_RELAY_PORT } from '../src/tools/mcp/relay/constants';
 
 const PORT = parseInt(process.env.BROWSER_AUTOMATION_MCP_RELAY_PORT || String(DEFAULT_RELAY_PORT), 10);
 const ITERATIONS = parseInt(process.env.ITERATIONS || '8', 10);
-const CHANNEL = process.env.BROWSER_CHANNEL || 'msedge';
+const CHANNEL = process.env.BROWSER_CHANNEL || 'chrome';
+const MODE = process.env.MODE || 'default';
 
 const URL_A = 'https://example.org/';
 const URL_B = 'https://example.net/';
@@ -96,11 +97,112 @@ function log(...args: unknown[]): void {
   console.log(`[${ts}]`, ...args);
 }
 
+type TabInfo = { tabId: number; title: string; url: string; active: boolean; lease: 'you' | 'busy' | 'free'; ownerId?: string };
+
+async function cdpCall(browser: Browser, method: string, params: any = {}): Promise<any> {
+  const cdp = await browser.newBrowserCDPSession();
+  try {
+    return await cdp.send(method as any, params);
+  } finally {
+    await cdp.detach().catch(() => {});
+  }
+}
+
+async function listTabs(browser: Browser): Promise<TabInfo[]> {
+  const res = await cdpCall(browser, 'Earthling.listTabsAnnotated', {});
+  return Array.isArray(res) ? res : (res?.tabs ?? []);
+}
+
+async function runLeaseChurn(info: { cdpPath: string }): Promise<void> {
+  const CHURN_ITERATIONS = parseInt(process.env.ITERATIONS || '30', 10);
+  const endpoint = (label: string) => `ws://127.0.0.1:${PORT}${info.cdpPath}?clientId=${encodeURIComponent(`churn-${label}-${process.pid}`)}`;
+
+  log(`Lease-churn mode: 2 actors + 1 observer × ${CHURN_ITERATIONS} iters`);
+  const browserA = await chromium.connectOverCDP(endpoint('A'), { isLocal: true });
+  const browserB = await chromium.connectOverCDP(endpoint('B'), { isLocal: true });
+  const browserObs = await chromium.connectOverCDP(endpoint('obs'), { isLocal: true });
+
+  try {
+    const seedTabs = await listTabs(browserObs);
+    const candidates = seedTabs.filter(t => !t.url.startsWith('chrome:') && !t.url.startsWith('edge:') && !t.url.startsWith('devtools:'));
+    if (candidates.length < 2)
+      throw new Error(`lease-churn needs ≥2 non-internal tabs; found ${candidates.length}`);
+    const [tabX, tabY] = candidates;
+    log(`Target tabs: X=${tabX.tabId} (${tabX.url}), Y=${tabY.tabId} (${tabY.url})`);
+
+    let observerStop = false;
+    const observations: { t: number; tabs: Map<number, string> }[] = [];
+    const observerLoop = (async () => {
+      while (!observerStop) {
+        try {
+          const tabs = await listTabs(browserObs);
+          const m = new Map<number, string>();
+          for (const t of tabs) m.set(t.tabId, t.lease === 'you' ? 'you' : t.lease === 'busy' ? `busy:${t.ownerId ?? '?'}` : 'free');
+          observations.push({ t: Date.now(), tabs: m });
+        } catch (e) {
+          // ignore transient errors
+        }
+        await new Promise(r => setTimeout(r, 50));
+      }
+    })();
+
+    const actor = async (label: string, browser: Browser, tabId: number) => {
+      const results: { iter: number; ms: number }[] = [];
+      for (let i = 0; i < CHURN_ITERATIONS; i++) {
+        const t0 = Date.now();
+        await cdpCall(browser, 'Earthling.switchToTab', { tabId, force: true });
+        await cdpCall(browser, 'Earthling.releaseTab', { tabId });
+        results.push({ iter: i, ms: Date.now() - t0 });
+        if (i % 10 === 0) log(`[${label}] iter=${i} switch+release=${results.at(-1)!.ms}ms`);
+      }
+      return results;
+    };
+
+    const [resA, resB] = await Promise.all([
+      actor('A', browserA, tabX.tabId),
+      actor('B', browserB, tabY.tabId),
+    ]);
+
+    observerStop = true;
+    await observerLoop;
+
+    log(`Observer captured ${observations.length} list snapshots`);
+    const ownerIdA = `churn-A-${process.pid}`;
+    const ownerIdB = `churn-B-${process.pid}`;
+    let seenBusyA = 0, seenBusyB = 0, seenFree = 0;
+    for (const snap of observations) {
+      const sx = snap.tabs.get(tabX.tabId);
+      const sy = snap.tabs.get(tabY.tabId);
+      if (sx?.startsWith('busy')) { if (sx.includes(ownerIdA)) seenBusyA++; }
+      if (sy?.startsWith('busy')) { if (sy.includes(ownerIdB)) seenBusyB++; }
+      if (sx === 'free' || sy === 'free') seenFree++;
+    }
+    log(`Observations: busy-A(X)=${seenBusyA}, busy-B(Y)=${seenBusyB}, free(either)=${seenFree}`);
+
+    const avg = (r: { ms: number }[]) => (r.reduce((s, v) => s + v.ms, 0) / r.length).toFixed(0);
+    log(`A: ${CHURN_ITERATIONS} iters, avg=${avg(resA)}ms; B: ${CHURN_ITERATIONS} iters, avg=${avg(resB)}ms`);
+
+    if (seenBusyA === 0 && seenBusyB === 0)
+      throw new Error('Observer never saw either target as busy — lease bookkeeping may be broken');
+
+    log('PASS — lease-churn invariants held');
+  } finally {
+    await browserA.close().catch(() => {});
+    await browserB.close().catch(() => {});
+    await browserObs.close().catch(() => {});
+  }
+}
+
 async function main(): Promise<void> {
-  log(`Ensuring daemon (port=${PORT}, channel=${CHANNEL})…`);
+  log(`Ensuring daemon (port=${PORT}, channel=${CHANNEL}, mode=${MODE})…`);
   await acquireDaemon(PORT, CHANNEL);
   const info = await discover();
   log(`Daemon up: pid=${info.pid} cdpPath=${info.cdpPath} uuid=${info.uuid}`);
+
+  if (MODE === 'lease-churn') {
+    await runLeaseChurn(info);
+    return;
+  }
 
   // Parallel connect — second client exercises the Issue #4 auto-open-blank-tab path.
   const [a, b] = await Promise.all([

@@ -17,6 +17,7 @@
 import { z } from '../../mcpBundle';
 import { defineTabTool } from './tool';
 import { elementSchema } from './snapshot';
+import { withActionBudget } from './utils';
 
 const press = defineTabTool({
   capability: 'core-input',
@@ -36,9 +37,9 @@ const press = defineTabTool({
     response.addCode(`await page.keyboard.press('${params.key}');`);
     if (params.key === 'Enter') {
       response.setIncludeSnapshot();
-      await tab.waitForCompletion(async () => {
+      await withActionBudget('browser_press_key', () => tab.waitForCompletion(async () => {
         await tab.page.keyboard.press('Enter');
-      });
+      }));
     } else {
       await tab.page.keyboard.press(params.key);
     }
@@ -67,9 +68,9 @@ const pressSequentially = defineTabTool({
     if (params.submit) {
       response.addCode(`await page.keyboard.press('Enter');`);
       response.setIncludeSnapshot();
-      await tab.waitForCompletion(async () => {
+      await withActionBudget('browser_press_sequentially', () => tab.waitForCompletion(async () => {
         await tab.page.keyboard.press('Enter');
-      });
+      }));
     }
   },
 });
@@ -94,7 +95,7 @@ const type = defineTabTool({
     const { locator, resolved } = await tab.refLocator(params);
     const secret = tab.context.lookupSecret(params.text);
 
-    await tab.waitForCompletion(async () => {
+    await withActionBudget('browser_type', () => tab.waitForCompletion(async () => {
       if (params.slowly) {
         response.setIncludeSnapshot();
         response.addCode(`await page.${resolved}.pressSequentially(${secret.code});`);
@@ -109,7 +110,7 @@ const type = defineTabTool({
         response.addCode(`await page.${resolved}.press('Enter');`);
         await locator.press('Enter', tab.actionTimeoutOptions);
       }
-    });
+    }));
   },
 });
 

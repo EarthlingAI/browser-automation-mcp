@@ -17,6 +17,7 @@
 import { Context } from './context';
 import { Response } from './response';
 import { SessionLog } from './sessionLog';
+import { MAX_TOOL_WAIT_MS, withTimeoutMarker } from './utils';
 import { debug } from '../../utilsBundle';
 import { mcpJsonl } from '../mcp/relay/debugJsonl';
 import { raceAgainstDeadline } from '../../utils/isomorphic/timeoutRunner';
@@ -185,7 +186,20 @@ export class BrowserBackend implements ServerBackend {
     let responseObject: mcpServer.CallToolResult;
     try {
       await tool.handle(context, parsedArguments, response);
-      responseObject = await response.serialize();
+      // Outermost guard: even though _build() bounds snapshot + header capture
+      // and safeWriteFile bounds file I/O, any future unbounded await inside
+      // serialize() must not freeze the MCP tool result. 120s matches the
+      // MAX_TOOL_WAIT_MS ceiling — this should never fire in practice.
+      const serializeOutcome = await withTimeoutMarker<mcpServer.CallToolResult>(
+          'response.serialize',
+          () => response.serialize(),
+          MAX_TOOL_WAIT_MS,
+          () => ({
+            content: [{ type: 'text' as const, text: `### Error\nResponse serialization timed out after ${MAX_TOOL_WAIT_MS}ms.` }],
+            isError: true,
+          }),
+      );
+      responseObject = serializeOutcome.result;
       this._sessionLog?.logResponse(name, parsedArguments, responseObject);
     } catch (error: any) {
       // If the error looks like a disconnect, attempt one reconnect + retry
@@ -207,7 +221,16 @@ export class BrowserBackend implements ServerBackend {
           retryContext.setRunningTool(name);
           try {
             await tool.handle(retryContext, parsedArguments, retryResponse);
-            responseObject = await retryResponse.serialize();
+            const retryOutcome = await withTimeoutMarker<mcpServer.CallToolResult>(
+                'response.serialize.retry',
+                () => retryResponse.serialize(),
+                MAX_TOOL_WAIT_MS,
+                () => ({
+                  content: [{ type: 'text' as const, text: `### Error\nResponse serialization timed out after ${MAX_TOOL_WAIT_MS}ms.` }],
+                  isError: true,
+                }),
+            );
+            responseObject = retryOutcome.result;
             this._sessionLog?.logResponse(name, parsedArguments, responseObject);
             return responseObject;
           } finally {

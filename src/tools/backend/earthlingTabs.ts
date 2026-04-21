@@ -9,7 +9,7 @@
 
 import { z } from '../../mcpBundle';
 import { defineTool } from './tool';
-import { withTimeoutMarker } from './utils';
+import { safeDetach, withTimeoutMarker } from './utils';
 
 import type { Tool } from './tool';
 
@@ -47,7 +47,7 @@ async function relaySend(context: any, method: string, params: any = {}): Promis
 			throw new RelayTimeoutError(method, timeoutMs);
 		return outcome.result;
 	} finally {
-		await cdp.detach().catch(() => {});
+		await safeDetach(cdp, 500);
 	}
 }
 
@@ -64,14 +64,10 @@ const listAllTabs = defineTool({
 		const tabs: any[] = await relaySend(context, 'Earthling.listTabsAnnotated', {});
 		const lines = ['### All Browser Tabs'];
 		for (const t of tabs) {
-			const flags: string[] = [];
-			if (t.connected) flags.push('CONNECTED');
-			if (t.highlighted) flags.push('HIGHLIGHTED');
-			if (t.active) flags.push('active');
 			let leaseLabel = '[free]';
 			if (t.lease === 'you') leaseLabel = '[leased-by-you]';
 			else if (t.lease === 'busy') leaseLabel = `[busy: ${t.ownerId}]`;
-			const f = flags.length ? ' [' + flags.join(', ') + ']' : '';
+			const f = t.active ? ' [active]' : '';
 			lines.push(`- tabId=${t.tabId} ${leaseLabel}${f}: [${t.title}](${t.url})`);
 		}
 		response.addTextResult(lines.join('\n'));
@@ -91,12 +87,18 @@ const switchTab = defineTool({
 		type: 'action',
 	},
 	handle: async (context, params, response) => {
-		await relaySend(context, 'Earthling.switchToTab', { tabId: params.tabId, force: !!params.force });
+		const res = await relaySend(context, 'Earthling.switchToTab', { tabId: params.tabId, force: !!params.force });
 		// setClose() tells the MCP server to dispose this backend (closing
 		// the connectOverCDP WebSocket). The next tool call creates a fresh
 		// backend that reconnects and leases the extension's now-connected tab.
 		response.setClose();
-		response.addTextResult(`Switched to tab ${params.tabId}. Use browser_snapshot to see the page content.`);
+		const parts = [`Switched to tab ${res?.claimed ?? params.tabId}.`];
+		if (res?.released != null)
+			parts.push(`Released prior tab ${res.released}.`);
+		if (res?.revokedFrom)
+			parts.push(`Revoked lease from client ${res.revokedFrom}.`);
+		parts.push('Use browser_snapshot to see the page content.');
+		response.addTextResult(parts.join(' '));
 	},
 });
 
@@ -113,7 +115,11 @@ const releaseTab = defineTool({
 	},
 	handle: async (context, params, response) => {
 		const res = await relaySend(context, 'Earthling.releaseTab', { tabId: params.tabId });
-		response.addTextResult(res?.released ? `Released tab ${params.tabId}.` : `Tab ${params.tabId} was not held by you.`);
+		if (!res?.released) {
+			response.addTextResult(`Tab ${params.tabId} was not held by you.`);
+			return;
+		}
+		response.addTextResult(`Released tab ${params.tabId}.${res.detached ? ' (CDP debugger detached.)' : ''}`);
 	},
 });
 

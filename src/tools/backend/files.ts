@@ -16,6 +16,7 @@
 
 import { z } from '../../mcpBundle';
 import { defineTabTool } from './tool';
+import { withActionBudget } from './utils';
 
 export const uploadFile = defineTabTool({
   capability: 'core',
@@ -43,10 +44,10 @@ export const uploadFile = defineTabTool({
     response.addCode(`await fileChooser.setFiles(${JSON.stringify(params.paths)})`);
 
     tab.clearModalState(modalState);
-    await tab.waitForCompletion(async () => {
+    await withActionBudget('browser_file_upload', () => tab.waitForCompletion(async () => {
       if (params.paths)
         await modalState.fileChooser.setFiles(params.paths);
-    });
+    }));
   },
 
   clearsModalState: 'fileChooser',

@@ -18,6 +18,7 @@ import { z } from '../../mcpBundle';
 import { escapeWithQuotes } from '../../utils/isomorphic/stringUtils';
 
 import { defineTabTool } from './tool';
+import { withActionBudget } from './utils';
 
 const fillForm = defineTabTool({
   capability: 'core',
@@ -39,21 +40,23 @@ const fillForm = defineTabTool({
   },
 
   handle: async (tab, params, response) => {
-    for (const field of params.fields) {
-      const { locator, resolved } = await tab.refLocator({ element: field.name, ref: field.ref, selector: field.selector });
-      const locatorSource = `await page.${resolved}`;
-      if (field.type === 'textbox' || field.type === 'slider') {
-        const secret = tab.context.lookupSecret(field.value);
-        await locator.fill(secret.value, tab.actionTimeoutOptions);
-        response.addCode(`${locatorSource}.fill(${secret.code});`);
-      } else if (field.type === 'checkbox' || field.type === 'radio') {
-        await locator.setChecked(field.value === 'true', tab.actionTimeoutOptions);
-        response.addCode(`${locatorSource}.setChecked(${field.value});`);
-      } else if (field.type === 'combobox') {
-        await locator.selectOption({ label: field.value }, tab.actionTimeoutOptions);
-        response.addCode(`${locatorSource}.selectOption(${escapeWithQuotes(field.value)});`);
+    await withActionBudget('browser_fill_form', async () => {
+      for (const field of params.fields) {
+        const { locator, resolved } = await tab.refLocator({ element: field.name, ref: field.ref, selector: field.selector });
+        const locatorSource = `await page.${resolved}`;
+        if (field.type === 'textbox' || field.type === 'slider') {
+          const secret = tab.context.lookupSecret(field.value);
+          await locator.fill(secret.value, tab.actionTimeoutOptions);
+          response.addCode(`${locatorSource}.fill(${secret.code});`);
+        } else if (field.type === 'checkbox' || field.type === 'radio') {
+          await locator.setChecked(field.value === 'true', tab.actionTimeoutOptions);
+          response.addCode(`${locatorSource}.setChecked(${field.value});`);
+        } else if (field.type === 'combobox') {
+          await locator.selectOption({ label: field.value }, tab.actionTimeoutOptions);
+          response.addCode(`${locatorSource}.selectOption(${escapeWithQuotes(field.value)});`);
+        }
       }
-    }
+    }, 60_000);
   },
 });
 

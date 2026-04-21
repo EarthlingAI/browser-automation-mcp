@@ -18,6 +18,7 @@ import { z } from '../../mcpBundle';
 import { formatObject, formatObjectOrVoid } from '../../utils/isomorphic/stringUtils';
 
 import { defineTabTool, defineTool } from './tool';
+import { withActionBudget } from './utils';
 
 const snapshot = defineTool({
   capability: 'core',
@@ -76,12 +77,12 @@ const click = defineTabTool({
     else
       response.addCode(`await page.${resolved}.click(${optionsArg});`);
 
-    await tab.waitForCompletion(async () => {
+    await withActionBudget('browser_click', () => tab.waitForCompletion(async () => {
       if (params.doubleClick)
         await locator.dblclick(options);
       else
         await locator.click(options);
-    });
+    }));
   },
 });
 
@@ -110,9 +111,9 @@ const drag = defineTabTool({
       { ref: params.endRef, selector: params.endSelector, element: params.endElement },
     ]);
 
-    await tab.waitForCompletion(async () => {
+    await withActionBudget('browser_drag', () => tab.waitForCompletion(async () => {
       await start.locator.dragTo(end.locator, tab.actionTimeoutOptions);
-    });
+    }));
 
     response.addCode(`await page.${start.resolved}.dragTo(page.${end.resolved});`);
   },
@@ -134,9 +135,9 @@ const hover = defineTabTool({
     const { locator, resolved } = await tab.refLocator(params);
     response.addCode(`await page.${resolved}.hover();`);
 
-    await tab.waitForCompletion(async () => {
+    await withActionBudget('browser_hover', () => tab.waitForCompletion(async () => {
       await locator.hover(tab.actionTimeoutOptions);
-    });
+    }));
   },
 });
 
@@ -160,9 +161,9 @@ const selectOption = defineTabTool({
     const { locator, resolved } = await tab.refLocator(params);
     response.addCode(`await page.${resolved}.selectOption(${formatObject(params.values)});`);
 
-    await tab.waitForCompletion(async () => {
+    await withActionBudget('browser_select_option', () => tab.waitForCompletion(async () => {
       await locator.selectOption(params.values, tab.actionTimeoutOptions);
-    });
+    }));
   },
 });
 

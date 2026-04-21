@@ -138,8 +138,8 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     const wallTime = Date.now();
     this._consoleLog = new LogFile(this.context, wallTime, 'console', 'Console');
     this._initializedPromise = this._initialize();
-    this.actionTimeoutOptions = { timeout: context.config.timeouts?.action };
-    this.navigationTimeoutOptions = { timeout: context.config.timeouts?.navigation };
+    this.actionTimeoutOptions = { timeout: context.config.timeouts?.action ?? 30_000 };
+    this.navigationTimeoutOptions = { timeout: context.config.timeouts?.navigation ?? 30_000 };
     this.expectTimeoutOptions = { timeout: context.config.timeouts?.expect };
   }
 

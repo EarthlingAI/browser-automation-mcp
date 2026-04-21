@@ -29,6 +29,24 @@ import type { Command } from '../../utilsBundle';
 import type { ClientInfo } from '../utils/mcp/server';
 import type * as playwright from 'playwright-core';
 
+/**
+ * Belt-and-braces cap on Browser.close() during backend disposal. A wedged
+ * CDP WS teardown (daemon gone, extension SW dying mid-handshake) must not
+ * freeze the disposed-callback — the server-level DISPOSE_BUDGET_MS would
+ * fire anyway, but capping here prevents unbounded pending promises from
+ * accumulating across successive tool calls.
+ */
+const CLOSE_BUDGET_MS = 3_000;
+
+async function boundedClose(promise: Promise<void> | undefined): Promise<void> {
+  if (!promise)
+    return;
+  await Promise.race([
+    promise.catch(() => {}),
+    new Promise<void>(r => setTimeout(r, CLOSE_BUDGET_MS)),
+  ]);
+}
+
 const version = require('../../../package.json').version;
 
 export function decorateMCPCommand(command: Command) {
@@ -117,7 +135,7 @@ export function decorateMCPCommand(command: Command) {
               // this client's leases. The next tool call re-creates the
               // backend with a fresh connection that leases the correct tab.
               const browserContext = (backend as BrowserBackend).browserContext;
-              await browserContext.browser()?.close().catch(() => {});
+              await boundedClose(browserContext.browser()?.close());
             }
           };
           await mcpServer.start(serverBackendFactory, config.server);
@@ -149,8 +167,8 @@ export function decorateMCPCommand(command: Command) {
             testDebug('close browser');
             sharedBrowser = undefined;
             const browserContext = (backend as BrowserBackend).browserContext;
-            await browserContext.close().catch(() => { });
-            await browserContext.browser()!.close().catch(() => { });
+            await boundedClose(browserContext.close());
+            await boundedClose(browserContext.browser()?.close());
           }
         };
         await mcpServer.start(factory, config.server);

@@ -29,8 +29,24 @@ export type Lease = {
   claimedAt: number;
 };
 
+export type PendingClaim = {
+  tabId: number;
+  newOwner: string;
+  oldOwner: string | null;
+  expiresAt: number;
+};
+
+// Strictly greater than the extension's switchToTab ACK timeout (10s) so a
+// slow-but-successful ACK cannot race the expiry sweep and land on an already-
+// swept pending — commitPending would silently set a lease with no reservation.
+const PENDING_EXPIRY_MS = 15_000;
+
 export class LeaseTable {
   private _byTab = new Map<number, Lease>();
+  // Pending claims are deliberately hidden from ownerOf/all readers — during
+  // a two-phase force-switch the tab must appear busy (held by oldOwner) until
+  // the commit lands, so a concurrent list_all_tabs never sees it as [free].
+  private _pendingByTab = new Map<number, PendingClaim>();
 
   all(): Lease[] {
     return Array.from(this._byTab.values());
@@ -38,6 +54,63 @@ export class LeaseTable {
 
   ownerOf(tabId: number): Lease | undefined {
     return this._byTab.get(tabId);
+  }
+
+  /**
+   * Reserve a pending claim on `tabId`. Does not mutate committed leases.
+   * Sweeps every expired pending first so stranded entries cannot block peers.
+   */
+  reservePending(tabId: number, newOwner: string, oldOwner: string | null): PendingClaim {
+    this.sweepExpiredPending();
+    const existing = this._pendingByTab.get(tabId);
+    if (existing)
+      throw new Error(`Tab ${tabId} already has an in-flight switch reservation. Wait 1–2 seconds and retry, or call browser_list_all_tabs to re-sync.`);
+    const pending: PendingClaim = { tabId, newOwner, oldOwner, expiresAt: Date.now() + PENDING_EXPIRY_MS };
+    this._pendingByTab.set(tabId, pending);
+    return pending;
+  }
+
+  commitPending(tabId: number): Lease | null {
+    const pending = this._pendingByTab.get(tabId);
+    if (!pending)
+      return null;
+    this._pendingByTab.delete(tabId);
+    const lease: Lease = { tabId, ownerClientId: pending.newOwner, claimedAt: Date.now() };
+    this._byTab.set(tabId, lease);
+    return lease;
+  }
+
+  cancelPending(tabId: number): void {
+    this._pendingByTab.delete(tabId);
+  }
+
+  hasPending(tabId: number): boolean {
+    return this._pendingByTab.has(tabId);
+  }
+
+  /** Drop every pending claim owned by `clientId`. Called on client WS close. */
+  cancelPendingFor(clientId: string): number[] {
+    const cancelled: number[] = [];
+    for (const [tabId, pending] of this._pendingByTab) {
+      if (pending.newOwner === clientId) {
+        this._pendingByTab.delete(tabId);
+        cancelled.push(tabId);
+      }
+    }
+    return cancelled;
+  }
+
+  /** Drop every pending claim past its expiresAt. Returns the cancelled tab ids. */
+  sweepExpiredPending(): number[] {
+    const now = Date.now();
+    const cancelled: number[] = [];
+    for (const [tabId, pending] of this._pendingByTab) {
+      if (pending.expiresAt <= now) {
+        this._pendingByTab.delete(tabId);
+        cancelled.push(tabId);
+      }
+    }
+    return cancelled;
   }
 
   /**
