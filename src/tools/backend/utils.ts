@@ -53,6 +53,21 @@ export async function withTimeoutMarker<T>(
 }
 
 /**
+ * Read a page's title without letting a mid-navigation rejection poison the
+ * tool response. Playwright's `page.title()` throws "Execution context was
+ * destroyed, most likely because of a navigation." while a target is
+ * navigating; a single helper keeps the fallback chain consistent across
+ * serializers (cached → URL → sentinel).
+ */
+export async function safeTitle(page: { title(): Promise<string>; url(): string }, cachedTitle?: string): Promise<string> {
+  try {
+    return await page.title();
+  } catch {
+    return cachedTitle || page.url() || '<navigating>';
+  }
+}
+
+/**
  * Fire a CDP detach without letting it stall teardown. Playwright's
  * CDPSession.detach() can hang indefinitely (neither resolve nor reject) when
  * the session's underlying target has been swapped out from under it — e.g.

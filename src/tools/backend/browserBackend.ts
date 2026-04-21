@@ -226,7 +226,7 @@ export class BrowserBackend implements ServerBackend {
                 () => retryResponse.serialize(),
                 MAX_TOOL_WAIT_MS,
                 () => ({
-                  content: [{ type: 'text' as const, text: `### Error\nResponse serialization timed out after ${MAX_TOOL_WAIT_MS}ms.` }],
+                  content: [{ type: 'text' as const, text: `### Error\nResponse serialization timed out after ${MAX_TOOL_WAIT_MS}ms (post-reconnect retry).` }],
                   isError: true,
                 }),
             );

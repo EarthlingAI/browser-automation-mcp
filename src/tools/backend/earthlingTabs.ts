@@ -68,7 +68,9 @@ const listAllTabs = defineTool({
 			if (t.lease === 'you') leaseLabel = '[leased-by-you]';
 			else if (t.lease === 'busy') leaseLabel = `[busy: ${t.ownerId}]`;
 			const f = t.active ? ' [active]' : '';
-			lines.push(`- tabId=${t.tabId} ${leaseLabel}${f}: [${t.title}](${t.url})`);
+			// Defuse relay responses where the extension returned undefined/empty title.
+			const title = (t.title && String(t.title)) || '<unknown>';
+			lines.push(`- tabId=${t.tabId} ${leaseLabel}${f}: [${title}](${t.url})`);
 		}
 		response.addTextResult(lines.join('\n'));
 	},

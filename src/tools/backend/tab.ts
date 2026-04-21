@@ -23,7 +23,7 @@ import { debug } from '../../utilsBundle';
 
 import { eventsHelper } from '../../server/utils/eventsHelper';
 import { disposeAll } from '../../server/utils/disposable';
-import { waitForCompletion, eventWaiter } from './utils';
+import { waitForCompletion, eventWaiter, safeTitle } from './utils';
 import { raceAgainstDeadline } from '../../utils/isomorphic/timeoutRunner';
 import { monotonicTime } from '../../utils/isomorphic/time';
 import { LogFile } from './logFile';
@@ -270,9 +270,15 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   async headerSnapshot(): Promise<TabHeader & { changed: boolean }> {
     let title: string | undefined;
     await this._raceAgainstModalStates(async () => {
-      // page.title() can genuinely hang on a wedged page; cap at 1s.
-      const outcome = await raceAgainstDeadline(() => this.page.title(), monotonicTime() + 1000);
-      title = outcome.timedOut ? '' : outcome.result;
+      // page.title() can hang on a wedged page AND throw "Execution context
+      // was destroyed" synchronously during navigation. Deadline guards the
+      // hang; safeTitle guards the throw, falling back to the last successful
+      // title, then the URL, then '<navigating>'.
+      const outcome = await raceAgainstDeadline(
+          () => safeTitle(this.page, this._lastHeader.title),
+          monotonicTime() + 1000,
+      );
+      title = outcome.timedOut ? (this._lastHeader.title || '') : outcome.result;
     });
     const newHeader: TabHeader = {
       title: title ?? '',

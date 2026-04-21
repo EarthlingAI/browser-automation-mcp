@@ -95,9 +95,10 @@ The daemon distinguishes between browser-level and tab-scoped CDP commands:
 - **Browser-level commands** (no `sessionId`) — handled locally by `_handleTopLevel` or returned as empty success `{}`. Never forwarded to the extension.
 - **Tab-scoped commands** (with virtual `sessionId`) — forwarded to the extension via `sendToExtensionForClient` with per-client command-id rewriting.
 
-Tab switching uses **backend disposal + reconnection**: `browser_switch_tab` updates leases and calls the extension, then `response.setClose()` disposes the Playwright backend. The next tool call creates a fresh `connectOverCDP` connection, and `_handleSetAutoAttach` selects the target tab with a two-step chain:
-1. `_lastSwitchedTab` hint (server-level Map surviving client reconnections).
-2. Auto-open a fresh blank tab when no hint exists (first-ever activation of a session).
+Tab switching uses **backend disposal + reconnection**: `browser_switch_tab` updates leases and calls the extension, then `response.setClose()` disposes the Playwright backend. The next tool call creates a fresh `connectOverCDP` connection, and `_handleSetAutoAttach` selects the target tab with a three-step chain:
+1. `_lastSwitchedTab` hint (server-level Map surviving client reconnections) AND the hint tab is visible in the live `listTabs()` snapshot.
+2. Hint present but missing from `listTabs()` — retry via a direct extension `attachToTab` (the live snapshot can be stale mid-navigation).
+3. Auto-open a fresh blank tab when no hint exists or direct-attach failed.
 
 There is no silent-claim fallback — listing tabs or connecting does not acquire a tab. The client must call `browser_switch_tab` explicitly.
 

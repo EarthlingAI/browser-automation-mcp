@@ -136,8 +136,12 @@ export function createServer(name: string, version: string, factory: ServerBacke
       const backend = await backendPromise;
       const toolResult = await backend.callTool(request.params.name, request.params.arguments || {}, progress);
       if (toolResult.isClose) {
-        const disposePromise = backendManager.disposeBackend(backend).catch(serverDebug);
-        const outcome = await withTimeoutMarker('disposeBackend', () => disposePromise, DISPOSE_BUDGET_MS, () => undefined);
+        const outcome = await withTimeoutMarker(
+            'disposeBackend',
+            () => backendManager.disposeBackend(backend).catch(serverDebug),
+            DISPOSE_BUDGET_MS,
+            () => undefined,
+        );
         if (outcome.timedOut) {
           // Fire-and-forget: the in-flight dispose will eventually settle on
           // its own; we just won't block the tool response on it. The backend

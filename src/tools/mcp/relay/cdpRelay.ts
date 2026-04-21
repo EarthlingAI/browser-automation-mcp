@@ -931,8 +931,10 @@ class ClientConnection {
     if (tabId === null) {
       const tabs = await this._relay.listTabs();
       debugLogger(`[${this.id}] setAutoAttach: finding tab (${tabs.length} browser tabs, leases=${this._relay.leases().all().length})`);
-      // Priority 1: Tab that this client last switched to (survives dispose→reconnect).
       const hintTab = this._relay.consumeLastSwitchedTab(this.id);
+      let hintMissed = false;
+
+      // Priority 1: hint present AND visible in live tab list.
       if (hintTab !== undefined && tabs.some((t: any) => t.tabId === hintTab)) {
         const claim = this._relay.leases().claim(hintTab, this.id, false);
         if (claim.ok) {
@@ -940,15 +942,42 @@ class ClientConnection {
           debugLogger(`[${this.id}] setAutoAttach: leased hint tab ${tabId}`);
         }
       }
-      // Priority 2: No hint — open a new blank tab for this client.
+
+      // Priority 2: hint present but missing from live list. Try a direct
+      // extension attach — listTabs() may have returned a stale snapshot
+      // mid-navigation. Closes the switch_tab target-creation race where a
+      // transient listTabs() miss caused the client to silently land on a
+      // freshly-spawned about:blank instead of the requested target.
+      if (tabId === null && hintTab !== undefined) {
+        try {
+          const direct = await this._relay.callExtensionDirect('attachToTab', { tabId: hintTab });
+          if (direct && direct.targetInfo) {
+            const claim = this._relay.leases().claim(hintTab, this.id, false);
+            if (claim.ok) {
+              tabId = hintTab;
+              debugLogger(`[${this.id}] setAutoAttach: direct-attached hint tab ${tabId} (missed by listTabs)`);
+              daemonJsonl('session.autoAttach.hint.directAttach', { clientId: this.id, tabId: hintTab });
+            }
+          }
+        } catch (e) {
+          hintMissed = true;
+          daemonJsonl('session.autoAttach.hint.missed', { clientId: this.id, tabId: hintTab, detail: { error: String((e as any)?.message || e) } });
+        }
+        if (tabId === null)
+          hintMissed = true;
+      }
+
+      // Priority 3: no hint (or hint recovery failed) — open a fresh blank.
       if (tabId === null) {
-        debugLogger(`[${this.id}] setAutoAttach: no free tab — auto-opening blank tab`);
+        debugLogger(`[${this.id}] setAutoAttach: opening blank tab (hintMissed=${hintMissed})`);
         const newTab = await this._relay.callExtensionDirect('openTab', { url: 'about:blank' });
         tabId = newTab.tabId as number;
         const claim = this._relay.leases().claim(tabId, this.id, false);
         if (!claim.ok)
           throw new Error(`Failed to claim newly opened tab ${tabId}`);
         debugLogger(`[${this.id}] setAutoAttach: opened and leased blank tab ${tabId}`);
+        if (hintMissed)
+          daemonJsonl('session.autoAttach.hint.fallbackBlank', { clientId: this.id, tabId, detail: { originalHint: hintTab } });
       }
       this._primaryTab = tabId;
     }
