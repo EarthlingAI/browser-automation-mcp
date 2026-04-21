@@ -19,6 +19,15 @@ import { Response } from './response';
 import { SessionLog } from './sessionLog';
 import { debug } from '../../utilsBundle';
 import { mcpJsonl } from '../mcp/relay/debugJsonl';
+import { raceAgainstDeadline } from '../../utils/isomorphic/timeoutRunner';
+import { monotonicTime } from '../../utils/isomorphic/time';
+
+/**
+ * Total wall-clock budget for a single transparent reconnect (across all
+ * retry attempts). Caps worst-case stall so one pathological extension
+ * never freezes the MCP dispatcher longer than this.
+ */
+const RECONNECT_TOTAL_BUDGET_MS = 30_000;
 
 import type { ContextConfig } from './context';
 import type * as playwright from 'playwright-core';
@@ -89,30 +98,53 @@ export class BrowserBackend implements ServerBackend {
     }
     const clientId = `mcp-${process.pid}`;
     this._reconnectInFlight = (async () => {
-      mcpJsonl('mcp.backend.reconnect.start', { clientId });
+      mcpJsonl('mcp.backend.reconnect.start', { clientId, detail: { budgetMs: RECONNECT_TOTAL_BUDGET_MS } });
       const attempts = 3;
+      const deadline = monotonicTime() + RECONNECT_TOTAL_BUDGET_MS;
       let lastError: any;
       for (let i = 0; i < attempts; i++) {
-        try {
-          await this._context?.dispose().catch(() => {});
-          await this.browserContext.browser()?.close().catch(() => {});
-          const fresh = await this._reconnectFactory!();
-          const freshCtx = fresh.contexts()[0];
-          if (!freshCtx)
-            throw new Error('Reconnected browser has no default context');
-          this.browserContext = freshCtx;
-          this._context = new Context(this.browserContext, {
-            config: this._config,
-            sessionLog: this._sessionLog,
-            cwd: this._clientInfo?.cwd ?? process.cwd(),
-          });
+        if (monotonicTime() >= deadline) {
+          mcpJsonl('mcp.backend.reconnect.budget_exhausted', { clientId, detail: { attempt: i + 1 } });
+          throw new Error(`Reconnect exceeded ${RECONNECT_TOTAL_BUDGET_MS}ms total budget after ${i} attempts`);
+        }
+        const attemptOutcome = await raceAgainstDeadline(async () => {
+          try {
+            await this._context?.dispose().catch(() => {});
+            await this.browserContext.browser()?.close().catch(() => {});
+            const fresh = await this._reconnectFactory!();
+            const freshCtx = fresh.contexts()[0];
+            if (!freshCtx)
+              throw new Error('Reconnected browser has no default context');
+            this.browserContext = freshCtx;
+            this._context = new Context(this.browserContext, {
+              config: this._config,
+              sessionLog: this._sessionLog,
+              cwd: this._clientInfo?.cwd ?? process.cwd(),
+            });
+            return { ok: true as const };
+          } catch (e: any) {
+            return { ok: false as const, error: e };
+          }
+        }, deadline);
+        if (attemptOutcome.timedOut) {
+          mcpJsonl('mcp.backend.reconnect.budget_exhausted', { clientId, detail: { attempt: i + 1 } });
+          throw new Error(`Reconnect exceeded ${RECONNECT_TOTAL_BUDGET_MS}ms total budget after ${i + 1} attempts`);
+        }
+        if (attemptOutcome.result.ok) {
           mcpJsonl('mcp.backend.reconnect.success', { clientId, detail: { attempt: i + 1 } });
           return;
-        } catch (e: any) {
-          lastError = e;
-          mcpJsonl('mcp.backend.reconnect.fail', { clientId, detail: { attempt: i + 1, error: String(e?.message || e) } });
-          if (i < attempts - 1)
-            await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i))); // 1s, 2s
+        }
+        const e = attemptOutcome.result.error;
+        lastError = e;
+        mcpJsonl('mcp.backend.reconnect.fail', { clientId, detail: { attempt: i + 1, error: String(e?.message || e) } });
+        if (i < attempts - 1) {
+          const backoff = 1000 * Math.pow(2, i); // 1s, 2s
+          const remaining = deadline - monotonicTime();
+          if (remaining <= 0) {
+            mcpJsonl('mcp.backend.reconnect.budget_exhausted', { clientId, detail: { attempt: i + 1, phase: 'backoff' } });
+            throw new Error(`Reconnect exceeded ${RECONNECT_TOTAL_BUDGET_MS}ms total budget after ${i + 1} attempts`);
+          }
+          await new Promise(r => setTimeout(r, Math.min(backoff, remaining)));
         }
       }
       throw new Error(`Failed to reconnect after ${attempts} attempts: ${String(lastError?.message || lastError)}`);

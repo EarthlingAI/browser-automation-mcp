@@ -247,10 +247,7 @@ export class CDPRelayServer {
       debugLogger(`Extension reconnected — probing for surviving tabs (leases=${leaseCount}, virtualSessions=${virtualCount})`);
       daemonJsonl('ext.reconnect.probe.start', { detail: { leases: leaseCount, virtualSessions: virtualCount } });
       try {
-        const tabs: any[] = await Promise.race([
-          conn.send('listBrowserTabs', {}),
-          new Promise<never>((_, rej) => setTimeout(() => rej(new Error('probe timeout')), 5000)),
-        ]);
+        const tabs: any[] = await conn.send('listBrowserTabs', {}, 2_000);
         const liveTabIds = new Set(tabs.map((t: any) => t.tabId));
         const leasedTabIds = this._leases.all().map(l => l.tabId);
         const surviving = leasedTabIds.filter(id => liveTabIds.has(id));
@@ -266,7 +263,7 @@ export class CDPRelayServer {
           // Re-attach debugger to surviving tabs and re-bind sessions.
           for (const tabId of surviving) {
             try {
-              const { sessionId: extSid } = await conn.send('attachToTab', { tabId });
+              const { sessionId: extSid } = await conn.send('attachToTab', { tabId }, 5_000);
               const virtualId = this._tabVirtualSession.get(tabId);
               if (extSid && virtualId)
                 this.bindExtSession(extSid, virtualId, tabId);
@@ -514,7 +511,7 @@ export class CDPRelayServer {
   async listTabs(): Promise<TabInfo[]> {
     if (!this._extension)
       throw new Error('Extension not connected');
-    return await this._extension.send('listBrowserTabs', {});
+    return await this._extension.send('listBrowserTabs', {}, 2_000);
   }
 
   virtualSessionForTab(tabId: number): string {
@@ -1000,9 +997,20 @@ type ExtensionResponse = {
   error?: string;
 };
 
+/**
+ * Per-method timeout budgets (ms) for ExtensionConnection.send(). These are
+ * the daemon→extension WebSocket calls; Earthling.* pseudo-CDP calls from
+ * MCP clients (earthlingTabs.ts) go through relaySend() and are capped
+ * separately on the client side with withTimeoutMarker.
+ *
+ *   listBrowserTabs     : 2_000   (local list in extension)
+ *   attachToTab         : 5_000   (debugger.attach can block briefly)
+ *   <forwardCDPCommand> : per-call (not routed through send())
+ *   default             : 10_000
+ */
 export class ExtensionConnection {
   private readonly _ws: WebSocket;
-  private readonly _callbacks = new Map<number, { resolve: (o: any) => void; reject: (e: Error) => void; error: Error }>();
+  private readonly _callbacks = new Map<number, { resolve: (o: any) => void; reject: (e: Error) => void; error: Error; timer?: NodeJS.Timeout }>();
   private _lastId = 0;
 
   onmessage?: <M extends keyof ExtensionEvents>(method: M, params: ExtensionEvents[M]['params']) => void;
@@ -1019,15 +1027,23 @@ export class ExtensionConnection {
     ws.on('error', () => this._dispose());
   }
 
-  /** Typed send with locally-tracked response. */
-  async send<M extends keyof ExtensionCommand>(method: M, params: ExtensionCommand[M]['params']): Promise<any> {
+  /** Typed send with locally-tracked response and per-method timeout budget. */
+  async send<M extends keyof ExtensionCommand>(method: M, params: ExtensionCommand[M]['params'], timeoutMs: number = 10_000): Promise<any> {
     if (this._ws.readyState !== ws.OPEN)
       throw new Error(`Unexpected WebSocket state: ${this._ws.readyState}`);
     const id = ++this._lastId + 1_000_000_000; // separate id space from relay-forwarded commands
     this._ws.send(JSON.stringify({ id, method, params }));
     const error = new Error(`Protocol error: ${method}`);
     return new Promise((resolve, reject) => {
-      this._callbacks.set(id, { resolve, reject, error });
+      const timer = setTimeout(() => {
+        if (this._callbacks.has(id)) {
+          this._callbacks.delete(id);
+          reject(new Error(`Relay CDP command ${method} timed out after ${timeoutMs}ms`));
+        }
+      }, timeoutMs);
+      if (typeof (timer as any).unref === 'function')
+        (timer as any).unref();
+      this._callbacks.set(id, { resolve, reject, error, timer });
     });
   }
 
@@ -1055,6 +1071,8 @@ export class ExtensionConnection {
       if (this._callbacks.has(obj.id)) {
         const cb = this._callbacks.get(obj.id)!;
         this._callbacks.delete(obj.id);
+        if (cb.timer)
+          clearTimeout(cb.timer);
         if (obj.error) {
           cb.error.message = obj.error;
           cb.reject(cb.error);
@@ -1070,8 +1088,11 @@ export class ExtensionConnection {
   }
 
   private _dispose() {
-    for (const cb of this._callbacks.values())
+    for (const cb of this._callbacks.values()) {
+      if (cb.timer)
+        clearTimeout(cb.timer);
       cb.reject(new Error('WebSocket closed'));
+    }
     this._callbacks.clear();
   }
 }

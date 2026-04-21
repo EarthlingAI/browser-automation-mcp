@@ -1057,7 +1057,15 @@ export class Frame extends SdkObject<FrameEventMap> {
     const continuePolling = Symbol('continuePolling');
     timeouts = [0, ...timeouts];
     let timeoutIndex = 0;
+    // Earthling Phase 1: hard upper bound on retry attempts. The outer
+    // ProgressController deadline bounds wall-clock time, but in debug mode
+    // (timeoutSettings.ts:66) that deadline can be 0 (= infinite), which
+    // turned this into an unbounded loop on pathological pages.
+    const MAX_RETRY_ATTEMPTS = 20;
+    let attempts = 0;
     while (true) {
+      if (attempts++ >= MAX_RETRY_ATTEMPTS)
+        throw new TimeoutError(`retryWithProgressAndTimeouts exhausted after ${MAX_RETRY_ATTEMPTS} attempts`);
       const timeout = timeouts[Math.min(timeoutIndex++, timeouts.length - 1)];
       if (timeout) {
         // Make sure we react immediately upon page close or frame detach.

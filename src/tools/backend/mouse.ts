@@ -15,6 +15,7 @@
  */
 
 import { z } from '../../mcpBundle';
+import { assertWithinMaxTimeout } from './utils';
 import { formatObjectOrVoid } from '../../utils/isomorphic/stringUtils';
 import { defineTabTool } from './tool';
 
@@ -125,6 +126,7 @@ const mouseClick = defineTabTool({
 
   handle: async (tab, params, response) => {
     response.setIncludeSnapshot();
+    assertWithinMaxTimeout('browser_mouse_click_xy.delay', params.delay);
 
     const options = {
       button: params.button,

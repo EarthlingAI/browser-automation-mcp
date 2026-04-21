@@ -17,6 +17,54 @@
 import type * as playwright from 'playwright-core';
 import type { Tab } from './tab';
 
+import { raceAgainstDeadline } from '../../utils/isomorphic/timeoutRunner';
+import { monotonicTime } from '../../utils/isomorphic/time';
+
+/**
+ * Maximum wait/timeout any tool argument may request. Past this, agents
+ * should use polling patterns (repeated list-then-check calls).
+ */
+export const MAX_TOOL_WAIT_MS = 120_000;
+
+/**
+ * Race an async operation against a timeout budget, resolving to a
+ * `{ result, timedOut }` pair. On timeout, returns the supplied fallback
+ * (or the result of the fallback factory) in the `result` slot. Never
+ * throws for timeout.
+ *
+ * Primary use-cases in this codebase:
+ *   - post-action snapshot capture with a sentinel on timeout
+ *   - relay-layer `Earthling.*` CDP calls with per-method budgets
+ *   - page.title()/headerSnapshot races against wedged pages
+ */
+export async function withTimeoutMarker<T>(
+  label: string,
+  fn: () => Promise<T>,
+  timeoutMs: number,
+  fallback: T | (() => T),
+): Promise<{ result: T, timedOut: boolean }> {
+  void label; // label is preserved in signature for logging at call sites
+  const outcome = await raceAgainstDeadline<T>(fn, monotonicTime() + timeoutMs);
+  if (outcome.timedOut) {
+    const value = typeof fallback === 'function' ? (fallback as () => T)() : fallback;
+    return { result: value, timedOut: true };
+  }
+  return { result: outcome.result, timedOut: false };
+}
+
+/**
+ * Validate a caller-supplied timeout against MAX_TOOL_WAIT_MS. Returns the
+ * value (unchanged) if within cap. Throws with a clear message pointing
+ * agents at the polling pattern if over cap. Pass undefined to opt out.
+ */
+export function assertWithinMaxTimeout(label: string, ms: number | undefined, max: number = MAX_TOOL_WAIT_MS): number | undefined {
+  if (ms === undefined)
+    return undefined;
+  if (ms > max)
+    throw new Error(`${label} timeout ${ms}ms exceeds maximum of ${max}ms. Use a polling pattern (repeated list-then-check tool calls) for long waits.`);
+  return ms;
+}
+
 export async function waitForCompletion<R>(tab: Tab, callback: () => Promise<R>): Promise<R> {
   const requests: playwright.Request[] = [];
 

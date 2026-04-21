@@ -24,6 +24,8 @@ import { debug } from '../../utilsBundle';
 import { eventsHelper } from '../../server/utils/eventsHelper';
 import { disposeAll } from '../../server/utils/disposable';
 import { waitForCompletion, eventWaiter } from './utils';
+import { raceAgainstDeadline } from '../../utils/isomorphic/timeoutRunner';
+import { monotonicTime } from '../../utils/isomorphic/time';
 import { LogFile } from './logFile';
 import { ModalState } from './tool';
 import { handleDialog } from './dialogs';
@@ -268,7 +270,9 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   async headerSnapshot(): Promise<TabHeader & { changed: boolean }> {
     let title: string | undefined;
     await this._raceAgainstModalStates(async () => {
-      title = await this.page.title();
+      // page.title() can genuinely hang on a wedged page; cap at 1s.
+      const outcome = await raceAgainstDeadline(() => this.page.title(), monotonicTime() + 1000);
+      title = outcome.timedOut ? '' : outcome.result;
     });
     const newHeader: TabHeader = {
       title: title ?? '',
@@ -375,8 +379,23 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   async captureSnapshot(selector: string | undefined, relativeTo: string | undefined): Promise<TabSnapshot> {
     await this._initializedPromise;
     let tabSnapshot: TabSnapshot | undefined;
+    // Inner budget is slightly under Response._build's outer SNAPSHOT_TIMEOUT_MS
+    // (3000ms) so the inner layer rejects first with a clean message rather
+    // than leaving the outer to catch a raw TimeoutError.
+    const INNER_SNAPSHOT_TIMEOUT_MS = 2500;
     const modalStates = await this._raceAgainstModalStates(async () => {
-      const snapshot: { full: string, incremental?: string } = selector ? await this.page.locator(selector).snapshotForAI() : await this.page.snapshotForAI({ track: 'response' });
+      const snapOutcome = await raceAgainstDeadline(
+          () => selector ? this.page.locator(selector).snapshotForAI() : this.page.snapshotForAI({ track: 'response' }),
+          monotonicTime() + INNER_SNAPSHOT_TIMEOUT_MS,
+      );
+      if (snapOutcome.timedOut) {
+        // Leave tabSnapshot undefined; the outer Response._build renders the
+        // "[snapshot unavailable]" sentinel. _needsFullSnapshot is set below
+        // so the next capture sends a full snapshot, not a diff.
+        debug('pw:tools:error')(`page.snapshotForAI timed out after ${INNER_SNAPSHOT_TIMEOUT_MS}ms`);
+        return;
+      }
+      const snapshot = snapOutcome.result as { full: string, incremental?: string };
       tabSnapshot = {
         ariaSnapshot: truncateSnapshot(snapshot.full),
         ariaSnapshotDiff: this._needsFullSnapshot ? undefined : (snapshot.incremental ? truncateSnapshot(snapshot.incremental) : undefined),

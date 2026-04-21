@@ -20,12 +20,24 @@ import path from 'path';
 import { debug } from '../../utilsBundle';
 import { renderModalStates, shouldIncludeMessage } from './tab';
 import { scaleImageToFitMessage } from './screenshot';
+import { raceAgainstDeadline } from '../../utils/isomorphic/timeoutRunner';
+import { monotonicTime } from '../../utils/isomorphic/time';
 
-import type { TabHeader } from './tab';
+import type { Tab, TabHeader } from './tab';
 import type { CallToolResult, ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
 import type { Context, FilenameTemplate } from './context';
 
 export const requestDebug = debug('pw:mcp:request');
+
+/**
+ * Post-action snapshot budget. The outer Response._build budget is the
+ * belt-and-braces ceiling; the inner Tab.captureSnapshot race uses a slightly
+ * shorter budget (SNAPSHOT_TIMEOUT_MS - 500) so the inner layer rejects first
+ * with a clean message on a wedged page.
+ */
+const SNAPSHOT_TIMEOUT_MS = 3000;
+const HEADER_TIMEOUT_MS = 1500;
+const INLINE_SNAPSHOT_MAX_BYTES = 100_000;
 
 type ResolvedFile = {
   fileName: string;
@@ -176,6 +188,42 @@ export class Response {
     };
   }
 
+  /**
+   * Sentinel placeholder when the post-action snapshot times out. The tool's
+   * primary result still returns; this tells the agent the page state is
+   * stale without blocking the whole response.
+   */
+  private _buildSnapshotUnavailableMarker() {
+    return {
+      ariaSnapshot: '[snapshot unavailable — page unresponsive, call browser_snapshot to retry]',
+      ariaSnapshotDiff: undefined,
+      modalStates: [],
+      events: [],
+      consoleLink: undefined,
+    };
+  }
+
+  /**
+   * Race the current tab's headerSnapshot() against a short budget. On
+   * timeout, return a placeholder header so the response still renders a
+   * Page section with the cached URL.
+   */
+  private async _buildCurrentHeader(tab: Tab): Promise<TabHeader & { changed: boolean }> {
+    const outcome = await raceAgainstDeadline<TabHeader & { changed: boolean }>(
+        () => tab.headerSnapshot(),
+        monotonicTime() + HEADER_TIMEOUT_MS,
+    );
+    if (outcome.timedOut) {
+      requestDebug(`headerSnapshot: timed out after ${HEADER_TIMEOUT_MS}ms`);
+      let url = 'about:unknown';
+      try {
+        url = tab.page?.url?.() ?? url;
+      } catch {}
+      return { title: '(unavailable)', url, current: true, console: { total: 0, errors: 0, warnings: 0 }, changed: false };
+    }
+    return outcome.result;
+  }
+
   private async _build(): Promise<Section[]> {
     const sections: Section[] = [];
     const addSection = (title: string, content: string[], codeframe?: 'yaml' | 'js') => {
@@ -197,15 +245,35 @@ export class Response {
     let tabSnapshot: any;
     if (!this._isClose) {
       const snapshotStart = Date.now();
+      const currentTab = this._context.currentTab();
       requestDebug(`captureSnapshot: starting (tool=${this.toolName}, includeSnapshot=${this._includeSnapshot})`);
-      tabSnapshot = this._context.currentTab() ? await this._context.currentTabOrDie().captureSnapshot(this._includeSnapshotSelector, this._clientWorkspace) : undefined;
-      requestDebug(`captureSnapshot: completed in ${Date.now() - snapshotStart}ms`);
-      const tabHeaders = await Promise.all(this._context.tabs().map(tab => tab.headerSnapshot()));
-      if (this._includeSnapshot !== 'none' || tabHeaders.some(header => header.changed)) {
-        if (tabHeaders.length !== 1)
-          addSection('Open tabs', renderTabsMarkdown(tabHeaders));
-        addSection('Page', renderTabMarkdown(tabHeaders.find(h => h.current) ?? tabHeaders[0]));
+      if (currentTab) {
+        // Opportunistic post-action snapshot: race against a 3s budget. On
+        // timeout we emit a visible sentinel so the agent knows the page
+        // state is stale, and flag the tab so its next snapshot is a full one.
+        const snapOutcome = await raceAgainstDeadline(
+            () => this._context.currentTabOrDie().captureSnapshot(this._includeSnapshotSelector, this._clientWorkspace),
+            monotonicTime() + SNAPSHOT_TIMEOUT_MS,
+        );
+        if (snapOutcome.timedOut) {
+          requestDebug(`captureSnapshot: timed out after ${SNAPSHOT_TIMEOUT_MS}ms`);
+          (currentTab as any)._needsFullSnapshot = true;
+          tabSnapshot = this._buildSnapshotUnavailableMarker();
+        } else {
+          tabSnapshot = snapOutcome.result;
+          requestDebug(`captureSnapshot: completed in ${Date.now() - snapshotStart}ms`);
+        }
+      } else {
+        tabSnapshot = undefined;
       }
+      // Current-tab header only; cross-tab headers are available via
+      // browser_list_all_tabs on demand. One wedged non-current tab no longer
+      // blocks the response.
+      const currentHeader = currentTab
+        ? await this._buildCurrentHeader(currentTab)
+        : undefined;
+      if (currentHeader && (this._includeSnapshot !== 'none' || currentHeader.changed))
+        addSection('Page', renderTabMarkdown(currentHeader));
       if (this._context.tabs().length === 0)
         this._isClose = true;
     }
@@ -217,10 +285,19 @@ export class Response {
     // Handle tab snapshot
     if (tabSnapshot && this._includeSnapshot !== 'none') {
       const snapshot = this._includeSnapshot === 'full' ? tabSnapshot.ariaSnapshot : tabSnapshot.ariaSnapshotDiff ?? tabSnapshot.ariaSnapshot;
-      if (this._context.config.outputMode === 'file' || this._includeSnapshotFileName) {
+      const userRequestedFile = this._context.config.outputMode === 'file' || !!this._includeSnapshotFileName;
+      if (userRequestedFile) {
         const resolvedFile = await this.resolveClientFile({ prefix: 'page', ext: 'yml', suggestedFilename: this._includeSnapshotFileName }, 'Snapshot');
         await fs.promises.writeFile(resolvedFile.fileName, snapshot, 'utf-8');
         addSection('Snapshot', [resolvedFile.printableLink]);
+      } else if (typeof snapshot === 'string' && Buffer.byteLength(snapshot, 'utf8') > INLINE_SNAPSHOT_MAX_BYTES) {
+        // Auto-save oversized inline snapshots to disk and leave a pointer.
+        const sizeKB = Math.round(Buffer.byteLength(snapshot, 'utf8') / 1024);
+        const ts = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
+        const fileTemplate: FilenameTemplate = { prefix: `snapshots/${ts}_${this.toolName}`, ext: 'md' };
+        const resolvedFile = await this.resolveClientFile(fileTemplate, 'Snapshot');
+        await fs.promises.writeFile(resolvedFile.fileName, snapshot, 'utf-8');
+        addSection('Snapshot', [`[snapshot too large (${sizeKB} KB) — saved to ${resolvedFile.relativeName}. Call browser_snapshot with filename= to request a persistent copy.]`]);
       } else {
         addSection('Snapshot', [snapshot], 'yaml');
       }

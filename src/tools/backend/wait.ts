@@ -16,6 +16,7 @@
 
 import { z } from '../../mcpBundle';
 import { defineTool } from './tool';
+import { assertWithinMaxTimeout, MAX_TOOL_WAIT_MS } from './utils';
 
 const wait = defineTool({
   capability: 'core',
@@ -23,9 +24,9 @@ const wait = defineTool({
   schema: {
     name: 'browser_wait_for',
     title: 'Wait for',
-    description: 'Wait for text to appear or disappear or a specified time to pass',
+    description: `Wait for text to appear or disappear or a specified time to pass. Time is capped at ${MAX_TOOL_WAIT_MS / 1000}s — for longer waits, use a polling pattern (repeated list-then-check tool calls).`,
     inputSchema: z.object({
-      time: z.number().optional().describe('The time to wait in seconds'),
+      time: z.number().optional().describe(`The time to wait in seconds (max ${MAX_TOOL_WAIT_MS / 1000})`),
       text: z.string().optional().describe('The text to wait for'),
       textGone: z.string().optional().describe('The text to wait for to disappear'),
     }),
@@ -37,6 +38,7 @@ const wait = defineTool({
       throw new Error('Either time, text or textGone must be provided');
 
     if (params.time) {
+      assertWithinMaxTimeout('browser_wait_for.time', params.time * 1000);
       response.addCode(`await new Promise(f => setTimeout(f, ${params.time!} * 1000));`);
       await new Promise(f => setTimeout(f, Math.min(30000, params.time! * 1000)));
     }

@@ -27,6 +27,8 @@ import { SdkObject } from './instrumentation';
 import * as js from './javascript';
 import { Screenshotter, validateScreenshotOptions } from './screenshotter';
 import { LongStandingScope, assert, renderTitleForCall, trimStringWithEllipsis } from '../utils';
+import { raceAgainstDeadline } from '../utils/isomorphic/timeoutRunner';
+import { monotonicTime } from '../utils/isomorphic/time';
 import { asLocator } from '../utils';
 import { getComparator } from './utils/comparators';
 import { debugLogger } from './utils/debugLogger';
@@ -1047,13 +1049,24 @@ export class InitScript extends DisposableObject {
   }
 }
 
+// Earthling Phase 1: per-iframe snapshot budget. Prevents one pathological
+// iframe (slow CSP worker, infinite loop in extension content script) from
+// blocking its siblings and freezing the parent snapshot.
+const IFRAME_SNAPSHOT_TIMEOUT_MS = 5000;
+
 async function snapshotFrameForAI(progress: Progress, frame: frames.Frame, options: { track?: string, doNotRenderActive?: boolean, info?: SelectorInfo } = {}): Promise<{ full: string[], incremental?: string[] }> {
+  // Earthling Phase 1: race each inner step against the frame's detachment
+  // scope so a frame that detaches mid-snapshot rejects promptly rather
+  // than waiting for the outer ProgressController deadline.
+  const raceWithDetachment = <T>(p: Promise<T>): Promise<T> =>
+    progress.race(LongStandingScope.raceMultiple([frame._detachedScope], p));
+
   // Only await the topmost navigations, inner frames will be empty when racing.
   const snapshot = await frame.retryWithProgressAndTimeouts(progress, [1000, 2000, 4000, 8000], async continuePolling => {
     try {
-      const context = await progress.race(frame._utilityContext());
-      const injectedScript = await progress.race(context.injectedScript());
-      const snapshotOrRetry = await progress.race(injectedScript.evaluate((injected, options) => {
+      const context = await raceWithDetachment(frame._utilityContext());
+      const injectedScript = await raceWithDetachment(context.injectedScript());
+      const snapshotOrRetry = await raceWithDetachment(injectedScript.evaluate((injected, options) => {
         if (options.info) {
           const element = injected.querySelector(options.info.parsed, injected.document, options.info.strict);
           if (!element)
@@ -1082,7 +1095,17 @@ async function snapshotFrameForAI(progress: Progress, frame: frames.Frame, optio
     }
   });
 
-  const childSnapshotPromises = snapshot.iframeRefs.map(ref => snapshotFrameRefForAI(progress, frame, ref, options));
+  // Earthling Phase 1: per-iframe 5s budget; a timed-out iframe becomes an
+  // inline marker instead of blocking the whole snapshot.
+  const childSnapshotPromises = snapshot.iframeRefs.map(async ref => {
+    const outcome = await raceAgainstDeadline<{ full: string[], incremental?: string[] }>(
+        () => snapshotFrameRefForAI(progress, frame, ref, options),
+        monotonicTime() + IFRAME_SNAPSHOT_TIMEOUT_MS,
+    );
+    if (outcome.timedOut)
+      return { full: [`[iframe ref=${ref} unavailable: snapshot timed out after ${IFRAME_SNAPSHOT_TIMEOUT_MS}ms]`], incremental: undefined };
+    return outcome.result;
+  });
   const childSnapshots = await Promise.all(childSnapshotPromises);
 
   const full = [];

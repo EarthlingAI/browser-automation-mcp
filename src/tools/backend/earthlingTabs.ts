@@ -9,8 +9,30 @@
 
 import { z } from '../../mcpBundle';
 import { defineTool } from './tool';
+import { withTimeoutMarker } from './utils';
 
 import type { Tool } from './tool';
+
+/**
+ * Per-method budgets for client→daemon `Earthling.*` pseudo-CDP calls.
+ * Missing keys fall back to 10s. Tuned to the operation's expected cost
+ * (local lookups vs. navigation); any of these timing out signals the
+ * relay or extension is unresponsive.
+ */
+const EARTHLING_TIMEOUTS: Record<string, number> = {
+	'Earthling.listTabsAnnotated': 2_000,
+	'Earthling.switchToTab': 5_000,
+	'Earthling.releaseTab': 2_000,
+	'Earthling.closeTab': 2_000,
+	'Earthling.openTab': 10_000,
+	'Earthling.whoAmI': 1_000,
+};
+
+class RelayTimeoutError extends Error {
+	constructor(public readonly method: string, public readonly timeoutMs: number) {
+		super(`${method} timed out after ${timeoutMs}ms; relay or extension may be unresponsive. Try again or call browser_list_all_tabs to re-sync.`);
+	}
+}
 
 async function relaySend(context: any, method: string, params: any = {}): Promise<any> {
 	const browserContext = await context.ensureBrowserContext();
@@ -18,8 +40,12 @@ async function relaySend(context: any, method: string, params: any = {}): Promis
 	if (!browser)
 		throw new Error('No browser available to reach the relay.');
 	const cdp = await browser.newBrowserCDPSession();
+	const timeoutMs = EARTHLING_TIMEOUTS[method] ?? 10_000;
 	try {
-		return await cdp.send(method as any, params);
+		const outcome = await withTimeoutMarker<any>(method, () => cdp.send(method as any, params), timeoutMs, () => undefined);
+		if (outcome.timedOut)
+			throw new RelayTimeoutError(method, timeoutMs);
+		return outcome.result;
 	} finally {
 		await cdp.detach().catch(() => {});
 	}
