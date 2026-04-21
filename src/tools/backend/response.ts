@@ -304,13 +304,23 @@ export class Response {
 
     // Handle tab snapshot
     if (tabSnapshot && this._includeSnapshot !== 'none') {
-      const snapshot = this._includeSnapshot === 'full' ? tabSnapshot.ariaSnapshot : tabSnapshot.ariaSnapshotDiff ?? tabSnapshot.ariaSnapshot;
+      let snapshot = this._includeSnapshot === 'full' ? tabSnapshot.ariaSnapshot : tabSnapshot.ariaSnapshotDiff ?? tabSnapshot.ariaSnapshot;
+      // Empty aria tree (page in an intermediate/unresponsive state) — substitute
+      // the same sentinel as the timeout path so agents always see an actionable
+      // marker instead of a silently-blank Snapshot section. Gated on the underlying
+      // full ariaSnapshot being empty too: an empty diff on its own legitimately
+      // means "nothing changed" and must not produce a misleading unavailable marker.
+      const fullIsEmpty = typeof tabSnapshot.ariaSnapshot !== 'string' || tabSnapshot.ariaSnapshot.trim() === '';
+      if ((typeof snapshot !== 'string' || snapshot.trim() === '') && fullIsEmpty)
+        snapshot = this._buildSnapshotUnavailableMarker().ariaSnapshot;
       const userRequestedFile = this._context.config.outputMode === 'file' || !!this._includeSnapshotFileName;
       if (userRequestedFile) {
         const resolvedFile = await this.resolveClientFile({ prefix: 'page', ext: 'yml', suggestedFilename: this._includeSnapshotFileName }, 'Snapshot');
         await safeWriteFile(resolvedFile.fileName, snapshot, 'utf-8');
         addSection('Snapshot', [resolvedFile.printableLink]);
       } else if (typeof snapshot === 'string' && Buffer.byteLength(snapshot, 'utf8') > INLINE_SNAPSHOT_MAX_BYTES) {
+        // Rare-fire: Playwright's built-in aria elision usually keeps inline snapshots
+        // under this cap. This auto-save primarily covers the filename= bypass path.
         // Auto-save oversized inline snapshots to disk and leave a pointer.
         const sizeKB = Math.round(Buffer.byteLength(snapshot, 'utf8') / 1024);
         const ts = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);

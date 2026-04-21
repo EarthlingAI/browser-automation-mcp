@@ -42,7 +42,7 @@ async function boundedClose(promise: Promise<void> | undefined): Promise<void> {
   if (!promise)
     return;
   await Promise.race([
-    promise.catch(() => {}),
+    promise.catch(e => testDebug('browser.close error', e)),
     new Promise<void>(r => setTimeout(r, CLOSE_BUDGET_MS)),
   ]);
 }

@@ -132,6 +132,19 @@ export class CDPRelayServer {
   private _graceTimer: NodeJS.Timeout | null = null;
   private _onIdle: (() => void) | null = null;
 
+  // Lightweight observability counters exposed via /health. Pure-additive: the
+  // existing `session.autoAttach.hint.*` JSONL entries remain authoritative for
+  // forensic traces; these aggregates let a /health reader get a ratio without
+  // parsing JSONL.
+  private _telemetry = {
+    hintDirectAttach: 0,
+    hintMissed: 0,
+    hintFallbackBlank: 0,
+    serializeRetryTimeout: 0,
+  };
+  private _clientsHighWater1s = 0;
+  private _clientsHighWaterResetTimer: NodeJS.Timeout | null = null;
+
   constructor(httpServer: http.Server, browserChannel: string, userDataDir?: string, executablePath?: string) {
     this._httpServer = httpServer;
     this._browserChannel = browserChannel;
@@ -146,12 +159,26 @@ export class CDPRelayServer {
 
     this._wss = new wsServer({ server: httpServer });
     this._wss.on('connection', this._onConnection.bind(this));
+
+    // Reset the 1-second client-count high-water every second so /health shows
+    // a rolling peak (absorbs force-takeover reconnect blips without losing
+    // the instantaneous `clients` field). Unref so it never holds the daemon open.
+    this._clientsHighWaterResetTimer = setInterval(() => {
+      this._clientsHighWater1s = this._clients.size;
+    }, 1_000);
+    this._clientsHighWaterResetTimer.unref?.();
   }
 
   extensionPath(): string { return this._extensionPath; }
   cdpPath(): string { return this._cdpPath; }
   isExtensionConnected(): boolean { return this._extension !== null; }
   clientCount(): number { return this._clients.size; }
+  clientsHighWater1s(): number { return this._clientsHighWater1s; }
+  telemetry(): Readonly<typeof this._telemetry> { return this._telemetry; }
+  incrementHintDirectAttach(): void { this._telemetry.hintDirectAttach++; }
+  incrementHintMissed(): void { this._telemetry.hintMissed++; }
+  incrementHintFallbackBlank(): void { this._telemetry.hintFallbackBlank++; }
+  incrementSerializeRetryTimeout(): void { this._telemetry.serializeRetryTimeout++; }
   leaseSnapshot() { return this._leases.all(); }
 
   onIdle(cb: () => void) { this._onIdle = cb; }
@@ -166,16 +193,33 @@ export class CDPRelayServer {
     const timeout = process.env.PWMCP_TEST_CONNECTION_TIMEOUT
       ? parseInt(process.env.PWMCP_TEST_CONNECTION_TIMEOUT, 10)
       : 30_000;
-    await Promise.race([
-      this._extensionReadyPromise,
-      new Promise((_, reject) => setTimeout(() => {
-        reject(new Error('Extension auto-connect timeout. Make sure the Earthling Browser Bridge extension is installed.'));
-      }, timeout)),
-    ]);
+    // Clear the timer in `finally` so a winning `_extensionReadyPromise` does
+    // not leave a dangling setTimeout handle in the event loop. The probe work
+    // (`_extensionReadyPromise`) has no native cancellation — it settles via
+    // `_handleExtensionConnection`/`_onExtensionLost` regardless — so a signal
+    // has nothing to attach to; the `clearTimeout` alone covers the leak.
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        this._extensionReadyPromise,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => {
+            reject(new Error('Extension auto-connect timeout. Make sure the Earthling Browser Bridge extension is installed.'));
+          }, timeout);
+        }),
+      ]);
+    } finally {
+      if (timer)
+        clearTimeout(timer);
+    }
   }
 
   async shutdown(reason: string): Promise<void> {
     debugLogger('Shutting down relay:', reason);
+    if (this._clientsHighWaterResetTimer) {
+      clearInterval(this._clientsHighWaterResetTimer);
+      this._clientsHighWaterResetTimer = null;
+    }
     for (const c of [...this._clients.values()])
       c.drainAndClose(reason);
     this._extension?.close(reason);
@@ -360,8 +404,8 @@ export class CDPRelayServer {
         const owner = this._leases.ownerOf(detachedTabId);
         if (owner)
           this._leases.release(detachedTabId, owner.ownerClientId);
-        // Clean up stale session mappings for this tab.
-        this._cleanupTabSessions(detachedTabId);
+        // Tab/debuggee is gone — forget sessions and hints.
+        this._forgetTab(detachedTabId);
         break;
       }
       case 'forwardCDPEvent': {
@@ -469,6 +513,8 @@ export class CDPRelayServer {
     }
     const client = new ClientConnection(clientId, ws, this);
     this._clients.set(clientId, client);
+    if (this._clients.size > this._clientsHighWater1s)
+      this._clientsHighWater1s = this._clients.size;
     this._cancelGraceTimer();
     debugLogger(`Playwright client connected: ${clientId} (total=${this._clients.size})`);
     daemonJsonl('client.connect', { clientId, detail: { totalClients: this._clients.size } });
@@ -548,7 +594,11 @@ export class CDPRelayServer {
     return this._virtualSession.get(virtualId)?.extSessionId;
   }
 
-  /** Remove all session mappings for a specific tab (on tab close or debugger detach). */
+  /** Remove all session mappings for a specific tab. Called on debugger detach,
+   * lease release, client disconnect, and tab close. Does NOT clear
+   * `_lastSwitchedTab` — that hint must survive lease release + client
+   * reconnect so `_handleSetAutoAttach` can rebind to the intended target.
+   * Use `_forgetTab(tabId)` for the strict tab-closed path that owns hint teardown. */
   _cleanupTabSessions(tabId: number): void {
     // Drop any real (child) sessions bound to this tab (iframes/workers).
     for (const [sid, entry] of Array.from(this._extSession.entries())) {
@@ -560,7 +610,14 @@ export class CDPRelayServer {
       this._tabVirtualSession.delete(tabId);
       this._virtualSession.delete(virtualId);
     }
-    // Clear any last-switched hints pointing to the now-gone tab.
+  }
+
+  /** Full teardown for a tab that is actually being closed/destroyed —
+   * sessions + last-switched hints. Safe to call from `closeTab` and
+   * extension `debuggee.detach` paths; do NOT call it on a transient
+   * client-WS close where the tab is merely released. */
+  _forgetTab(tabId: number): void {
+    this._cleanupTabSessions(tabId);
     for (const [cid, tid] of this._lastSwitchedTab) {
       if (tid === tabId)
         this._lastSwitchedTab.delete(cid);
@@ -909,7 +966,7 @@ class ClientConnection {
           this._relay.revokeClientSubscription(remainingOwner.ownerClientId, tabId, 'Tab closed');
           this._relay.leases().release(tabId, remainingOwner.ownerClientId);
         }
-        this._relay._cleanupTabSessions(tabId);
+        this._relay._forgetTab(tabId);
         const result = await this._relay.callExtensionDirect('closeTab', { tabId });
         debugLogger(`[${this.id}] closeTab: tab ${tabId} closed successfully`);
         return result;
@@ -957,11 +1014,13 @@ class ClientConnection {
               tabId = hintTab;
               debugLogger(`[${this.id}] setAutoAttach: direct-attached hint tab ${tabId} (missed by listTabs)`);
               daemonJsonl('session.autoAttach.hint.directAttach', { clientId: this.id, tabId: hintTab });
+              this._relay.incrementHintDirectAttach();
             }
           }
         } catch (e) {
           hintMissed = true;
           daemonJsonl('session.autoAttach.hint.missed', { clientId: this.id, tabId: hintTab, detail: { error: String((e as any)?.message || e) } });
+          this._relay.incrementHintMissed();
         }
         if (tabId === null)
           hintMissed = true;
@@ -976,8 +1035,10 @@ class ClientConnection {
         if (!claim.ok)
           throw new Error(`Failed to claim newly opened tab ${tabId}`);
         debugLogger(`[${this.id}] setAutoAttach: opened and leased blank tab ${tabId}`);
-        if (hintMissed)
+        if (hintMissed) {
           daemonJsonl('session.autoAttach.hint.fallbackBlank', { clientId: this.id, tabId, detail: { originalHint: hintTab } });
+          this._relay.incrementHintFallbackBlank();
+        }
       }
       this._primaryTab = tabId;
     }

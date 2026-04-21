@@ -35,7 +35,7 @@ import { debug } from '../../../utilsBundle';
 import { ensureRuntimeDir, LOG_FILE, PID_FILE, SECRET_FILE } from './paths';
 import { CDPRelayServer } from './cdpRelay';
 import { DEFAULT_RELAY_PORT } from './constants';
-import { appendExtensionJsonl } from './debugJsonl';
+import { appendExtensionJsonl, daemonJsonl } from './debugJsonl';
 
 const debugLogger = debug('pw:mcp:relay:daemon');
 
@@ -109,11 +109,19 @@ async function main() {
       if (relay && !relay.isExtensionConnected())
         void relay.ensureBrowserLaunched().catch(() => {});
       res.writeHead(200, { 'Content-Type': 'application/json' });
+      const t = relay?.telemetry();
       res.end(JSON.stringify({
         ok: true,
         extension: relay?.isExtensionConnected() ? 'connected' : 'disconnected',
         clients: relay?.clientCount() ?? 0,
+        clients_1s_high_water: relay?.clientsHighWater1s() ?? 0,
         leases: relay?.leaseSnapshot() ?? [],
+        telemetry: {
+          hint_direct_attach: t?.hintDirectAttach ?? 0,
+          hint_missed: t?.hintMissed ?? 0,
+          hint_fallback_blank: t?.hintFallbackBlank ?? 0,
+          serialize_retry_timeout: t?.serializeRetryTimeout ?? 0,
+        },
       }));
       return;
     }
@@ -134,6 +142,18 @@ async function main() {
         }
       });
       req.on('error', () => { try { res.writeHead(400); res.end('bad request'); } catch {} });
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/telemetry/bump') {
+      // MCP clients bump daemon-local counters here (e.g. serialize-retry
+      // timeouts) since they run in separate processes. Fire-and-forget; no
+      // auth required (loopback-only server).
+      const counter = url.searchParams.get('counter');
+      if (counter === 'serialize_retry_timeout')
+        relay?.incrementSerializeRetryTimeout();
+      else
+        daemonJsonl('telemetry.bump.unknown', { detail: { counter } });
+      res.writeHead(204); res.end();
       return;
     }
     if (req.method === 'POST' && url.pathname === '/shutdown') {

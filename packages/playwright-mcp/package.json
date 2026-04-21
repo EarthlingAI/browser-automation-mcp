@@ -18,7 +18,7 @@
   "scripts": {
     "lint": "node update-readme.js",
     "test": "playwright test",
-    "ctest": "playwright test --project=chrome",
+    "ctest": "playwright test --project=chrome --workers=1",
     "ftest": "playwright test --project=firefox",
     "wtest": "playwright test --project=webkit",
     "dtest": "MCP_IN_DOCKER=1 playwright test --project=chromium-docker",

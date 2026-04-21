@@ -14,14 +14,41 @@
  * limitations under the License.
  */
 
+import http from 'http';
+
 import { Context } from './context';
 import { Response } from './response';
 import { SessionLog } from './sessionLog';
 import { MAX_TOOL_WAIT_MS, withTimeoutMarker } from './utils';
 import { debug } from '../../utilsBundle';
 import { mcpJsonl } from '../mcp/relay/debugJsonl';
+import { DEFAULT_RELAY_PORT } from '../mcp/relay/constants';
 import { raceAgainstDeadline } from '../../utils/isomorphic/timeoutRunner';
 import { monotonicTime } from '../../utils/isomorphic/time';
+
+/**
+ * Fire-and-forget HTTP POST to the daemon to bump a cross-process counter.
+ * Used for telemetry signals observed in the MCP process that /health
+ * consumers expect to see aggregated at the daemon. Silent on failure —
+ * missing telemetry must never affect tool dispatch.
+ */
+function bumpDaemonTelemetry(counter: string): void {
+  const port = parseInt(process.env.BROWSER_AUTOMATION_MCP_RELAY_PORT || String(DEFAULT_RELAY_PORT), 10);
+  try {
+    const req = http.request({
+      host: '127.0.0.1',
+      port,
+      path: `/telemetry/bump?counter=${encodeURIComponent(counter)}`,
+      method: 'POST',
+      timeout: 500,
+    });
+    req.on('error', () => {});
+    req.on('timeout', () => { try { req.destroy(); } catch {} });
+    req.end();
+  } catch {
+    /* best-effort */
+  }
+}
 
 /**
  * Total wall-clock budget for a single transparent reconnect (across all
@@ -225,10 +252,16 @@ export class BrowserBackend implements ServerBackend {
                 'response.serialize.retry',
                 () => retryResponse.serialize(),
                 MAX_TOOL_WAIT_MS,
-                () => ({
-                  content: [{ type: 'text' as const, text: `### Error\nResponse serialization timed out after ${MAX_TOOL_WAIT_MS}ms (post-reconnect retry).` }],
-                  isError: true,
-                }),
+                () => {
+                  // High-signal anomaly — aggregate at the daemon so /health
+                  // surfaces a non-zero value without JSONL parsing. Any count
+                  // here should prompt investigation.
+                  bumpDaemonTelemetry('serialize_retry_timeout');
+                  return {
+                    content: [{ type: 'text' as const, text: `### Error\nResponse serialization timed out after ${MAX_TOOL_WAIT_MS}ms (post-reconnect retry).` }],
+                    isError: true,
+                  };
+                },
             );
             responseObject = retryOutcome.result;
             this._sessionLog?.logResponse(name, parsedArguments, responseObject);

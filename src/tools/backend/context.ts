@@ -33,6 +33,8 @@ import type { ToolCapability } from './tool';
 
 const testDebug = debug('pw:mcp:test');
 
+const MAX_PENDING_EVENTS = 50;
+
 export type ContextConfig = {
   allowUnrestrictedFileAccess?: boolean;
   capabilities?: ToolCapability[];
@@ -106,6 +108,7 @@ export class Context {
 
   private _runningToolName: string | undefined;
   private _pendingEvents: string[] = [];
+  private _droppedPendingEvents: number = 0;
   private _preemptionCdp: playwright.CDPSession | undefined;
 
   constructor(browserContext: playwright.BrowserContext, options: ContextOptions) {
@@ -118,13 +121,6 @@ export class Context {
 
   async dispose() {
     await disposeAll(this._disposables);
-    // Fire-and-forget: the detach can hang when the browser-level target was
-    // swapped under us (Phase-3 atomic tab switch). Null the field first so
-    // any concurrent reader sees `undefined`, then let safeDetach race the
-    // detach against a bounded timer in the background.
-    const cdp = this._preemptionCdp;
-    this._preemptionCdp = undefined;
-    void safeDetach(cdp, 500);
     for (const tab of this._tabs)
       await tab.dispose();
     this._tabs.length = 0;
@@ -133,12 +129,20 @@ export class Context {
   }
 
   addPendingEvent(msg: string): void {
+    if (this._pendingEvents.length >= MAX_PENDING_EVENTS) {
+      this._pendingEvents.shift();
+      this._droppedPendingEvents++;
+    }
     this._pendingEvents.push(msg);
   }
 
   drainPendingEvents(): string[] {
     const out = this._pendingEvents;
     this._pendingEvents = [];
+    if (this._droppedPendingEvents > 0) {
+      out.unshift(`… ${this._droppedPendingEvents} earlier events dropped`);
+      this._droppedPendingEvents = 0;
+    }
     return out;
   }
 
@@ -336,12 +340,21 @@ export class Context {
         this._preemptionCdp = cdp;
         cdp.on('Earthling.tabPreempted' as any, (params: any) => {
           const msg = `Your lease on tab ${params?.tabId} was preempted by client ${params?.revokedBy} (reason: ${params?.reason ?? 'unknown'}).`;
-          this._pendingEvents.push(msg);
+          this.addPendingEvent(msg);
         });
-        // Eagerly drop our reference if the browser disconnects — covers the
-        // extension-lost / browser-killed / daemon-respawn paths where
-        // Playwright fires 'disconnected'. The switch_tab path doesn't trigger
-        // this; the fire-and-forget in dispose() covers that case.
+        // Terminal path: fire-and-forget safeDetach covers the Phase-3 atomic
+        // tab-switch case where the browser-level target is swapped under us
+        // and detach() would await an invalidated handshake forever.
+        this._disposables.push({
+          dispose: async () => {
+            const pending = this._preemptionCdp;
+            this._preemptionCdp = undefined;
+            void safeDetach(pending, 500);
+          },
+        });
+        // Fast path: eagerly drop our reference on browser-disconnect
+        // (extension-lost / browser-killed / daemon-respawn). Complements
+        // the terminal disposable path above.
         browser.on('disconnected', () => { this._preemptionCdp = undefined; });
       } catch {
         /* best-effort */
