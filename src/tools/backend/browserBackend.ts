@@ -161,7 +161,12 @@ export class BrowserBackend implements ServerBackend {
       // browser has been closed" and "Connection closed" are the typical
       // flavours when the CDP WS dies mid-call.
       const msg = String(error?.message || error);
-      const looksLikeDisconnect = /Target.*closed|Connection closed|browser has been closed|Session closed/i.test(msg);
+      // "No debugger attached" is the semantic error the extension returns when
+      // a tab-scoped CDP command races the extension SW restart — the lease was
+      // revoked but the in-flight command reached the extension first. Treat it
+      // as disconnect-shaped so transparent reconnect kicks in instead of
+      // surfacing a raw extension error to the agent.
+      const looksLikeDisconnect = /Target.*closed|Connection closed|browser has been closed|Session closed|No debugger attached/i.test(msg);
       if (looksLikeDisconnect && this._reconnectFactory) {
         try {
           await this._reconnect();

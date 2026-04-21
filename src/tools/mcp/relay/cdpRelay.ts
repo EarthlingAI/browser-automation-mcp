@@ -77,7 +77,12 @@ type PendingCmd = {
   realSessionId?: string;
 };
 
-const GRACE_PERIOD_MS = 60_000;
+// Grace period after the extension disconnects before notifying clients and
+// clearing state. MV3 service workers sleep transiently (~30s) and reconnect
+// on wake; the default 60s covers that comfortably. Overridable via env for
+// test / debug scenarios that need to exercise the grace-expiry code path
+// (e.g. the `onExtensionLost` force-close) without waiting the full minute.
+const GRACE_PERIOD_MS = parseInt(process.env.BROWSER_AUTOMATION_MCP_GRACE_MS || '60000', 10);
 
 // Synthetic sessionId returned to Playwright from Target.attachToBrowserTarget.
 // Commands sent with this sessionId are routed as top-level (Earthling.* handled locally).
@@ -719,6 +724,12 @@ class ClientConnection {
     }
     this._subscribedTabs.clear();
     this._primaryTab = null;
+    // Force-close the client WS so Playwright's Browser.isConnected() flips to
+    // false immediately. The MCP BrowserBackend's pre-dispatch isConnected()
+    // check (browserBackend.ts) then triggers transparent reconnect on the next
+    // tool call — cleaner than relying on a tool-level error regex to detect
+    // the disposed-page state that would otherwise result.
+    this.drainAndClose(`extension lost: ${reason}`);
   }
 
   private async _handleMessage(msg: CDPCommand) {
