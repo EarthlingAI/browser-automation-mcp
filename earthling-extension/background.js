@@ -298,14 +298,21 @@ class RelayConnection {
 		if (message.method === "listBrowserTabs") {
 			const tabs = await chrome.tabs.query({});
 			const blocklist = await getBlocklist();
-			const filtered = tabs.filter(tab =>
-				tab.url && !["chrome:", "edge:", "devtools:"].some(s => tab.url.startsWith(s))
-				&& !blocklist.includes(tab.id)
-			);
+			const filtered = tabs.filter(tab => {
+				// Prefer committed url; fall back to pendingUrl so tabs still
+				// navigating (e.g. just-opened chrome.tabs.create) aren't invisible.
+				// Without this fallback, a 1000000290 openTab→listBrowserTabs race
+				// within ~50ms drops the new tab from the list entirely.
+				const effectiveUrl = tab.url || tab.pendingUrl || "";
+				if (!effectiveUrl) return false;
+				if (["chrome:", "edge:", "devtools:"].some(s => effectiveUrl.startsWith(s))) return false;
+				if (blocklist.includes(tab.id)) return false;
+				return true;
+			});
 			return filtered.map(tab => ({
 				tabId: tab.id,
 				title: tab.title || "",
-				url: tab.url || "",
+				url: tab.url || tab.pendingUrl || "",
 				windowId: tab.windowId,
 				active: tab.active
 			}));
@@ -372,8 +379,15 @@ class RelayConnection {
 			// 1 when unknown — the daemon's `historyLength <= 1` filter treats
 			// that as "un-navigated and safe to close"). We never close tabs
 			// ourselves — invariant #9: extension stays passive.
-			const tabs = await chrome.tabs.query({ url: "about:blank" });
-			const out = tabs.map(t => ({
+			//
+			// chrome.tabs.query({url}) uses match-pattern syntax, which does NOT
+			// match the `about:` scheme. Query all tabs then filter in JS.
+			const tabs = await chrome.tabs.query({});
+			const blanks = tabs.filter(t => {
+				const u = t.url || t.pendingUrl || "";
+				return u === "about:blank" || u === "";
+			});
+			const out = blanks.map(t => ({
 				tabId: t.id,
 				lastAccessed: typeof t.lastAccessed === "number" ? t.lastAccessed : 0,
 				// chrome.tabs.Tab doesn't expose session/back-forward history length

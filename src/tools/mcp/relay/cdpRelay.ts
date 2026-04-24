@@ -141,6 +141,13 @@ export class CDPRelayServer {
   // /health without needing a Terra session to catch.
   readonly _declaredSwitchTarget = new Map<string, number>();
 
+  // Auto-opened about:blank tabs (one per client, spawned by the Priority 3
+  // fallback in `_handleSetAutoAttach`). These are owned by the daemon, not
+  // the user — so the daemon must close them when the client no longer needs
+  // them: on client disconnect, or when the client switches off the blank.
+  // Without this the browser leaks one blank per CDP client ever connected.
+  readonly _autoOpenedBlanks = new Map<string, Set<number>>();
+
   private _graceTimer: NodeJS.Timeout | null = null;
   private _onIdle: (() => void) | null = null;
 
@@ -550,13 +557,28 @@ export class CDPRelayServer {
       const released = this._leases.releaseAllFor(clientId);
       const cancelledPending = this._leases.cancelPendingFor(clientId);
       this._clients.delete(clientId);
-      debugLogger(`Playwright client disconnected: ${clientId} (released tabs: ${released.join(',')}, cancelled pending: ${cancelledPending.join(',')})`);
-      daemonJsonl('client.disconnect', { clientId, detail: { code, releasedTabs: released, cancelledPending, remaining: this._clients.size } });
+      // Pop the client's auto-opened blanks — these are daemon-owned tabs
+      // that must not outlive the client that they were opened for.
+      const autoBlanks = [...(this._autoOpenedBlanks.get(clientId) ?? [])];
+      this._autoOpenedBlanks.delete(clientId);
+      // NOTE: do NOT delete `_lastSwitchedTab` or `_declaredSwitchTarget` here.
+      // Both are designed to survive client WS close → reconnect cycles
+      // (invariant #12, #18). They are consumed / cleared on tab-gone events
+      // (`_forgetTab`, `releaseTab`, `revokeTab`, `onExtensionLost`), not on
+      // disconnect. Wiping them here regresses `reconnect-preserves-switch-hint`.
+      debugLogger(`Playwright client disconnected: ${clientId} (released tabs: ${released.join(',')}, cancelled pending: ${cancelledPending.join(',')}, autoBlanks: ${autoBlanks.join(',')})`);
+      daemonJsonl('client.disconnect', { clientId, detail: { code, releasedTabs: released, cancelledPending, autoBlanks, remaining: this._clients.size } });
       // Detach CDP from each released tab so orphan debugger attachments die
       // with the client. Fire-and-forget with a 2s cage.
       for (const tabId of released) {
         this._cleanupTabSessions(tabId);
         this._extension?.send('detachFromTab', { tabId } as any, 2_000).catch(() => {});
+      }
+      // Close the auto-opened blanks the daemon created for this client.
+      // Detach is handled implicitly by chrome.tabs.remove; best-effort.
+      for (const tabId of autoBlanks) {
+        this._forgetTab(tabId);
+        this._extension?.send('closeTab', { tabId } as any, 2_000).catch(() => {});
       }
       if (this._clients.size === 0 && this._extension === null)
         this._startGraceTimer();
@@ -1024,6 +1046,17 @@ class ClientConnection {
           this._relay.leases().release(oldPrimary, this.id);
           this._subscribedTabs.delete(oldPrimary);
           releasedPrior = oldPrimary;
+          // If the old primary was a daemon-auto-opened blank, close it now —
+          // the client is switching to a real target and will never come back
+          // to the transient blank. Leaving it open accumulates orphans over
+          // the browser session's lifetime.
+          const autoSet = this._relay._autoOpenedBlanks.get(this.id);
+          if (autoSet?.has(oldPrimary)) {
+            autoSet.delete(oldPrimary);
+            this._relay._forgetTab(oldPrimary);
+            void this._relay.callExtensionDirect('closeTab', { tabId: oldPrimary }).catch(() => {});
+            daemonJsonl('autoBlank.closed.switchOff', { clientId: this.id, tabId: oldPrimary });
+          }
         }
 
         this._relay.leases().commitPending(tabId);
@@ -1066,6 +1099,8 @@ class ClientConnection {
         return { clientId: this.id, primaryTab: this._primaryTab };
       case 'Earthling.getDebugLog':
         return await this._relay.callExtensionDirect('getDebugLog', {});
+      case 'Earthling.queryOrphanBlanks':
+        return await this._relay.callExtensionDirect('queryOrphanBlanks', {});
     }
     return undefined;
   }
@@ -1125,6 +1160,11 @@ class ClientConnection {
         const claim = this._relay.leases().claim(tabId, this.id, false);
         if (!claim.ok)
           throw new Error(`Failed to claim newly opened tab ${tabId}`);
+        // Track as daemon-owned so it gets closed on client-disconnect /
+        // switch-off rather than leaking to the user's browser.
+        let set = this._relay._autoOpenedBlanks.get(this.id);
+        if (!set) { set = new Set(); this._relay._autoOpenedBlanks.set(this.id, set); }
+        set.add(tabId);
         debugLogger(`[${this.id}] setAutoAttach: opened and leased blank tab ${tabId}`);
         if (hintMissed) {
           daemonJsonl('session.autoAttach.hint.fallbackBlank', { clientId: this.id, tabId, detail: { originalHint: hintTab } });
@@ -1195,6 +1235,15 @@ class ClientConnection {
       // voluntarily gave up the tab.
       if (this._relay._declaredSwitchTarget.get(this.id) === tabId)
         this._relay._declaredSwitchTarget.delete(this.id);
+      // If this was a daemon-auto-opened blank, close it — same rationale
+      // as the switch-off path in `Earthling.switchToTab`.
+      const autoSet = this._relay._autoOpenedBlanks.get(this.id);
+      if (autoSet?.has(tabId)) {
+        autoSet.delete(tabId);
+        this._relay._forgetTab(tabId);
+        void this._relay.callExtensionDirect('closeTab', { tabId }).catch(() => {});
+        daemonJsonl('autoBlank.closed.release', { clientId: this.id, tabId });
+      }
     }
     return ok;
   }

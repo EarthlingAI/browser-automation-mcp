@@ -204,6 +204,12 @@ async function main() {
     void (async () => {
       try {
         await relay!.ensureBrowserLaunched();
+        // Wait up to 10s for the extension to actually pair — ensureBrowserLaunched
+        // only starts Chrome; the extension's service-worker needs a beat to
+        // auto-connect and answer pseudo-CDP queries.
+        const deadline = Date.now() + 10_000;
+        while (!relay!.extension() && Date.now() < deadline)
+          await new Promise(r => setTimeout(r, 250));
         await relay!._sweepOrphanBlanks(5 * 60 * 1000);
       } catch (e: any) {
         daemonJsonl('daemon.orphan_sweep.fail', { detail: { error: String(e?.message || e) } });
