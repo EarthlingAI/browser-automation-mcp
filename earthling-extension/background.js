@@ -366,6 +366,23 @@ class RelayConnection {
 			return [..._debugRingBuffer];
 		}
 
+		if (message.method === "queryOrphanBlanks") {
+			// Dev-only sweep support. Returns tabs currently at about:blank with
+			// their `lastAccessed` and a best-effort `historyLength` (defaults to
+			// 1 when unknown — the daemon's `historyLength <= 1` filter treats
+			// that as "un-navigated and safe to close"). We never close tabs
+			// ourselves — invariant #9: extension stays passive.
+			const tabs = await chrome.tabs.query({ url: "about:blank" });
+			const out = tabs.map(t => ({
+				tabId: t.id,
+				lastAccessed: typeof t.lastAccessed === "number" ? t.lastAccessed : 0,
+				// chrome.tabs.Tab doesn't expose session/back-forward history length
+				// from an SW context; safe default is 1 (one entry = just about:blank).
+				historyLength: 1,
+			}));
+			return { tabs: out };
+		}
+
 		if (message.method === "forwardCDPCommand") {
 			const { tabId, sessionId, method, params } = message.params;
 			const debuggee = tabId ? this._debuggees.get(tabId) : null;

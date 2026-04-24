@@ -129,6 +129,18 @@ export class CDPRelayServer {
   // connection needs this hint to lease the correct tab).
   private readonly _lastSwitchedTab = new Map<string, number>();
 
+  // Defensive twin of `_lastSwitchedTab`. `_lastSwitchedTab` is CONSUMED by
+  // `_handleSetAutoAttach` Priority 1 — so once the happy path fires, the
+  // hint is gone and a subsequent bug that rebinds to the wrong tab is
+  // invisible. This map is set at switch-commit time and cleared only on
+  // actual tab-gone events (`_forgetTab`, `Earthling.releaseTab`). At
+  // `_handleSetAutoAttach` exit, if `_declaredSwitchTarget[clientId]` is set
+  // and doesn't match the chosen `activeTabId`, we bump
+  // `switch_tab_target_mismatch` so regressions of the Scenario-1 bug class
+  // (hint chain bypassed, client lands on an unintended tab) show up in
+  // /health without needing a Terra session to catch.
+  readonly _declaredSwitchTarget = new Map<string, number>();
+
   private _graceTimer: NodeJS.Timeout | null = null;
   private _onIdle: (() => void) | null = null;
 
@@ -141,6 +153,16 @@ export class CDPRelayServer {
     hintMissed: 0,
     hintFallbackBlank: 0,
     serializeRetryTimeout: 0,
+    // Bumped by BrowserBackend.callTool (MCP process) via POST /telemetry/bump
+    // whenever the per-client dispatch mutex actually serializes a parallel
+    // tool_use block. Any non-zero count signals concurrent agent dispatch —
+    // useful for confirming the mutex is doing its job in production.
+    concurrentDispatchSerialized: 0,
+    // Bumped by CdpRelay._handleSetAutoAttach exit when the declared-switch
+    // target disagrees with the tab the client actually landed on. Counts
+    // regressions of the Scenario-1 "_cleanupTabSessions wiped the hint mid-
+    // lease-release" bug class. Non-zero = investigate.
+    switchTabTargetMismatch: 0,
   };
   private _clientsHighWater1s = 0;
   private _clientsHighWaterResetTimer: NodeJS.Timeout | null = null;
@@ -179,6 +201,8 @@ export class CDPRelayServer {
   incrementHintMissed(): void { this._telemetry.hintMissed++; }
   incrementHintFallbackBlank(): void { this._telemetry.hintFallbackBlank++; }
   incrementSerializeRetryTimeout(): void { this._telemetry.serializeRetryTimeout++; }
+  incrementConcurrentDispatchSerialized(): void { this._telemetry.concurrentDispatchSerialized++; }
+  incrementSwitchTabTargetMismatch(): void { this._telemetry.switchTabTargetMismatch++; }
   leaseSnapshot() { return this._leases.all(); }
 
   onIdle(cb: () => void) { this._onIdle = cb; }
@@ -622,6 +646,10 @@ export class CDPRelayServer {
       if (tid === tabId)
         this._lastSwitchedTab.delete(cid);
     }
+    for (const [cid, tid] of this._declaredSwitchTarget) {
+      if (tid === tabId)
+        this._declaredSwitchTarget.delete(cid);
+    }
   }
 
   /** Send command to extension on behalf of a client; returns relayId for response tracking. */
@@ -678,6 +706,54 @@ export class CDPRelayServer {
       method: 'forwardCDPCommand',
       params: { tabId: fallbackTabId, sessionId: sessionIdForExt, method, params },
     });
+  }
+
+  /**
+   * Dev-only orphan-blank sweep. Gated behind EARTHLING_MCP_SWEEP_ORPHANS=1
+   * at the daemon entry point — this method itself does not check the env
+   * flag (it's a no-op if never called). Closes stale about:blank tabs that
+   * accumulate across debris-prone dev workflows (e.g. repeated failed
+   * switch_tab spawning fresh blanks). Never throws.
+   *
+   * Safety filters — a tab is closed only if ALL of the following hold:
+   *   - url is about:blank (enforced by the extension's query filter)
+   *   - (now - lastAccessed) >= maxAgeMs   — not a freshly-opened tab
+   *   - historyLength <= 1                 — never navigated away
+   *   - _leases.ownerOf(tabId) is undefined — no MCP client holds the tab
+   */
+  async _sweepOrphanBlanks(maxAgeMs: number): Promise<void> {
+    if (!this._extension) {
+      daemonJsonl('daemon.orphan_sweep.skipped', { detail: { reason: 'no extension' } });
+      return;
+    }
+    try {
+      const resp: any = await this._extension.send('queryOrphanBlanks' as any, {}, 2_000);
+      const tabs: Array<{ tabId: number; lastAccessed: number; historyLength: number }> = resp?.tabs || [];
+      const now = Date.now();
+      let scanned = 0;
+      let closed = 0;
+      for (const t of tabs) {
+        scanned++;
+        const age = now - (t.lastAccessed || 0);
+        if (age < maxAgeMs)
+          continue;
+        if ((t.historyLength ?? 1) > 1)
+          continue;
+        if (this._leases.ownerOf(t.tabId))
+          continue;
+        try {
+          await this._extension.send('closeTab' as any, { tabId: t.tabId }, 2_000);
+          this._forgetTab(t.tabId);
+          closed++;
+          daemonJsonl('daemon.orphan_sweep.closed', { tabId: t.tabId, detail: { ageMs: age, historyLength: t.historyLength ?? 1 } });
+        } catch (e) {
+          daemonJsonl('daemon.orphan_sweep.close_fail', { tabId: t.tabId, detail: { error: String((e as any)?.message || e) } });
+        }
+      }
+      daemonJsonl('daemon.orphan_sweep.complete', { detail: { scanned, closed } });
+    } catch (e) {
+      daemonJsonl('daemon.orphan_sweep.fail', { detail: { error: String((e as any)?.message || e) } });
+    }
   }
 
   async callExtensionDirect<M extends keyof ExtensionCommand>(method: M, params: ExtensionCommand[M]['params']): Promise<any> {
@@ -772,6 +848,12 @@ class ClientConnection {
     this._subscribedTabs.delete(tabId);
     if (this._primaryTab === tabId)
       this._primaryTab = null;
+    // Peer force-switch / external revocation: the declared target is no
+    // longer reachable by this client. Clear it here too, otherwise the
+    // post-reconnect `_handleSetAutoAttach` mismatch check treats every
+    // preemption as a regression and spams `switch_tab_target_mismatch`.
+    if (this._relay._declaredSwitchTarget.get(this.id) === tabId)
+      this._relay._declaredSwitchTarget.delete(this.id);
   }
 
   onExtensionLost(reason: string) {
@@ -789,6 +871,10 @@ class ClientConnection {
     }
     this._subscribedTabs.clear();
     this._primaryTab = null;
+    // Lost extension invalidates the whole notion of a declared target on
+    // this client — without this, the post-reconnect mismatch check fires on
+    // every extension-loss recovery and drowns the counter's signal.
+    this._relay._declaredSwitchTarget.delete(this.id);
     // Force-close the client WS so Playwright's Browser.isConnected() flips to
     // false immediately. The MCP BrowserBackend's pre-dispatch isConnected()
     // check (browserBackend.ts) then triggers transparent reconnect on the next
@@ -945,6 +1031,11 @@ class ClientConnection {
         this._primaryTab = tabId;
         this._subscribedTabs.add(tabId);
         this._relay.setLastSwitchedTab(this.id, tabId);
+        // Record the declared target for post-reconnect mismatch detection.
+        // Unlike `_lastSwitchedTab` (consumed by Priority 1), this survives
+        // the whole backend-dispose → reconnect cycle; cleared only when the
+        // tab actually goes away.
+        this._relay._declaredSwitchTarget.set(this.id, tabId);
         debugLogger(`[${this.id}] switchToTab: committed tab ${tabId} (released prior=${releasedPrior}, revoked from=${oldOwnerId})`);
 
         return { ...extResult, released: releasedPrior, revokedFrom: oldOwnerId, claimed: tabId, force };
@@ -1074,6 +1165,22 @@ class ClientConnection {
         waitingForDebugger: false,
       },
     });
+
+    // Defensive mismatch check — if this client had a declared switch target
+    // surviving the reconnect cycle and we landed on a different tab, bump
+    // the counter so the class of bug that caused Scenario 1 shows up in
+    // /health without needing a Terra session to catch. We do NOT clear
+    // `_declaredSwitchTarget` here: multiple reconnect cycles against the
+    // same declared target each landing wrong should each bump.
+    const declared = this._relay._declaredSwitchTarget.get(this.id);
+    if (declared !== undefined && declared !== activeTabId) {
+      daemonJsonl('session.autoAttach.target.mismatch', {
+        clientId: this.id,
+        tabId: activeTabId,
+        detail: { declaredTarget: declared, actualTarget: activeTabId },
+      });
+      this._relay.incrementSwitchTabTargetMismatch();
+    }
   }
 
   releaseTab(tabId: number): boolean {
@@ -1082,6 +1189,12 @@ class ClientConnection {
       this._subscribedTabs.delete(tabId);
       if (this._primaryTab === tabId)
         this._primaryTab = null;
+      // If this client's declared target was the released tab, drop the
+      // defensive tracker too — otherwise a subsequent reconnect that lands
+      // on a fresh blank would look like a mismatch when the client
+      // voluntarily gave up the tab.
+      if (this._relay._declaredSwitchTarget.get(this.id) === tabId)
+        this._relay._declaredSwitchTarget.delete(this.id);
     }
     return ok;
   }

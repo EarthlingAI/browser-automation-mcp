@@ -79,6 +79,18 @@ export class BrowserBackend implements ServerBackend {
   private _clientInfo: ClientInfo | undefined;
   private _reconnectFactory: BrowserReconnectFactory | undefined;
   private _reconnectInFlight: Promise<void> | undefined;
+  /**
+   * Per-instance dispatch mutex. Serializes `callTool` invocations on a single
+   * BrowserBackend so concurrent `tool_use` blocks from the same MCP client
+   * never race over the shared `Browser`/CDP-session state. Root cause the
+   * serialization eliminates: `earthlingTabs.relaySend` opens a fresh
+   * `newBrowserCDPSession` per call; five concurrent callers observing the
+   * same WS close mid-flight all crashed with `-32000`. With the mutex,
+   * `_reconnectInFlight` nests inside but becomes redundant (only one tool
+   * path can ever touch the disconnect at a time).
+   */
+  private _dispatchMutex: Promise<void> = Promise.resolve();
+  private _dispatchesQueuedOrInFlight = 0;
   /** Mutable so we can swap references on transparent reconnect. */
   browserContext: playwright.BrowserContext;
 
@@ -185,6 +197,29 @@ export class BrowserBackend implements ServerBackend {
   }
 
   async callTool(name: string, rawArguments: mcpServer.CallToolRequest['params']['arguments']) {
+    // Per-client dispatch mutex: serialize concurrent callTool() invocations
+    // so parallel tool_use blocks can never observe each other's WS teardown
+    // mid-flight. See the _dispatchMutex field doc for the concrete failure
+    // mode this closes. The waiting count snapshot uses a simple "anyone else
+    // queued?" check — precise enough for the telemetry counter which only
+    // needs to signal that serialization actually kicked in.
+    const waitingBehindOther = this._dispatchesQueuedOrInFlight > 0;
+    this._dispatchesQueuedOrInFlight++;
+    const prevDispatch = this._dispatchMutex;
+    let releaseDispatch!: () => void;
+    this._dispatchMutex = new Promise<void>(r => { releaseDispatch = r; });
+    try {
+      await prevDispatch;
+      if (waitingBehindOther)
+        bumpDaemonTelemetry('concurrent_dispatch_serialized');
+      return await this._callToolLocked(name, rawArguments);
+    } finally {
+      this._dispatchesQueuedOrInFlight--;
+      releaseDispatch();
+    }
+  }
+
+  private async _callToolLocked(name: string, rawArguments: mcpServer.CallToolRequest['params']['arguments']) {
     const tool = this._tools.find(tool => tool.schema.name === name)!;
     if (!tool) {
       return {

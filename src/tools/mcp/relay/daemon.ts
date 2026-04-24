@@ -121,6 +121,8 @@ async function main() {
           hint_missed: t?.hintMissed ?? 0,
           hint_fallback_blank: t?.hintFallbackBlank ?? 0,
           serialize_retry_timeout: t?.serializeRetryTimeout ?? 0,
+          concurrent_dispatch_serialized: t?.concurrentDispatchSerialized ?? 0,
+          switch_tab_target_mismatch: t?.switchTabTargetMismatch ?? 0,
         },
       }));
       return;
@@ -151,6 +153,8 @@ async function main() {
       const counter = url.searchParams.get('counter');
       if (counter === 'serialize_retry_timeout')
         relay?.incrementSerializeRetryTimeout();
+      else if (counter === 'concurrent_dispatch_serialized')
+        relay?.incrementConcurrentDispatchSerialized();
       else
         daemonJsonl('telemetry.bump.unknown', { detail: { counter } });
       res.writeHead(204); res.end();
@@ -190,6 +194,22 @@ async function main() {
   fs.writeFileSync(PID_FILE, String(process.pid));
   debugLogger(`Daemon listening on 127.0.0.1:${args.port}, pid=${process.pid}`);
   process.stdout.write(`earthling-cdp-relay listening on 127.0.0.1:${args.port} (pid=${process.pid})\n`);
+
+  // Dev-only: sweep accumulated orphan about:blank tabs on startup. Fire-and-
+  // forget — MUST NOT block the listening path. Default off; enable via
+  // EARTHLING_MCP_SWEEP_ORPHANS=1. The sweep itself is triple-gated inside
+  // cdpRelay (lease-held / history>1 / age<5min) so it cannot close a real
+  // user tab.
+  if (process.env.EARTHLING_MCP_SWEEP_ORPHANS === '1') {
+    void (async () => {
+      try {
+        await relay!.ensureBrowserLaunched();
+        await relay!._sweepOrphanBlanks(5 * 60 * 1000);
+      } catch (e: any) {
+        daemonJsonl('daemon.orphan_sweep.fail', { detail: { error: String(e?.message || e) } });
+      }
+    })();
+  }
 
   let shuttingDown = false;
   async function gracefulShutdown(reason: string) {

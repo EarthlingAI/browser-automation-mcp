@@ -17,6 +17,10 @@ import { test, expect } from '@playwright/test';
 
 import { Context } from '../../../src/tools/backend/context';
 
+// Context ctor doesn't read browserContext in the code paths exercised here
+// (addPendingEvent / drainPendingEvents are purely in-memory array ops), so
+// `null as any` is safe for unit-level pending-buffer tests. Revisit if
+// Context gains early-init logic that touches browserContext.
 function makeContext(): Context {
 	return new Context(null as any, { config: {}, cwd: process.cwd() } as any);
 }

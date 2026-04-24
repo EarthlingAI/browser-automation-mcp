@@ -28,6 +28,14 @@ export type ExtensionCommand = {
 	'closeTab': { params: { tabId: number } };
 	'detachFromTab': { params: { tabId: number } };
 	'getDebugLog': { params: {} };
+	// Earthling: dev-only orphan-sweep support. Returns about:blank tabs with
+	// `lastAccessed` + `historyLength` so the daemon can decide which are safe
+	// to close (stale, un-navigated, lease-free). Read-only; closure is done
+	// via the existing `closeTab` handler to preserve invariant #9.
+	'queryOrphanBlanks': {
+		params: {};
+		result: { tabs: Array<{ tabId: number; lastAccessed: number; historyLength: number }> };
+	};
 };
 
 export type ExtensionEvents = {
