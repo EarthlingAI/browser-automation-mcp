@@ -81,7 +81,7 @@ const switchTab = defineTool({
 	schema: {
 		name: 'browser_switch_tab',
 		title: 'Switch to browser tab',
-		description: 'Switch the browser connection to a different tab by tab ID. Acquires an exclusive lease on the tab. If another client holds the lease, the call fails unless `force:true` is passed. Call browser_snapshot after switching.',
+		description: 'Switch the browser connection to a different tab by tab ID. Acquires an exclusive lease on the tab. If another client holds the lease, the call fails unless `force:true` is passed. When force preempts an existing holder, the response includes "Preempted lease from client <id> (force:true)."; when the target was already free, the preemption line is omitted. Call browser_snapshot after switching.',
 		inputSchema: z.object({
 			tabId: z.number().describe('Tab ID from browser_list_all_tabs'),
 			force: z.boolean().optional().describe('Take over the tab even if another client currently holds its lease. Default false.'),
@@ -98,7 +98,7 @@ const switchTab = defineTool({
 		if (res?.released != null)
 			parts.push(`Released prior tab ${res.released}.`);
 		if (res?.revokedFrom)
-			parts.push(`Revoked lease from client ${res.revokedFrom}.`);
+			parts.push(`Preempted lease from client ${res.revokedFrom} (force:true).`);
 		parts.push('Use browser_snapshot to see the page content.');
 		response.addTextResult(parts.join(' '));
 	},
@@ -137,6 +137,11 @@ const openTab = defineTool({
 		type: 'action',
 	},
 	handle: async (context, params, response) => {
+		// Suppress the `### Page` block: browser_open_tab returns just the
+		// "Opened tab N" line regardless of whether the current-tab header
+		// changed. Guarantees a consistent response shape across parallel
+		// callers where only the first would otherwise see a changed header.
+		response.setIncludePage(false);
 		const result = await relaySend(context, 'Earthling.openTab', { url: params.url });
 		response.addTextResult(`Opened tab ${result.tabId}. Use browser_switch_tab to interact with it.`);
 	},

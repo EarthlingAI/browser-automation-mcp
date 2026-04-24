@@ -124,7 +124,16 @@ async function runLeaseChurn(info: { cdpPath: string }): Promise<void> {
 
   try {
     const seedTabs = await listTabs(browserObs);
-    const candidates = seedTabs.filter(t => !t.url.startsWith('chrome:') && !t.url.startsWith('edge:') && !t.url.startsWith('devtools:'));
+    // Exclude about:blank — those may be daemon-auto-opened blanks tied to
+    // another client's _autoOpenedBlanks set, which invariant #19 closes on
+    // release. Picking one as a churn target leads to "No tab with given id"
+    // mid-loop. Real tabs only.
+    const candidates = seedTabs.filter(t =>
+      !t.url.startsWith('chrome:')
+      && !t.url.startsWith('edge:')
+      && !t.url.startsWith('devtools:')
+      && t.url !== 'about:blank'
+      && t.url !== '');
     if (candidates.length < 2)
       throw new Error(`lease-churn needs ≥2 non-internal tabs; found ${candidates.length}`);
     const [tabX, tabY] = candidates;

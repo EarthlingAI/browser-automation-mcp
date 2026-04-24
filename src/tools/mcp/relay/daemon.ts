@@ -123,6 +123,8 @@ async function main() {
           serialize_retry_timeout: t?.serializeRetryTimeout ?? 0,
           concurrent_dispatch_serialized: t?.concurrentDispatchSerialized ?? 0,
           switch_tab_target_mismatch: t?.switchTabTargetMismatch ?? 0,
+          lifetime_clients_high_water: t?.lifetimeClientsHighWater ?? 0,
+          client_disconnect_count: t?.clientDisconnectCount ?? 0,
         },
       }));
       return;

@@ -37,6 +37,16 @@ export const requestDebug = debug('pw:mcp:request');
 const FILE_WRITE_BUDGET_MS = 10_000;
 
 async function safeWriteFile(file: string, data: Buffer | string, encoding: BufferEncoding | undefined): Promise<boolean> {
+  // Ensure the parent directory exists. Callers (both filename= requested writes
+  // and the oversized-inline auto-save) may point at nested paths that don't
+  // yet exist; without this mkdir the writeFile silently fails and the response
+  // claims success with nothing on disk (data-loss + false-success).
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+  } catch (e) {
+    requestDebug(`mkdir failed for ${file}: ${String((e as any)?.message || e)}`);
+    // Fall through; writeFile will fail the same way and return false.
+  }
   const writePromise = typeof data === 'string'
     ? fs.promises.writeFile(file, data, encoding ?? 'utf-8')
     : fs.promises.writeFile(file, data);
@@ -81,6 +91,7 @@ export class Response {
   private _includeSnapshotFileName: string | undefined;
   private _includeSnapshotSelector: string | undefined;
   private _isClose: boolean = false;
+  private _includePage: boolean = true;
 
   readonly toolName: string;
   readonly toolArgs: Record<string, any>;
@@ -145,6 +156,10 @@ export class Response {
 
   setClose() {
     this._isClose = true;
+  }
+
+  setIncludePage(value: boolean) {
+    this._includePage = value;
   }
 
   addError(error: string) {
@@ -292,7 +307,7 @@ export class Response {
       const currentHeader = currentTab
         ? await this._buildCurrentHeader(currentTab)
         : undefined;
-      if (currentHeader && (this._includeSnapshot !== 'none' || currentHeader.changed))
+      if (currentHeader && this._includePage && (this._includeSnapshot !== 'none' || currentHeader.changed))
         addSection('Page', renderTabMarkdown(currentHeader));
       if (this._context.tabs().length === 0)
         this._isClose = true;

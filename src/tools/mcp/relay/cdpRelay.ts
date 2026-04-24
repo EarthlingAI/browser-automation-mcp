@@ -170,6 +170,14 @@ export class CDPRelayServer {
     // regressions of the Scenario-1 "_cleanupTabSessions wiped the hint mid-
     // lease-release" bug class. Non-zero = investigate.
     switchTabTargetMismatch: 0,
+    // Lifetime peak of concurrent Playwright clients ever observed on this
+    // daemon. Complements `clients_1s_high_water` (rolling 1s) by capturing
+    // forensic churn that the rolling counter can miss between resets.
+    lifetimeClientsHighWater: 0,
+    // Total client WebSocket closes observed (both orderly client.close() and
+    // daemon-initiated drainAndClose cascades funnel through the same
+    // ws.on('close') handler, so one bump site covers both cases).
+    clientDisconnectCount: 0,
   };
   private _clientsHighWater1s = 0;
   private _clientsHighWaterResetTimer: NodeJS.Timeout | null = null;
@@ -210,6 +218,11 @@ export class CDPRelayServer {
   incrementSerializeRetryTimeout(): void { this._telemetry.serializeRetryTimeout++; }
   incrementConcurrentDispatchSerialized(): void { this._telemetry.concurrentDispatchSerialized++; }
   incrementSwitchTabTargetMismatch(): void { this._telemetry.switchTabTargetMismatch++; }
+  updateLifetimeClientsHighWater(current: number): void {
+    if (current > this._telemetry.lifetimeClientsHighWater)
+      this._telemetry.lifetimeClientsHighWater = current;
+  }
+  incrementClientDisconnectCount(): void { this._telemetry.clientDisconnectCount++; }
   leaseSnapshot() { return this._leases.all(); }
 
   onIdle(cb: () => void) { this._onIdle = cb; }
@@ -546,6 +559,7 @@ export class CDPRelayServer {
     this._clients.set(clientId, client);
     if (this._clients.size > this._clientsHighWater1s)
       this._clientsHighWater1s = this._clients.size;
+    this.updateLifetimeClientsHighWater(this._clients.size);
     this._cancelGraceTimer();
     debugLogger(`Playwright client connected: ${clientId} (total=${this._clients.size})`);
     daemonJsonl('client.connect', { clientId, detail: { totalClients: this._clients.size } });
@@ -557,6 +571,7 @@ export class CDPRelayServer {
       const released = this._leases.releaseAllFor(clientId);
       const cancelledPending = this._leases.cancelPendingFor(clientId);
       this._clients.delete(clientId);
+      this.incrementClientDisconnectCount();
       // Pop the client's auto-opened blanks — these are daemon-owned tabs
       // that must not outlive the client that they were opened for.
       const autoBlanks = [...(this._autoOpenedBlanks.get(clientId) ?? [])];
@@ -1118,6 +1133,8 @@ class ClientConnection {
       let hintMissed = false;
 
       // Priority 1: hint present AND visible in live tab list.
+      // Invariant #21: non-force claim. If tab is owned by another client, skip the
+      // hint rather than silently transfer — caller must explicitly switch with force:true.
       if (hintTab !== undefined && tabs.some((t: any) => t.tabId === hintTab)) {
         const claim = this._relay.leases().claim(hintTab, this.id, false);
         if (claim.ok) {
