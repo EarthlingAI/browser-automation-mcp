@@ -148,6 +148,15 @@ export class CDPRelayServer {
   // Without this the browser leaks one blank per CDP client ever connected.
   readonly _autoOpenedBlanks = new Map<string, Set<number>>();
 
+  // Per-client mapping from tabId → real Chromium targetId (the value the
+  // daemon emitted in `Target.attachedToTarget.targetInfo.targetId`). Required
+  // because Playwright's unpatched `_onDetachedFromTarget` matches by real
+  // targetId; emitting a synthetic `tab-${tabId}` is silently ignored, leaving
+  // the client's `_crPages` map carrying a dead entry. Populated on every
+  // `Target.attachedToTarget` emit (via `recordClientTabTargetId`); cleared on
+  // tab revoke / detach / client disconnect.
+  private readonly _clientTabTargetIds = new Map<string, Map<number, string>>();
+
   private _graceTimer: NodeJS.Timeout | null = null;
   private _onIdle: (() => void) | null = null;
 
@@ -576,6 +585,7 @@ export class CDPRelayServer {
       // that must not outlive the client that they were opened for.
       const autoBlanks = [...(this._autoOpenedBlanks.get(clientId) ?? [])];
       this._autoOpenedBlanks.delete(clientId);
+      this.clearClientTabTargetIds(clientId);
       // NOTE: do NOT delete `_lastSwitchedTab` or `_declaredSwitchTarget` here.
       // Both are designed to survive client WS close → reconnect cycles
       // (invariant #12, #18). They are consumed / cleared on tab-gone events
@@ -607,6 +617,25 @@ export class CDPRelayServer {
 
   /** Record which tab a client last switched to (survives reconnection). */
   setLastSwitchedTab(clientId: string, tabId: number): void { this._lastSwitchedTab.set(clientId, tabId); }
+
+  recordClientTabTargetId(clientId: string, tabId: number, realTargetId: string): void {
+    let row = this._clientTabTargetIds.get(clientId);
+    if (!row) { row = new Map(); this._clientTabTargetIds.set(clientId, row); }
+    row.set(tabId, realTargetId);
+  }
+  getClientTabTargetId(clientId: string, tabId: number): string | undefined {
+    return this._clientTabTargetIds.get(clientId)?.get(tabId);
+  }
+  clearClientTabTargetIdsForTab(clientId: string, tabId: number): void {
+    const row = this._clientTabTargetIds.get(clientId);
+    if (!row) return;
+    row.delete(tabId);
+    if (row.size === 0)
+      this._clientTabTargetIds.delete(clientId);
+  }
+  clearClientTabTargetIds(clientId: string): void {
+    this._clientTabTargetIds.delete(clientId);
+  }
   /** Consume (read + delete) the last-switched hint for a client. */
   consumeLastSwitchedTab(clientId: string): number | undefined {
     const tab = this._lastSwitchedTab.get(clientId);
@@ -878,11 +907,17 @@ class ClientConnection {
     if (!this._subscribedTabs.has(tabId))
       return;
     const virtualId = this._relay.virtualSessionForTab(tabId);
+    // Emit detach with the real Chromium targetId we recorded at attach time.
+    // Playwright's `_onDetachedFromTarget` matches by real targetId; emitting
+    // a synthetic `tab-${tabId}` is silently ignored, leaving the client's
+    // `_crPages` carrying a closed-target entry.
+    const realTargetId = this._relay.getClientTabTargetId(this.id, tabId);
     this.sendRaw({
       method: 'Target.detachedFromTarget',
-      params: { sessionId: virtualId, targetId: `tab-${tabId}`, reason } as any,
+      params: { sessionId: virtualId, targetId: realTargetId ?? `tab-${tabId}`, reason } as any,
     });
     this._subscribedTabs.delete(tabId);
+    this._relay.clearClientTabTargetIdsForTab(this.id, tabId);
     if (this._primaryTab === tabId)
       this._primaryTab = null;
     // Peer force-switch / external revocation: the declared target is no
@@ -901,11 +936,13 @@ class ClientConnection {
     });
     for (const tabId of this._subscribedTabs) {
       const virtualId = this._relay.virtualSessionForTab(tabId);
+      const realTargetId = this._relay.getClientTabTargetId(this.id, tabId);
       this.sendRaw({
         method: 'Target.detachedFromTarget',
-        params: { sessionId: virtualId, targetId: `tab-${tabId}` },
+        params: { sessionId: virtualId, targetId: realTargetId ?? `tab-${tabId}` },
       });
     }
+    this._relay.clearClientTabTargetIds(this.id);
     this._subscribedTabs.clear();
     this._primaryTab = null;
     // Lost extension invalidates the whole notion of a declared target on
@@ -1092,6 +1129,52 @@ class ClientConnection {
         const tabId: number = params?.tabId;
         return await this.releaseTabWithDetach(tabId);
       }
+      case 'Earthling.bindTab': {
+        // Idempotent attach for the per-tab page pool. The MCP backend calls
+        // this when its `Context._tabsByTabId` does NOT yet have a Page for
+        // the requested tab (initial bind, or a tab the client has not
+        // previously visited). Returns `{alreadyBound: true}` when this client
+        // already holds a CRPage for the tab — re-emitting attach in that
+        // case would trip Playwright's `assert(!this._crPages.has(...))`.
+        const tabId: number = params?.tabId;
+        if (typeof tabId !== 'number')
+          throw new Error(`Earthling.bindTab: tabId required`);
+        const owner = this._relay.leases().ownerOf(tabId);
+        if (!owner || owner.ownerClientId !== this.id)
+          throw new Error(`Earthling.bindTab: client ${this.id} does not own tab ${tabId}`);
+        const existing = this._relay.getClientTabTargetId(this.id, tabId);
+        if (existing) {
+          daemonJsonl('session.bindTab', { clientId: this.id, tabId, detail: { alreadyBound: true, realTargetId: existing } });
+          return { alreadyBound: true, targetId: existing };
+        }
+        const attachResult = await this._relay.callExtensionDirect('attachToTab', { tabId } as any);
+        const targetInfo = attachResult?.targetInfo;
+        const extSessionId: string | undefined = attachResult?.sessionId;
+        const realTargetId: string | undefined = targetInfo?.targetId;
+        if (!realTargetId)
+          throw new Error(`Earthling.bindTab: extension returned no targetId for tab ${tabId}`);
+        const virtualId = this._relay.virtualSessionForTab(tabId);
+        if (extSessionId)
+          this._relay.bindExtSession(extSessionId, virtualId, tabId);
+        this._subscribedTabs.add(tabId);
+        this._relay.recordClientTabTargetId(this.id, tabId, realTargetId);
+        daemonJsonl('session.bindTab', {
+          clientId: this.id,
+          tabId,
+          virtualSessionId: virtualId,
+          realSessionId: extSessionId,
+          detail: { alreadyBound: false, realTargetId },
+        });
+        this.sendRaw({
+          method: 'Target.attachedToTarget',
+          params: {
+            sessionId: virtualId,
+            targetInfo: { ...targetInfo, attached: true },
+            waitingForDebugger: false,
+          },
+        });
+        return { alreadyBound: false, targetId: realTargetId };
+      }
       case 'Earthling.openTab':
         return await this._relay.callExtensionDirect('openTab', params || {});
       case 'Earthling.closeTab': {
@@ -1207,6 +1290,8 @@ class ClientConnection {
     });
     if (extSessionId)
       this._relay.bindExtSession(extSessionId, virtualId, activeTabId);
+    if (targetInfo?.targetId)
+      this._relay.recordClientTabTargetId(this.id, activeTabId, targetInfo.targetId);
     daemonJsonl('session.autoAttach.emit', {
       clientId: this.id,
       tabId: activeTabId,

@@ -97,8 +97,10 @@ export class Context {
   readonly options: ContextOptions;
   private _rawBrowserContext: playwright.BrowserContext;
   private _browserContextPromise: Promise<playwright.BrowserContext> | undefined;
-  private _tabs: Tab[] = [];
-  private _currentTab: Tab | undefined;
+  private _tabsByTabId = new Map<number, Tab>();
+  private _currentTabId: number | null = null;
+  private _pendingBindTabId: number | null = null;
+  private _initialPagePooledPromise: Promise<void> | undefined;
   private _routes: RouteEntry[] = [];
   private _video: {
     allVideos: Set<playwright.Video>;
@@ -121,10 +123,10 @@ export class Context {
 
   async dispose() {
     await disposeAll(this._disposables);
-    for (const tab of this._tabs)
+    for (const tab of this._tabsByTabId.values())
       await tab.dispose();
-    this._tabs.length = 0;
-    this._currentTab = undefined;
+    this._tabsByTabId.clear();
+    this._currentTabId = null;
     await this.stopVideoRecording();
   }
 
@@ -147,49 +149,155 @@ export class Context {
   }
 
   tabs(): Tab[] {
-    return this._tabs;
+    return Array.from(this._tabsByTabId.values());
   }
 
   currentTab(): Tab | undefined {
-    return this._currentTab;
+    return this._currentTabId !== null ? this._tabsByTabId.get(this._currentTabId) : undefined;
   }
 
   currentTabOrDie(): Tab {
-    if (!this._currentTab)
+    const tab = this.currentTab();
+    if (!tab)
       throw new Error('No open pages available.');
-    return this._currentTab;
+    return tab;
   }
 
   async newTab(): Promise<Tab> {
     const browserContext = await this.ensureBrowserContext();
-    const page = await browserContext.newPage();
-    this._currentTab = this._tabs.find(t => t.page === page)!;
-    return this._currentTab;
+    await browserContext.newPage();
+    const tab = this.currentTab();
+    if (!tab)
+      throw new Error('newTab: page event did not produce a pool entry');
+    return tab;
   }
 
   async selectTab(index: number) {
-    const tab = this._tabs[index];
+    const tab = this.tabs()[index];
     if (!tab)
       throw new Error(`Tab ${index} not found`);
     await tab.page.bringToFront();
-    this._currentTab = tab;
+    this._currentTabId = tab.tabId;
     return tab;
   }
 
   async ensureTab(): Promise<Tab> {
     const browserContext = await this.ensureBrowserContext();
-    if (!this._currentTab)
+    await this._ensureInitialPagePooled();
+    if (!this.currentTab())
       await browserContext.newPage();
-    return this._currentTab!;
+    return this.currentTabOrDie();
   }
 
   async closeTab(index: number | undefined): Promise<string> {
-    const tab = index === undefined ? this._currentTab : this._tabs[index];
+    const tab = index === undefined ? this.currentTab() : this.tabs()[index];
     if (!tab)
       throw new Error(`Tab ${index} not found`);
     const url = tab.page.url();
     await tab.page.close();
     return url;
+  }
+
+  /**
+   * Per-tab Page pool entry point. Routes to an existing pool entry if we
+   * already hold a Page for this tabId; otherwise issues `Earthling.bindTab`
+   * to the daemon and awaits the resulting BrowserContext 'page' event.
+   *
+   * The caller (earthlingTabs.switchTab.handle) is responsible for issuing
+   * `Earthling.switchToTab` first to claim the lease — this method only
+   * handles bindTab + pool routing.
+   */
+  async acquireTab(tabId: number, _force: boolean): Promise<Tab> {
+    await this._ensureInitialPagePooled();
+    if (this._tabsByTabId.has(tabId)) {
+      this._currentTabId = tabId;
+      return this._tabsByTabId.get(tabId)!;
+    }
+    const browserContext = await this.ensureBrowserContext();
+    const browser = browserContext.browser();
+    if (!browser)
+      throw new Error('No browser available for bindTab');
+    this._pendingBindTabId = tabId;
+    // Always clear the pending slot on any exit path. Without this, a 5s
+    // timeout (or a cdp.send rejection) leaves _pendingBindTabId set to the
+    // failed tabId — the next stray BrowserContext 'page' event would adopt
+    // the wrong Page under it, and a retried acquireTab(otherTabId) would
+    // overwrite the slot mid-flight, cross-wiring the late-arriving Page.
+    try {
+      const pageEvent = new Promise<playwright.Page>((resolve, reject) => {
+        const onPage = (p: playwright.Page) => { browserContext.off('page', onPage); resolve(p); };
+        browserContext.on('page', onPage);
+        setTimeout(() => { browserContext.off('page', onPage); reject(new Error(`bindTab(${tabId}) timed out waiting for Page`)); }, 5_000);
+      });
+      const cdp = await browser.newBrowserCDPSession();
+      try {
+        await cdp.send('Earthling.bindTab' as any, { tabId });
+      } finally {
+        void safeDetach(cdp, 500);
+      }
+      await pageEvent;
+      this._currentTabId = tabId;
+      const tab = this._tabsByTabId.get(tabId);
+      if (!tab)
+        throw new Error(`bindTab(${tabId}): page event fired but pool entry missing`);
+      return tab;
+    } finally {
+      if (this._pendingBindTabId === tabId)
+        this._pendingBindTabId = null;
+    }
+  }
+
+  private _evictTab(tabId: number): void {
+    this._tabsByTabId.delete(tabId);
+    if (this._currentTabId === tabId)
+      this._currentTabId = null;
+  }
+
+  /**
+   * Adopt the auto-attached page from `connectOverCDP` into the pool under
+   * the daemon-reported `primaryTab` tabId. Idempotent and lazy — fired
+   * from `acquireTab` / `ensureTab` on the first call. Uses `Earthling.whoAmI`
+   * to learn the tabId; if the daemon reports no primary or the BrowserContext
+   * has no pages yet, this is a no-op.
+   */
+  private _ensureInitialPagePooled(): Promise<void> {
+    if (this._initialPagePooledPromise)
+      return this._initialPagePooledPromise;
+    this._initialPagePooledPromise = (async () => {
+      const browserContext = await this.ensureBrowserContext();
+      // If a page already landed in the pool (e.g. via _onPageCreated with
+      // a pending bind), we're done.
+      if (this._tabsByTabId.size > 0)
+        return;
+      const browser = browserContext.browser();
+      if (!browser)
+        return;
+      let primaryTab: number | null = null;
+      try {
+        const cdp = await browser.newBrowserCDPSession();
+        try {
+          const res: any = await cdp.send('Earthling.whoAmI' as any, {});
+          primaryTab = (res && typeof res.primaryTab === 'number') ? res.primaryTab : null;
+        } finally {
+          void safeDetach(cdp, 500);
+        }
+      } catch {
+        return;
+      }
+      if (primaryTab === null)
+        return;
+      // The auto-attached page is already in BrowserContext.pages() — adopt it
+      // by re-running _onPageCreated with the discovered tabId.
+      const pages = browserContext.pages();
+      if (pages.length === 0)
+        return;
+      const page = pages[0];
+      if (Tab.forPage(page))
+        return; // already pooled
+      this._pendingBindTabId = primaryTab;
+      this._onPageCreated(page);
+    })();
+    return this._initialPagePooledPromise;
   }
 
   async workspaceFile(fileName: string, perCallWorkspaceDir: string | undefined): Promise<string> {
@@ -228,21 +336,29 @@ export class Context {
   }
 
   private _onPageCreated(page: playwright.Page) {
-    const tab = new Tab(this, page, tab => this._onPageClosed(tab));
-    this._tabs.push(tab);
-    if (!this._currentTab)
-      this._currentTab = tab;
+    // Determine the Earthling tabId for this Page. Priority:
+    //   1. _pendingBindTabId — set by acquireTab() / _ensureInitialPagePooled()
+    //      just before triggering an event that produces a 'page' event.
+    //   2. Otherwise: skip pooling. The daemon attaches Pages only via bindTab
+    //      (post-Phase 2), so any 'page' event without a pending bind is a
+    //      Playwright-internal artifact (e.g. about:blank during connect).
+    //      We'll adopt it lazily via _ensureInitialPagePooled() once whoAmI
+    //      tells us its tabId.
+    const tabId = this._pendingBindTabId;
+    if (tabId === null)
+      return;
+    this._pendingBindTabId = null;
+    if (this._tabsByTabId.has(tabId))
+      return; // already pooled — defensive
+    const tab = new Tab(this, tabId, page, t => this._onPageClosed(t));
+    this._tabsByTabId.set(tabId, tab);
+    if (this._currentTabId === null)
+      this._currentTabId = tabId;
     this._startPageVideo(page).catch(() => {});
   }
 
   private _onPageClosed(tab: Tab) {
-    const index = this._tabs.indexOf(tab);
-    if (index === -1)
-      return;
-    this._tabs.splice(index, 1);
-
-    if (this._currentTab === tab)
-      this._currentTab = this._tabs[Math.min(index, this._tabs.length - 1)];
+    this._evictTab(tab.tabId);
   }
 
   routes(): RouteEntry[] {

@@ -90,10 +90,10 @@ const switchTab = defineTool({
 	},
 	handle: async (context, params, response) => {
 		const res = await relaySend(context, 'Earthling.switchToTab', { tabId: params.tabId, force: !!params.force });
-		// setClose() tells the MCP server to dispose this backend (closing
-		// the connectOverCDP WebSocket). The next tool call creates a fresh
-		// backend that reconnects and leases the extension's now-connected tab.
-		response.setClose();
+		// Per-tab Page pool: switch is pure JS routing — claim the lease at the
+		// daemon (above), then ensure a Page exists for this tabId in our pool
+		// (binds via Earthling.bindTab if missing). The WebSocket stays alive.
+		await context.acquireTab(params.tabId, !!params.force);
 		const parts = [`Switched to tab ${res?.claimed ?? params.tabId}.`];
 		if (res?.released != null)
 			parts.push(`Released prior tab ${res.released}.`);

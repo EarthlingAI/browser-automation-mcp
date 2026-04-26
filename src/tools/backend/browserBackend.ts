@@ -269,13 +269,16 @@ export class BrowserBackend implements ServerBackend {
       // browser has been closed" and "Connection closed" are the typical
       // flavours when the CDP WS dies mid-call.
       const msg = String(error?.message || error);
-      // "No debugger attached" is the semantic error the extension returns when
-      // a tab-scoped CDP command races the extension SW restart — the lease was
-      // revoked but the in-flight command reached the extension first. Treat it
-      // as disconnect-shaped so transparent reconnect kicks in instead of
-      // surfacing a raw extension error to the agent.
-      const looksLikeDisconnect = /Target.*closed|Connection closed|browser has been closed|Session closed|No debugger attached/i.test(msg);
-      if (looksLikeDisconnect && this._reconnectFactory) {
+      // Trigger transparent reconnect for connection-level death. Match
+      // Playwright's canonical disconnect strings — including the default
+      // `TargetClosedError` message ("Target page, context or browser has
+      // been closed") which fires when a CDP send was in flight at the moment
+      // the WS died. Pair the regex with a real `browser.isConnected()` check
+      // so legitimate page-level errors (closed pool entry, extension SW race)
+      // still surface honestly to the agent rather than triggering reconnect.
+      const looksLikeDisconnect = /Browser has been closed|Connection closed|Browser closed|Target page, context or browser has been closed|Target browser has been closed/i.test(msg);
+      const browserGone = !!this.browserContext.browser() && !this.browserContext.browser()!.isConnected();
+      if (looksLikeDisconnect && browserGone && this._reconnectFactory) {
         try {
           await this._reconnect();
           const retryContext = this._context!;

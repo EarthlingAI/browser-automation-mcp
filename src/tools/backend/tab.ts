@@ -93,6 +93,7 @@ type TabSnapshot = {
 
 export class Tab extends EventEmitter<TabEventsInterface> {
   readonly context: Context;
+  readonly tabId: number;
   readonly page: playwright.Page;
   private _lastHeader: TabHeader = { title: 'about:blank', url: 'about:blank', current: false, console: { total: 0, warnings: 0, errors: 0 } };
   private _downloads: Download[] = [];
@@ -100,7 +101,7 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   private _onPageClose: (tab: Tab) => void;
   private _modalStates: ModalState[] = [];
   private _initializedPromise: Promise<void>;
-  private _needsFullSnapshot = false;
+  private _needsFullSnapshot = true;
   private _recentEventEntries: EventEntry[] = [];
   private _consoleLog: LogFile;
   private _disposables: Disposable[];
@@ -108,9 +109,10 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   readonly navigationTimeoutOptions: { timeout?: number; };
   readonly expectTimeoutOptions: { timeout?: number; };
 
-  constructor(context: Context, page: playwright.Page, onPageClose: (tab: Tab) => void) {
+  constructor(context: Context, tabId: number, page: playwright.Page, onPageClose: (tab: Tab) => void) {
     super();
     this.context = context;
+    this.tabId = tabId;
     this.page = page;
     this._onPageClose = onPageClose;
     const p = page;

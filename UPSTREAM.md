@@ -15,16 +15,19 @@
 
 ## Earthling divergence from upstream Playwright internals
 
-The following files under `src/server/` carry Earthling-specific patches on top of vendored Playwright code. Re-apply these on any upstream sync.
+There is currently no active Playwright-core patching in this repo. `node_modules/playwright-core/` matches the pinned upstream version baked into `package-lock.json`; the `patches/` directory is empty. The `patch-package` mechanism is preserved as a devDep + `postinstall` hook so a small targeted patch can be added later under the same workflow if needed.
 
-- `src/server/page.ts` — `snapshotFrameForAI()`:
-  - Per-iframe 5s timeout around `snapshotFrameRefForAI` (replaces the unbounded `Promise.all`). A timed-out iframe becomes an inline `[iframe ref=… unavailable: …]` marker instead of blocking the whole snapshot.
-  - Inner progress steps (`frame._utilityContext()`, `context.injectedScript()`, `injectedScript.evaluate(...)`) race against `frame._detachedScope` via `LongStandingScope.raceMultiple` so a frame detaching mid-snapshot rejects promptly.
-- `src/server/frames.ts` — `retryWithProgressAndTimeouts()`:
-  - Hard `MAX_RETRY_ATTEMPTS = 20` cap. Bounds the `while (true)` loop when the outer `ProgressController` deadline is 0 (debug mode).
-- `src/server/progress.ts` — `ProgressController.run()` (Phase 2+3, `zesty-meandering-island`):
-  - `HARD_CEILING_MS = 120_000` clamp. `timeout && timeout > 0 ? min(timeout, 120s) : 120s`. The `if (deadline)` guard around timer setup is removed since `deadline` is now always truthy. Error message uses the effective timeout (the clamped value) so agents see the real deadline that fired.
-  - Rationale: MCP tool calls must complete in bounded time — the upstream "0 means infinite" contract is incompatible with agent tool-call semantics, and Phase 1 only fixed the snapshot path. This closes the action-tool hang vector (Finding #15) at the Playwright layer, retroactively protecting every `locator.click` / `locator.fill` / `page.goto` etc.
+The dormant Earthling edits under `src/server/{page,frames,progress}.ts` are vendored upstream-derived sources (left over from earlier exploratory work). They do not reach MCP runtime — runtime Playwright comes from `node_modules/playwright-core/` which is unpatched. With the H1 rebind work resolved (see "Historical (resolved)" below) none of these src/server edits are load-bearing; treat them as conservative carry-over until an upstream sync resolves them.
+
+## Historical (resolved)
+
+- **H1 Option 3b rebind patch (2026-04 series).** A vendored `patches/playwright-core+...patch` introduced `_pendingRebind` / `rebindPageByPage` / `_rebindToTarget` / `disposeForRebind` to swap a `Page`'s underlying Chromium target on `browser_switch_tab` while preserving the outward `Page` reference. Phase 7 stress testing (`outputs/issue-reports/2026-04-25_h1-3b-final-a.md`) showed the rebind RPC engaged at the daemon layer but left the post-rebind `Page` in a "closed" state on Playwright's server side, so `page.snapshotForAI()` inside `response.serialize()` threw `TargetClosedError` and the legacy `_reconnect()` fallback masked the failure while burning two `client_disconnect_count` increments per switch. The patch was abandoned and replaced with a per-tab Playwright `Page` pool inside the MCP backend (`Context._tabsByTabId`); `browser_switch_tab` is now pure JS routing and the WebSocket survives indefinitely. The patch file is deleted, `patches/` is empty, and `playwright-core` is stock-upstream. Removed Earthling-side symbols: `Earthling.rebindPageSession`, `Earthling.resolveTabTargetId`, `Context.rebindTab`, `Tab._resetForRebind`, `scripts/rebind-probe.ts`, and the four `rebind-*.spec.ts` files.
+
+- **`src/server/page.ts` — `snapshotFrameForAI()` per-iframe 5s timeout + `_detachedScope` race.** Originally added to bound iframe snapshots and reject promptly when a frame detaches mid-snapshot. Lives in `src/server/` only and does not reach runtime; equivalent runtime guarding is provided by the Earthling-only `IFRAME_SNAPSHOT_TIMEOUT_MS` cap inside `src/tools/backend/page.ts` and the `withTimeoutMarker`/`safeWriteFile` budgets on the response path.
+
+- **`src/server/frames.ts` — `MAX_RETRY_ATTEMPTS = 20` cap on `retryWithProgressAndTimeouts()`.** Originally added to bound the `while (true)` loop when `ProgressController` deadline is 0 (debug mode). Dormant — runtime uses the unpatched upstream loop, but the `ProgressController.run()` `HARD_CEILING_MS = 120_000` (also dormant in `src/server/`) is provided at runtime via the layered `withActionBudget` / `MAX_TOOL_WAIT_MS` guards in `src/tools/backend/`.
+
+- **`src/server/progress.ts` — `ProgressController.run()` `HARD_CEILING_MS = 120_000` clamp.** Originally added (Phase 2+3, `zesty-meandering-island`) so MCP tool calls cannot hang indefinitely even when callers pass `timeout=0`. Dormant in `src/server/`; the same end-state is enforced at runtime by `withActionBudget(... 30_000ms)` per action tool plus the outer 120s `withTimeoutMarker` in `response.serialize()`.
 
 ## Earthling-only code outside `src/server/`
 
@@ -53,5 +56,5 @@ A `browser.on('disconnected')` listener in `_initializeBrowserContext` eagerly n
 
 **Follow-up (2026-04-22):** Phase F Terra E2E confirmed the primary goal (no more `switch_tab` hangs). Two orthogonal bugs were found and fixed in the same layer:
 
-- **`page.title()` serializer race.** During navigation, `page.title()` throws "Execution context was destroyed" synchronously; the raw rejection poisoned the whole tool response for ~25s of subsequent calls. Introduced `safeTitle(page, cachedTitle)` in `utils.ts` and wired through `tab.ts::headerSnapshot`. Fallback chain: cached title → `page.url()` → `'<navigating>'`. Listed as an additional helper under invariant #17.
+- **`page.title()` serializer race.** During navigation, `page.title()` throws "Execution context was destroyed" synchronously; the raw rejection poisoned the whole tool response for ~25s of subsequent calls. Introduced `safeTitle(page, cachedTitle)` in `utils.ts` and wired through `tab.ts::headerSnapshot`. Fallback chain: cached title → `page.url()` → `'<navigating>'`. Listed as an additional helper under invariant #19.
 - **`switch_tab` target-creation race.** `_handleSetAutoAttach` fell back to opening a fresh `about:blank` whenever a hint tab was absent from `listTabs()`, even when `listTabs()` returned a stale snapshot mid-navigation. Added a Priority-2 direct extension `attachToTab` step that recovers the hint tab before falling through to the blank fallback. Diagnostics surfaced via `session.autoAttach.hint.directAttach` / `session.autoAttach.hint.missed` / `session.autoAttach.hint.fallbackBlank` JSONL entries.
