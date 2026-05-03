@@ -72,13 +72,21 @@ async function health(port: number, timeoutMs = 200): Promise<{ ok: boolean; ext
 }
 
 function spawnDaemon(port: number, channel?: string): void {
-  // Resolve the built daemon. PKG_ROOT/dist/relay-daemon.js in production;
-  // in dev (tsx) we fall back to src via tsx.
+  // Three resolution paths in priority order:
+  //   1. BROWSER_AUTOMATION_MCP_RELAY_BINARY — pre-compiled standalone binary
+  //      (Earthling bundled-MCP mode; the calling MCP is itself a SEA blob,
+  //      so process.execPath cannot be used to spawn arbitrary JS).
+  //   2. PKG_ROOT/dist/relay-daemon.js — production source-install path.
+  //   3. src/tools/mcp/relay/daemon.ts via tsx — dev fallback.
+  const relayBinary = process.env.BROWSER_AUTOMATION_MCP_RELAY_BINARY;
   const builtPath = path.join(PKG_ROOT, 'dist', 'relay-daemon.js');
   const srcPath = path.join(PKG_ROOT, 'src', 'tools', 'mcp', 'relay', 'daemon.ts');
   let cmd: string;
   let args: string[];
-  if (fs.existsSync(builtPath)) {
+  if (relayBinary && fs.existsSync(relayBinary)) {
+    cmd = relayBinary;
+    args = ['--port', String(port)];
+  } else if (fs.existsSync(builtPath)) {
     cmd = process.execPath;
     args = [builtPath, '--port', String(port)];
   } else {
@@ -87,10 +95,22 @@ function spawnDaemon(port: number, channel?: string): void {
   }
   if (channel)
     args.push('--channel', channel);
+  // Bundled mode also needs to tell the relay binary where to find its
+  // externals tree. The relay shares the main MCP's externals tree (single
+  // copy on disk), so we forward EARTHLING_BUNDLED_MCP_DIR + a
+  // per-binary override so the relay's own SEA shim resolves correctly.
+  const childEnv = { ...process.env };
+  if (relayBinary && process.env.EARTHLING_BUNDLED_MCP_DIR && !process.env.BROWSER_AUTOMATION_MCP_RELAY_EXTERNALS_DIR) {
+    childEnv.BROWSER_AUTOMATION_MCP_RELAY_EXTERNALS_DIR = path.join(
+      process.env.EARTHLING_BUNDLED_MCP_DIR,
+      'browser-automation-mcp-externals',
+    );
+  }
   const child = spawn(cmd, args, {
     detached: true,
     stdio: 'ignore',
     windowsHide: true,
+    env: childEnv,
   });
   child.unref();
 }
