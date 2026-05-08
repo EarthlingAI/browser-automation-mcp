@@ -938,6 +938,15 @@ class ClientConnection {
   // When the client issues a top-level Target.setAutoAttach it gets auto-leased
   // to `_primaryTab` — used to map tab-less session requests back to a tab.
   private _primaryTab: number | null = null;
+  // The tabId the daemon auto-attached this client to at connect time. Set
+  // by `_handleSetAutoAttach`, NOT updated by `Earthling.switchToTab`. The
+  // MCP backend uses this to pool the auto-attached Page under the right
+  // tabId even when whoAmI is called after a switch has already moved
+  // _primaryTab — without this distinction, the lazy `_ensureInitialPagePooled`
+  // pools the autoBlank's Page under the destination tabId, which then
+  // wedges Page.navigate with "No frame with given id" because the cached
+  // frameTree belongs to the closed autoBlank target.
+  private _attachedTabId: number | null = null;
   private _closed = false;
 
   constructor(id: string, ws: WebSocket, relay: CDPRelayServer) {
@@ -999,6 +1008,8 @@ class ClientConnection {
     this._relay.clearClientTabTargetIdsForTab(this.id, tabId);
     if (this._primaryTab === tabId)
       this._primaryTab = null;
+    if (this._attachedTabId === tabId)
+      this._attachedTabId = null;
     // Peer force-switch / external revocation: the declared target is no
     // longer reachable by this client. Clear it here too, otherwise the
     // post-reconnect `_handleSetAutoAttach` mismatch check treats every
@@ -1024,6 +1035,7 @@ class ClientConnection {
     this._relay.clearClientTabTargetIds(this.id);
     this._subscribedTabs.clear();
     this._primaryTab = null;
+    this._attachedTabId = null;
     // Lost extension invalidates the whole notion of a declared target on
     // this client — without this, the post-reconnect mismatch check fires on
     // every extension-loss recovery and drowns the counter's signal.
@@ -1204,6 +1216,8 @@ class ClientConnection {
               params: { sessionId: stalePageVirtualId, targetId: stalePageTargetId ?? `tab-${oldPrimary}` } as any,
             });
             this._relay.clearClientTabTargetIdsForTab(this.id, oldPrimary);
+            if (this._attachedTabId === oldPrimary)
+              this._attachedTabId = null;
             this._relay._forgetTab(oldPrimary);
             void this._relay.callExtensionDirect('closeTab', { tabId: oldPrimary }).catch(() => {});
             daemonJsonl('autoBlank.closed.switchOff', { clientId: this.id, tabId: oldPrimary });
@@ -1293,7 +1307,7 @@ class ClientConnection {
         return result;
       }
       case 'Earthling.whoAmI':
-        return { clientId: this.id, primaryTab: this._primaryTab };
+        return { clientId: this.id, primaryTab: this._primaryTab, attachedTabId: this._attachedTabId };
       case 'Earthling.getDebugLog':
         return await this._relay.callExtensionDirect('getDebugLog', {});
       case 'Earthling.queryOrphanBlanks':
@@ -1374,6 +1388,11 @@ class ClientConnection {
     }
     const activeTabId: number = tabId;
     this._subscribedTabs.add(activeTabId);
+    // Stamp the auto-attach tabId on this session. This is what the MCP
+    // backend's `_ensureInitialPagePooled` queries via whoAmI to pool the
+    // auto-attached Page under the right tabId — independent of any
+    // subsequent `Earthling.switchToTab` calls that move `_primaryTab`.
+    this._attachedTabId = activeTabId;
 
     // Attach via extension (binds the extension sessionId for this tab if not already).
     const attachResult = await this._relay.callExtensionDirect('attachToTab', { tabId: activeTabId } as any);
@@ -1430,6 +1449,8 @@ class ClientConnection {
       this._subscribedTabs.delete(tabId);
       if (this._primaryTab === tabId)
         this._primaryTab = null;
+      if (this._attachedTabId === tabId)
+        this._attachedTabId = null;
       // If this client's declared target was the released tab, drop the
       // defensive tracker too — otherwise a subsequent reconnect that lands
       // on a fresh blank would look like a mismatch when the client

@@ -255,10 +255,27 @@ export class Context {
 
   /**
    * Adopt the auto-attached page from `connectOverCDP` into the pool under
-   * the daemon-reported `primaryTab` tabId. Idempotent and lazy — fired
-   * from `acquireTab` / `ensureTab` on the first call. Uses `Earthling.whoAmI`
-   * to learn the tabId; if the daemon reports no primary or the BrowserContext
-   * has no pages yet, this is a no-op.
+   * its true tabId. Idempotent and lazy — fired from `acquireTab` / `ensureTab`
+   * on the first call.
+   *
+   * Uses `Earthling.whoAmI.attachedTabId` (set ONCE by the daemon at auto-attach
+   * time and cleared only when that tab goes away). Falls back to `primaryTab`
+   * for backward compatibility with older daemons that don't report
+   * `attachedTabId`.
+   *
+   * The `attachedTabId` distinction matters because `acquireTab` is reachable
+   * from `switchTab.handle` AFTER `Earthling.switchToTab` has already moved
+   * the daemon's `_primaryTab` to the destination — using `primaryTab` then
+   * pools the still-alive auto-attached Page under the destination tabId,
+   * which makes `_tabsByTabId.has(destination)` return true and bypasses
+   * the bindTab path. Subsequent `Page.navigate` then carries the
+   * auto-attached page's cached mainFrameId to the destination's chrome
+   * target, which answers "No frame with given id found" because that
+   * frame belongs to a closed target.
+   *
+   * If the daemon reports `attachedTabId === null` (e.g. the auto-attached
+   * tab was already closed by the time this runs), we skip pooling — the
+   * caller's bindTab path will handle the destination cleanly.
    */
   private _ensureInitialPagePooled(): Promise<void> {
     if (this._initialPagePooledPromise)
@@ -272,19 +289,22 @@ export class Context {
       const browser = browserContext.browser();
       if (!browser)
         return;
-      let primaryTab: number | null = null;
+      let attachedTabId: number | null = null;
       try {
         const cdp = await browser.newBrowserCDPSession();
         try {
           const res: any = await cdp.send('Earthling.whoAmI' as any, {});
-          primaryTab = (res && typeof res.primaryTab === 'number') ? res.primaryTab : null;
+          if (res && typeof res.attachedTabId === 'number')
+            attachedTabId = res.attachedTabId;
+          else if (res && typeof res.primaryTab === 'number')
+            attachedTabId = res.primaryTab;
         } finally {
           void safeDetach(cdp, 500);
         }
       } catch {
         return;
       }
-      if (primaryTab === null)
+      if (attachedTabId === null)
         return;
       // The auto-attached page is already in BrowserContext.pages() — adopt it
       // by re-running _onPageCreated with the discovered tabId.
@@ -294,7 +314,7 @@ export class Context {
       const page = pages[0];
       if (Tab.forPage(page))
         return; // already pooled
-      this._pendingBindTabId = primaryTab;
+      this._pendingBindTabId = attachedTabId;
       this._onPageCreated(page);
     })();
     return this._initialPagePooledPromise;
