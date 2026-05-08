@@ -165,11 +165,8 @@ browser-automation-mcp/
 │   ├── lib/processTree.ts          # Cross-platform reapable child-process tracker
 │   ├── concurrent-smoke.ts         # 2-client + lease-churn baseline (smoke gate)
 │   ├── wedge-detector.ts           # 4-client raw-WS abort cascade harness
-│   ├── agent-driver.ts             # Earthling-agent driver (engine /api/chat SSE)
-│   ├── mcp-backend-driver.ts       # Standalone MCP-backend subprocess driver (stdio)
 │   ├── state-observer.ts           # Passive WS observer (daemon health + jsonl tail)
-│   ├── multi-driver-soak.ts        # 30-min sustained multi-driver validation
-│   └── scenarios/                  # Per-wedge reproduction scripts
+│   └── multi-driver-soak.ts        # Sustained multi-driver validation orchestrator
 ├── dev.ts                          # Development entry point (tsx)
 ├── tsconfig.json                   # TypeScript config (strict, ES2022, Node16)
 └── package.json                    # Workspaces: packages/*
@@ -372,15 +369,18 @@ Tests live in `packages/playwright-mcp/tests/` and use Playwright Test.
 
 ### Wedge-stab regression gates
 
-Two layered harnesses target the multi-client race surface that earlier production wedges (`switch_tab` "no targetId" stalls, `relay-wedge` recovery failures) exposed:
+Production wedges (`switch_tab` "no targetId" stalls, `relay-wedge` recovery failures) live at the per-MCP-backend `Context._tabsByTabId` pool under contention from N≥2 MCP backends sharing the singleton 9223 daemon. Validation has two complementary surfaces:
 
-| Layer | Script | Surface |
+| Surface | Driver | Coverage |
 |---|---|---|
-| Raw-WS | `scripts/wedge-detector.ts` (MODE=`wedge-probe` default) | 4 raw-WS clients × N iterations with mid-cycle victim aborts; daemon + extension WS lifecycle. |
-| Raw-WS | `scripts/concurrent-smoke.ts` MODE=`lease-churn` | 2-client interleaved switch/release; lease-table self-consistency. |
-| MCP tool path | `scripts/scenarios/*.ts` driven by `scripts/mcp-backend-driver.ts` + `scripts/agent-driver.ts` | N≥2 MCP backends + Earthling-agent contention through `browser_*` tools; exercises `Context._tabsByTabId` per-pool eviction (the production wedge surface). |
+| Raw-WS lease/transport | `scripts/wedge-detector.ts` MODE=`wedge-probe` (default) | 4 raw-WS clients × N iterations with mid-cycle victim aborts; daemon + extension WS lifecycle. |
+| Raw-WS lease churn     | `scripts/concurrent-smoke.ts` MODE=`lease-churn` | 2-client interleaved switch/release; lease-table self-consistency. |
+| MCP tool-path (headless) | `packages/playwright-mcp/tests/*.spec.ts` via `StdioClientTransport` | Spec-level invariants exercised through public `browser_*` tools — the production surface a real agent hits. New regression specs live here. |
+| MCP tool-path (live)     | A developer agent + the Earthling agent contending via the chat UI | Two real MCP backends sharing the live 9223 daemon; matches production exactly. The agents drive scenarios; `state-observer.ts` traces the daemon side. |
 
-`scripts/multi-driver-soak.ts` cycles the MCP-tool-path scenarios alongside the raw-WS harnesses for `SOAK_MINUTES` (default 30, hard cap 120). Output goes to `outputs/wedge-stab/soak-<ts>/` (round NDJSON + per-failure logs + summary.md). Cross-platform reapable orchestration (Windows `taskkill /F /T`, Unix process-group SIGTERM/SIGKILL) lives in `scripts/lib/processTree.ts` — every spawn-site uses `ProcessTracker` so SIGINT/SIGTERM tears down chromium + node descendants without leaks.
+`scripts/state-observer.ts` is a passive read-only probe (no leases, no `Earthling.*` commands) that polls `/health` and tails `.runtime/debug/daemon.jsonl` for `extCallbacks` saturation, sustained `leasesPending`, `callExtensionDirect.timeout`, and `lease.pending.sweep.fired` events. Run it alongside any live wedge reproduction to scope traces to the contention window. Output: `outputs/wedge-stab/observe-<ts>/state-observer-<label>.md`.
+
+`scripts/multi-driver-soak.ts` cycles the headless components (raw-WS + Playwright specs) for `SOAK_MINUTES` (default 30, hard cap 120). Output: `outputs/wedge-stab/soak-<ts>/`. Cross-platform reapable orchestration (Windows `taskkill /F /T`, Unix process-group SIGTERM/SIGKILL) lives in `scripts/lib/processTree.ts` — every spawn-site uses `ProcessTracker` so SIGINT/SIGTERM tears down chromium + node descendants without leaks.
 
 ### Daemon-side instrumentation
 
