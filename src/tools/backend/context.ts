@@ -457,6 +457,13 @@ export class Context {
         cdp.on('Earthling.tabPreempted' as any, (params: any) => {
           const msg = `Your lease on tab ${params?.tabId} was preempted by client ${params?.revokedBy} (reason: ${params?.reason ?? 'unknown'}).`;
           this.addPendingEvent(msg);
+          // The pooled Page's frame state goes stale once the new owner navigates
+          // this tab — evict so the next acquireTab(tabId) flows through a fresh
+          // Earthling.bindTab and a new Page with a valid frame. Without this,
+          // a re-claim returns the orphan Page; snapshot/navigate then throw
+          // "No frame with given id" / "Cannot find context" until session reload.
+          if (typeof params?.tabId === 'number')
+            this._evictTab(params.tabId);
         });
         // Terminal path: fire-and-forget safeDetach covers the Phase-3 atomic
         // tab-switch case where the browser-level target is swapped under us
