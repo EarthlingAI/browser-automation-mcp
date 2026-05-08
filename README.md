@@ -162,11 +162,14 @@ browser-automation-mcp/
 │   └── playwright-cli-stub/        # CLI wrapper
 ├── scripts/
 │   ├── build.js                    # esbuild bundler
+│   ├── lib/processTree.ts          # Cross-platform reapable child-process tracker
 │   ├── concurrent-smoke.ts         # 2-client + lease-churn baseline (smoke gate)
-│   ├── wedge-detector.ts           # 4-client raw-WS abort cascade harness (wedge-stab Layer A)
-│   ├── layer-b-driver.ts           # Isolated-Chrome + alt-port-daemon scenarios (wedge-stab Layer B)
-│   ├── sync-broadcast.ts           # TCP barrier broadcaster for cross-process release skew
-│   └── soak.ts                     # Wall-clock soak orchestrator across all of the above
+│   ├── wedge-detector.ts           # 4-client raw-WS abort cascade harness
+│   ├── agent-driver.ts             # Earthling-agent driver (engine /api/chat SSE)
+│   ├── mcp-backend-driver.ts       # Standalone MCP-backend subprocess driver (stdio)
+│   ├── state-observer.ts           # Passive WS observer (daemon health + jsonl tail)
+│   ├── multi-driver-soak.ts        # 30-min sustained multi-driver validation
+│   └── scenarios/                  # Per-wedge reproduction scripts
 ├── dev.ts                          # Development entry point (tsx)
 ├── tsconfig.json                   # TypeScript config (strict, ES2022, Node16)
 └── package.json                    # Workspaces: packages/*
@@ -369,17 +372,15 @@ Tests live in `packages/playwright-mcp/tests/` and use Playwright Test.
 
 ### Wedge-stab regression gates
 
-Three layered harnesses target the multi-client race surface that earlier production wedges (`switch_tab` "no targetId" stalls, `relay-wedge` recovery failures) exposed:
+Two layered harnesses target the multi-client race surface that earlier production wedges (`switch_tab` "no targetId" stalls, `relay-wedge` recovery failures) exposed:
 
 | Layer | Script | Surface |
 |---|---|---|
-| A | `scripts/wedge-detector.ts` (MODE=`wedge-probe` default) | 4 raw-WS clients × N iterations with mid-cycle victim aborts; daemon + extension WS lifecycle. |
-| A | `scripts/concurrent-smoke.ts` MODE=`lease-churn` | 2-client interleaved switch/release; lease-table self-consistency. |
-| B | `scripts/layer-b-driver.ts` SCENARIO=`preemption-staleness` \| `grace-race` | Isolated Chromium + alt-port daemon (no impact on the live 9223 daemon); full extension/Chrome stack; production-fidelity. |
+| Raw-WS | `scripts/wedge-detector.ts` (MODE=`wedge-probe` default) | 4 raw-WS clients × N iterations with mid-cycle victim aborts; daemon + extension WS lifecycle. |
+| Raw-WS | `scripts/concurrent-smoke.ts` MODE=`lease-churn` | 2-client interleaved switch/release; lease-table self-consistency. |
+| MCP tool path | `scripts/scenarios/*.ts` driven by `scripts/mcp-backend-driver.ts` + `scripts/agent-driver.ts` | N≥2 MCP backends + Earthling-agent contention through `browser_*` tools; exercises `Context._tabsByTabId` per-pool eviction (the production wedge surface). |
 
-`scripts/soak.ts` cycles all of the above for `SOAK_HOURS` (default 0.5, hard cap 8). Output goes to `outputs/wedge-stab/soak-<ts>/` (round NDJSON + per-failure logs + summary.md).
-
-The Layer-B harness picks a free port (9224+), copies the extension to a tmpdir with the default `relayConfig.port` patched, and launches Playwright's bundled chromium with `--load-extension`. It's safe to run alongside the user's primary daemon. See script-head doc for SCENARIO list.
+`scripts/multi-driver-soak.ts` cycles the MCP-tool-path scenarios alongside the raw-WS harnesses for `SOAK_MINUTES` (default 30, hard cap 120). Output goes to `outputs/wedge-stab/soak-<ts>/` (round NDJSON + per-failure logs + summary.md). Cross-platform reapable orchestration (Windows `taskkill /F /T`, Unix process-group SIGTERM/SIGKILL) lives in `scripts/lib/processTree.ts` — every spawn-site uses `ProcessTracker` so SIGINT/SIGTERM tears down chromium + node descendants without leaks.
 
 ### Daemon-side instrumentation
 
