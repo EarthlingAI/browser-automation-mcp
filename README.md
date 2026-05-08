@@ -161,7 +161,12 @@ browser-automation-mcp/
 │   ├── extension/                  # Chrome extension build output
 │   └── playwright-cli-stub/        # CLI wrapper
 ├── scripts/
-│   └── build.js                    # esbuild bundler
+│   ├── build.js                    # esbuild bundler
+│   ├── concurrent-smoke.ts         # 2-client + lease-churn baseline (smoke gate)
+│   ├── wedge-detector.ts           # 4-client raw-WS abort cascade harness (wedge-stab Layer A)
+│   ├── layer-b-driver.ts           # Isolated-Chrome + alt-port-daemon scenarios (wedge-stab Layer B)
+│   ├── sync-broadcast.ts           # TCP barrier broadcaster for cross-process release skew
+│   └── soak.ts                     # Wall-clock soak orchestrator across all of the above
 ├── dev.ts                          # Development entry point (tsx)
 ├── tsconfig.json                   # TypeScript config (strict, ES2022, Node16)
 └── package.json                    # Workspaces: packages/*
@@ -362,6 +367,24 @@ Tests live in `packages/playwright-mcp/tests/` and use Playwright Test.
 
 `npm run smoke-concurrent` (or `npx tsx scripts/concurrent-smoke.ts`) spawns the daemon, opens two independent `chromium.connectOverCDP` connections with distinct clientIds, and asserts no URL cross-contamination. `ITERATIONS=N` overrides iteration count; `BROWSER_CHANNEL=chrome|msedge` selects the channel.
 
+### Wedge-stab regression gates
+
+Three layered harnesses target the multi-client race surface that earlier production wedges (`switch_tab` "no targetId" stalls, `relay-wedge` recovery failures) exposed:
+
+| Layer | Script | Surface |
+|---|---|---|
+| A | `scripts/wedge-detector.ts` (MODE=`wedge-probe` default) | 4 raw-WS clients × N iterations with mid-cycle victim aborts; daemon + extension WS lifecycle. |
+| A | `scripts/concurrent-smoke.ts` MODE=`lease-churn` | 2-client interleaved switch/release; lease-table self-consistency. |
+| B | `scripts/layer-b-driver.ts` SCENARIO=`preemption-staleness` \| `grace-race` | Isolated Chromium + alt-port daemon (no impact on the live 9223 daemon); full extension/Chrome stack; production-fidelity. |
+
+`scripts/soak.ts` cycles all of the above for `SOAK_HOURS` (default 0.5, hard cap 8). Output goes to `outputs/wedge-stab/soak-<ts>/` (round NDJSON + per-failure logs + summary.md).
+
+The Layer-B harness picks a free port (9224+), copies the extension to a tmpdir with the default `relayConfig.port` patched, and launches Playwright's bundled chromium with `--load-extension`. It's safe to run alongside the user's primary daemon. See script-head doc for SCENARIO list.
+
+### Daemon-side instrumentation
+
+`src/tools/mcp/relay/cdpRelay.ts` emits a 100ms `daemon.snapshot` JSONL line covering every per-tab map, the extension callback table, lease counts, and grace-timer state. Cadence is tunable via `EARTHLING_RELAY_SNAPSHOT_MS` (default 100, set 0 to disable for timing-sensitive tests). Per-call `callExtensionDirect.start/.response/.timeout/.error` events with latency are also emitted. `LeaseTable.sweepExpiredPending()` emits `lease.pending.sweep.fired` when expired entries are dropped. These were added in 2026-05-08's Stage A pass and are the foundation for any future investigation of unbounded daemon resources.
+
 ### Chrome ctest spec inventory (44 specs)
 
 - `action-budget.spec.ts` — pathological-click page asserts `browser_click` rejects within ~30s with the budget-exceeded hint; verifies hard ceiling + 30s wrapper.
@@ -400,10 +423,8 @@ Tests live in `packages/playwright-mcp/tests/` and use Playwright Test.
 ## Known Limitations
 
 - **Multi-agent concurrency is partially validated** — per-tab virtual↔real CDP session binding works for iframes/workers, but page-level `sessionId` is not capturable (`chrome.debugger.attach({tabId})` IS the page session — no child "page" target exists to auto-attach to). Tab-scoped concurrency routes through the daemon by tabId.
-- **Force-reclaim of a wedged page-handle** — *resolved by the per-tab pool* (see [`outputs/issue-reports/2026-04-26_pool-final-verification.md`](../../outputs/issue-reports/2026-04-26_pool-final-verification.md)). A preempted client's `Page` is closed via Playwright's standard `_onDetachedFromTarget` cleanup, and the next `browser_switch_tab(tabId, force:true)` re-binds a fresh `Page`.
-- **Bug 1 (cosmetic) — stale `Page.url()` on auto-blank-repointed pool entries.** Tabs adopted via the `autoBlank.closed.switchOff` repoint path return `Page URL: about:blank` even when title and a11y tree reflect real content. No `Page.frameNavigated` fires for the target swap, so Playwright's internal `_url` cache is never refreshed. Only auto-blank-repoint entries are affected; fresh-bind entries report URLs correctly. See the [pool verification rollup](../../outputs/issue-reports/2026-04-26_pool-final-verification.md) Bug 1.
-- **Bug 2 (narrow trigger) — stale pool entry survives cross-client navigation when adopted via auto-blank-repoint.** If client A's pool entry was created via auto-blank-repoint, then B claims and navigates the tab, and A reclaims — A's reclaimed `Page` reports the old URL/title, and `browser_snapshot()` returns `[snapshot unavailable]` permanently. `browser_evaluate()` works (real page state), but `browser_navigate()` and `snapshot()` fail with frame errors. Recoverable only by session reload. See [Bug 2](../../outputs/issue-reports/2026-04-26_pool-final-verification.md).
-- **Common root for Bug 1 + Bug 2:** the auto-blank-repoint adoption path lacks frame-state-registration parity with the fresh `session.bindTab` path. A single fix at that seam (e.g. registering `frame.on('detached')`, refreshing frame URL post-repoint, or rebinding fresh on validation mismatch) would likely close both.
+- **Force-reclaim of a wedged page-handle** — *resolved by the per-tab pool*. A preempted client's `Page` is closed via Playwright's standard `_onDetachedFromTarget` cleanup, and the next `browser_switch_tab(tabId, force:true)` re-binds a fresh `Page`.
+- **Stale pool entry on cross-client preemption** — *resolved by the `Earthling.tabPreempted` pool eviction in `Context.cdp.on('Earthling.tabPreempted')` at `src/tools/backend/context.ts`.* Previously, when client B force-switched a tab held by A and then navigated it, A's pool entry kept the orphan `Page` reference; subsequent `browser_snapshot` / `browser_navigate` from A failed with `No frame with given id` until session reload. The handler now also calls `_evictTab(tabId)` so the next `acquireTab` flows through a fresh `Earthling.bindTab` and a new `Page` bound to the live frame. Side benefit: cosmetic stale `Page.url()` on auto-blank-repointed entries goes away with the eviction (the orphan reference is no longer addressable).
 
 ## Troubleshooting
 
