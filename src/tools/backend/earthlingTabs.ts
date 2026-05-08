@@ -83,7 +83,7 @@ const switchTab = defineTool({
 		title: 'Switch to browser tab',
 		description: 'Switch the browser connection to a different tab by tab ID. Acquires an exclusive lease on the tab. If another client holds the lease, the call fails unless `force:true` is passed. When force preempts an existing holder, the response includes "Preempted lease from client <id> (force:true)."; when the target was already free, the preemption line is omitted. Call browser_snapshot after switching.',
 		inputSchema: z.object({
-			tabId: z.number().describe('Tab ID from browser_list_all_tabs'),
+			tabId: z.coerce.number().describe('Tab ID from browser_list_all_tabs'),
 			force: z.boolean().optional().describe('Take over the tab even if another client currently holds its lease. Default false.'),
 		}),
 		type: 'action',
@@ -111,7 +111,7 @@ const releaseTab = defineTool({
 		title: 'Release browser tab lease',
 		description: 'Release your exclusive lease on a tab so other clients can claim it. Safe to call on a tab you do not own (no-op).',
 		inputSchema: z.object({
-			tabId: z.number().describe('Tab ID to release'),
+			tabId: z.coerce.number().describe('Tab ID to release'),
 		}),
 		type: 'action',
 	},
@@ -154,7 +154,7 @@ const closeTab = defineTool({
 		title: 'Close a browser tab',
 		description: 'Close a browser tab by tab ID. Also releases any lease held on it.',
 		inputSchema: z.object({
-			tabId: z.number().describe('Tab ID to close'),
+			tabId: z.coerce.number().describe('Tab ID to close'),
 		}),
 		type: 'action',
 	},
