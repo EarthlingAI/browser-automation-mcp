@@ -1187,6 +1187,23 @@ class ClientConnection {
           const autoSet = this._relay._autoOpenedBlanks.get(this.id);
           if (autoSet?.has(oldPrimary)) {
             autoSet.delete(oldPrimary);
+            // Emit Target.detachedFromTarget BEFORE _forgetTab so the client's
+            // Playwright closes its CRPage for the now-gone autoBlank. Without
+            // this, Playwright retains a CRPage carrying the autoBlank's
+            // frameTree; the daemon's session lookup for `pw-tab-N` falls
+            // through to `clientPrimaryTab` after `_cleanupTabSessions`
+            // wipes the mapping, so subsequent commands route to the new tab
+            // — but the cached frameId is the autoBlank's, and Chrome answers
+            // "No frame with given id found" on the next Page.navigate. This
+            // surfaced as a hard wedge after `/reload` of the MCP backend
+            // (lessons_browser_automation_dual_agent_wedge.md).
+            const stalePageVirtualId = this._relay.virtualSessionForTab(oldPrimary);
+            const stalePageTargetId = this._relay.getClientTabTargetId(this.id, oldPrimary);
+            this.sendRaw({
+              method: 'Target.detachedFromTarget',
+              params: { sessionId: stalePageVirtualId, targetId: stalePageTargetId ?? `tab-${oldPrimary}` } as any,
+            });
+            this._relay.clearClientTabTargetIdsForTab(this.id, oldPrimary);
             this._relay._forgetTab(oldPrimary);
             void this._relay.callExtensionDirect('closeTab', { tabId: oldPrimary }).catch(() => {});
             daemonJsonl('autoBlank.closed.switchOff', { clientId: this.id, tabId: oldPrimary });
