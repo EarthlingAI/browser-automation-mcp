@@ -190,6 +190,13 @@ export class CDPRelayServer {
   };
   private _clientsHighWater1s = 0;
   private _clientsHighWaterResetTimer: NodeJS.Timeout | null = null;
+  // Stage A instrumentation — periodic snapshot of every map/queue we suspect
+  // can grow without bound across the wedge cascade. 100ms cadence; off when
+  // EARTHLING_RELAY_SNAPSHOT_MS=0. Diff iter-13 (clean) vs iter-15 (wedged) of
+  // wedge-detector to identify the leaking resource.
+  private _snapshotTimer: NodeJS.Timeout | null = null;
+  private _pendingCmdsHighWater = 0;
+  private _extCallbacksHighWater = 0;
 
   constructor(httpServer: http.Server, browserChannel: string, userDataDir?: string, executablePath?: string) {
     this._httpServer = httpServer;
@@ -213,6 +220,12 @@ export class CDPRelayServer {
       this._clientsHighWater1s = this._clients.size;
     }, 1_000);
     this._clientsHighWaterResetTimer.unref?.();
+
+    const snapshotMs = parseInt(process.env.EARTHLING_RELAY_SNAPSHOT_MS || '100', 10);
+    if (snapshotMs > 0) {
+      this._snapshotTimer = setInterval(() => this._emitSnapshot(), snapshotMs);
+      this._snapshotTimer.unref?.();
+    }
   }
 
   extensionPath(): string { return this._extensionPath; }
@@ -273,10 +286,50 @@ export class CDPRelayServer {
       clearInterval(this._clientsHighWaterResetTimer);
       this._clientsHighWaterResetTimer = null;
     }
+    if (this._snapshotTimer) {
+      clearInterval(this._snapshotTimer);
+      this._snapshotTimer = null;
+    }
     for (const c of [...this._clients.values()])
       c.drainAndClose(reason);
     this._extension?.close(reason);
     this._wss.close();
+  }
+
+  private _emitSnapshot(): void {
+    let autoBlanksTotal = 0;
+    for (const set of this._autoOpenedBlanks.values())
+      autoBlanksTotal += set.size;
+    let clientTabTargetIdsTotal = 0;
+    for (const m of this._clientTabTargetIds.values())
+      clientTabTargetIdsTotal += m.size;
+    const pendingCmds = this._pendingCmds.size;
+    const extCallbacks = this._extension?.pendingCallbackCount() ?? 0;
+    if (pendingCmds > this._pendingCmdsHighWater) this._pendingCmdsHighWater = pendingCmds;
+    if (extCallbacks > this._extCallbacksHighWater) this._extCallbacksHighWater = extCallbacks;
+    daemonJsonl('daemon.snapshot', {
+      detail: {
+        clients: this._clients.size,
+        clients_1s_high_water: this._clientsHighWater1s,
+        pendingCmds,
+        pendingCmds_high_water: this._pendingCmdsHighWater,
+        extCallbacks,
+        extCallbacks_high_water: this._extCallbacksHighWater,
+        leasesCommitted: this._leases.all().length,
+        leasesPending: this._leases.pendingCount(),
+        extSession: this._extSession.size,
+        virtualSession: this._virtualSession.size,
+        tabVirtualSession: this._tabVirtualSession.size,
+        autoOpenedBlanks_clients: this._autoOpenedBlanks.size,
+        autoOpenedBlanks_total: autoBlanksTotal,
+        clientTabTargetIds_clients: this._clientTabTargetIds.size,
+        clientTabTargetIds_total: clientTabTargetIdsTotal,
+        lastSwitchedTab: this._lastSwitchedTab.size,
+        declaredSwitchTarget: this._declaredSwitchTarget.size,
+        graceTimerActive: this._graceTimer !== null,
+        extensionConnected: this._extension !== null,
+      },
+    });
   }
 
   private _launchBrowser() {
@@ -822,11 +875,25 @@ export class CDPRelayServer {
     }
   }
 
-  async callExtensionDirect<M extends keyof ExtensionCommand>(method: M, params: ExtensionCommand[M]['params']): Promise<any> {
+  async callExtensionDirect<M extends keyof ExtensionCommand>(method: M, params: ExtensionCommand[M]['params'], timeoutMs?: number): Promise<any> {
     if (!this._extension)
       throw new Error('Extension not connected');
-    return await this._extension.send(method, params);
+    const startedAt = Date.now();
+    const callId = ++this._callExtDirectSeq;
+    daemonJsonl('callExtensionDirect.start', { method: String(method), detail: { callId, timeoutMs, pendingCallbacks: this._extension.pendingCallbackCount() } });
+    try {
+      const result = await this._extension.send(method, params, timeoutMs);
+      daemonJsonl('callExtensionDirect.response', { method: String(method), detail: { callId, latencyMs: Date.now() - startedAt } });
+      return result;
+    } catch (e) {
+      const latencyMs = Date.now() - startedAt;
+      const msg = e instanceof Error ? e.message : String(e);
+      const isTimeout = /timed out/i.test(msg);
+      daemonJsonl(isTimeout ? 'callExtensionDirect.timeout' : 'callExtensionDirect.error', { method: String(method), detail: { callId, latencyMs, error: msg } });
+      throw e;
+    }
   }
+  private _callExtDirectSeq = 0;
 
   private _startGraceTimer(reason: string = 'idle') {
     this._cancelGraceTimer();
@@ -892,14 +959,26 @@ class ClientConnection {
   sendRaw(msg: CDPResponse): void {
     if (this._closed)
       return;
-    if (this._ws.readyState === ws.OPEN)
+    if (this._ws.readyState !== ws.OPEN)
+      return;
+    // The readyState check is non-atomic with send() — the WS can transition
+    // to CLOSING between the check and the send call, in which case ws.send
+    // throws. Catch it locally so a single transient send failure doesn't
+    // cascade out of the message-handling path. The client's terminal close
+    // event will arrive via ws.on('close') and clean up state.
+    try {
       this._ws.send(JSON.stringify(msg));
+    } catch {
+      this._closed = true;
+    }
   }
 
   drainAndClose(reason: string) {
     this._closed = true;
-    if (this._ws.readyState === ws.OPEN)
-      this._ws.close(1012, reason);
+    if (this._ws.readyState === ws.OPEN) {
+      try { this._ws.close(1012, reason); }
+      catch { /* WS already closing — terminal state, nothing to do */ }
+    }
   }
 
   /** Drop subscription for a single tab and emit detach to Playwright. */
@@ -1059,10 +1138,13 @@ class ClientConnection {
         this._relay.leases().reservePending(tabId, this.id, oldOwnerId);
         daemonJsonl('lease.pending.reserve', { clientId: this.id, tabId, detail: { oldOwner: oldOwnerId, force } });
 
-        // Phase 2: call extension to actually attach.
+        // Phase 2: call extension to actually attach. Bounded 5s timeout
+        // prevents an unresponsive extension from holding the pending claim
+        // open until the 15s sweep, which would block concurrent peers behind
+        // an "in-flight reservation" wall and cascade into wedge.
         let extResult: any;
         try {
-          extResult = await this._relay.callExtensionDirect('switchToTab', { tabId });
+          extResult = await this._relay.callExtensionDirect('switchToTab', { tabId }, 5_000);
         } catch (e) {
           this._relay.leases().cancelPending(tabId);
           daemonJsonl('lease.pending.cancel', { clientId: this.id, tabId, detail: { reason: 'extension failure', error: String(e) } });
@@ -1393,12 +1475,22 @@ type ExtensionResponse = {
  */
 export class ExtensionConnection {
   private readonly _ws: WebSocket;
-  private readonly _callbacks = new Map<number, { resolve: (o: any) => void; reject: (e: Error) => void; error: Error; timer?: NodeJS.Timeout }>();
+  private readonly _callbacks = new Map<number, { resolve: (o: any) => void; reject: (e: Error) => void; error: Error; timer?: NodeJS.Timeout; method: string; startedAt: number }>();
   private _lastId = 0;
 
   onmessage?: <M extends keyof ExtensionEvents>(method: M, params: ExtensionEvents[M]['params']) => void;
   onresponse?: (id: number, result: any, error?: string) => void;
   onclose?: (self: ExtensionConnection, reason: string) => void;
+
+  /** Stage A instrumentation: callback table size for snapshot dumps. */
+  pendingCallbackCount(): number { return this._callbacks.size; }
+  pendingCallbackOldestAgeMs(): number | undefined {
+    let oldest: number | undefined;
+    for (const cb of this._callbacks.values()) {
+      if (oldest === undefined || cb.startedAt < oldest) oldest = cb.startedAt;
+    }
+    return oldest === undefined ? undefined : (Date.now() - oldest);
+  }
 
   constructor(ws: WebSocket) {
     this._ws = ws;
@@ -1417,6 +1509,7 @@ export class ExtensionConnection {
     const id = ++this._lastId + 1_000_000_000; // separate id space from relay-forwarded commands
     this._ws.send(JSON.stringify({ id, method, params }));
     const error = new Error(`Protocol error: ${method}`);
+    const startedAt = Date.now();
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         if (this._callbacks.has(id)) {
@@ -1426,7 +1519,7 @@ export class ExtensionConnection {
       }, timeoutMs);
       if (typeof (timer as any).unref === 'function')
         (timer as any).unref();
-      this._callbacks.set(id, { resolve, reject, error, timer });
+      this._callbacks.set(id, { resolve, reject, error, timer, method: String(method), startedAt });
     });
   }
 

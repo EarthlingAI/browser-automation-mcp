@@ -17,6 +17,7 @@
     "start": "node dist/index.js --extension",
     "start-relay": "node dist/relay-daemon.js --port 9223",
     "smoke-concurrent": "tsx scripts/concurrent-smoke.ts",
+    "wedge:probe": "tsx scripts/wedge-detector.ts",
     "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
     "docker-rm": "docker rm playwright-mcp-dev",
     "docker-run": "docker run -it -p 8080:8080 --name playwright-mcp-dev playwright-mcp-dev:latest",

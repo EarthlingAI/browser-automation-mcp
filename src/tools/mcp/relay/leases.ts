@@ -23,6 +23,8 @@
  * or `force:true` take-over.
  */
 
+import { daemonJsonl } from './debugJsonl';
+
 export type Lease = {
   tabId: number;
   ownerClientId: string;
@@ -50,6 +52,12 @@ export class LeaseTable {
 
   all(): Lease[] {
     return Array.from(this._byTab.values());
+  }
+
+  /** Pending-claim count exposed for snapshot instrumentation; readers must
+   * still treat pendings as opaque (see `_pendingByTab` invariant). */
+  pendingCount(): number {
+    return this._pendingByTab.size;
   }
 
   ownerOf(tabId: number): Lease | undefined {
@@ -110,6 +118,8 @@ export class LeaseTable {
         cancelled.push(tabId);
       }
     }
+    if (cancelled.length > 0)
+      daemonJsonl('lease.pending.sweep.fired', { detail: { expired: cancelled, remaining: this._pendingByTab.size } });
     return cancelled;
   }
 

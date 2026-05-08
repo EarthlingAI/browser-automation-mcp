@@ -63,11 +63,21 @@ if (chrome.runtime.onSuspend) {
 // Module-level bridge reference for RelayConnection access
 let bridge;
 
+// Bounded send queue for messages issued while the WS is mid-handshake
+// (CONNECTING) or transiently un-OPEN. Prevents silent drops in the gap
+// between WS state changes and the producer's next message. Overflow is
+// surfaced as a structured `Earthling.sendBufferOverflow` event so the
+// relay sees backpressure instead of silence.
+const SEND_QUEUE_MAX = 256;
+
 class RelayConnection {
 	constructor(ws, tabId) {
 		this._ws = ws;
 		this._closed = false;
 		this.onclose = null;
+		this._sendQueue = [];
+		this._droppedMessages = 0;
+		this._overflowSignalled = false;
 		// Multi-tab: track all debugger-attached tabs. Chrome supports
 		// simultaneous chrome.debugger.attach() to multiple tabs.
 		// Entries are ONLY added after chrome.debugger.attach() succeeds.
@@ -92,6 +102,13 @@ class RelayConnection {
 		}
 		this._ws.onmessage = this._onMessage.bind(this);
 		this._ws.onclose = () => this._onClose();
+		// Drain any messages enqueued while the WS was CONNECTING. Defensive:
+		// in the current architecture the constructor receives an already-OPEN
+		// WS, but the queue must flush if a future reconnect path delivers a
+		// CONNECTING socket here.
+		this._ws.onopen = () => this._drainSendQueue();
+		if (this._ws.readyState === WebSocket.OPEN)
+			this._drainSendQueue();
 		this._eventListener = this._onDebuggerEvent.bind(this);
 		this._detachListener = this._onDebuggerDetach.bind(this);
 		chrome.debugger.onEvent.addListener(this._eventListener);
@@ -429,8 +446,66 @@ class RelayConnection {
 	}
 
 	_sendMessage(message) {
-		if (this._ws.readyState === WebSocket.OPEN)
-			this._ws.send(JSON.stringify(message));
+		const state = this._ws.readyState;
+		if (state === WebSocket.OPEN) {
+			if (this._sendQueue.length > 0)
+				this._drainSendQueue();
+			try {
+				this._ws.send(JSON.stringify(message));
+				return;
+			} catch (e) {
+				// readyState can transition to CLOSING between the check and
+				// send. Fall through to the drop path so we count it.
+				this._bumpDropped();
+				return;
+			}
+		}
+		if (state === WebSocket.CONNECTING) {
+			if (this._sendQueue.length < SEND_QUEUE_MAX) {
+				this._sendQueue.push(message);
+				return;
+			}
+			this._bumpDropped();
+			this._signalOverflow();
+			return;
+		}
+		// CLOSING or CLOSED — terminal; nowhere to send.
+		this._bumpDropped();
+	}
+
+	_drainSendQueue() {
+		while (this._sendQueue.length > 0 && this._ws.readyState === WebSocket.OPEN) {
+			const msg = this._sendQueue.shift();
+			try { this._ws.send(JSON.stringify(msg)); }
+			catch { this._bumpDropped(); break; }
+		}
+		if (this._sendQueue.length === 0)
+			this._overflowSignalled = false;
+	}
+
+	_bumpDropped() {
+		this._droppedMessages += 1;
+		try { void chrome.storage.session.set({ relayDroppedMessages: this._droppedMessages }); }
+		catch { /* SW context teardown, ignore */ }
+	}
+
+	// Surface backpressure to the relay once per overflow run. Best-effort: if
+	// the WS isn't OPEN there's nowhere to send, but the dropped_messages
+	// counter still rises so the daemon's /health reader sees it on next poll
+	// (extension JSONL pipeline mirrors this if a connection re-establishes).
+	_signalOverflow() {
+		if (this._overflowSignalled)
+			return;
+		this._overflowSignalled = true;
+		debugJsonl('relay.sendBufferOverflow', { detail: { dropped: this._droppedMessages, queueCap: SEND_QUEUE_MAX } });
+		if (this._ws.readyState === WebSocket.OPEN) {
+			try {
+				this._ws.send(JSON.stringify({
+					method: 'Earthling.sendBufferOverflow',
+					params: { droppedSoFar: this._droppedMessages, queueCap: SEND_QUEUE_MAX },
+				}));
+			} catch { /* ignore — counter alone covers visibility */ }
+		}
 	}
 }
 
