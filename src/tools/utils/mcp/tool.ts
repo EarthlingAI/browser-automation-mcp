@@ -27,6 +27,10 @@ export type ToolSchema<Input extends z.Schema> = {
 };
 
 export function toMcpTool(tool: ToolSchema<any>): mcpServer.Tool {
+  // `type` is the single source of truth — author it on the tool schema and let
+  // all four MCP annotation hints derive from it here. `readOnlyHint` in
+  // particular gates whether a permission-restricted client (e.g. an agent in a
+  // read-only planning phase) is allowed to call the tool at all.
   const readOnly = tool.type === 'readOnly' || tool.type === 'assertion';
   return {
     name: tool.name,
@@ -35,8 +39,13 @@ export function toMcpTool(tool: ToolSchema<any>): mcpServer.Tool {
     annotations: {
       title: tool.title,
       readOnlyHint: readOnly,
-      destructiveHint: !readOnly,
-      openWorldHint: true,
+      // No browser tool deletes data in the MCP sense — it drives a page, it
+      // doesn't destroy state — so `destructiveHint` is always false.
+      destructiveHint: false,
+      idempotentHint: readOnly,
+      // Read-only tools reflect the current page, not an open-ended external
+      // world; mutating tools touch the live page (open world).
+      openWorldHint: !readOnly,
     },
   };
 }
