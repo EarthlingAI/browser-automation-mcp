@@ -7,6 +7,7 @@
  */
 
 export interface RawNode {
+  nodeId?: string;
   role: string;
   name?: string;
   description?: string;
@@ -181,10 +182,13 @@ export function prune(root: RawNode, opts: PruneOptions = {}): PrunedNode {
     }
   }
 
-  // Assign sequential refs and build output
+  // Refs map 1:1 to the page-side nodeId so the in-page `findByRef` can resolve them
+  // to the exact element the agent saw in this snapshot. Synthetic root (no nodeId) keeps "0".
   const selectedSet = new Set(selected);
   const idxToRef = new Map<number, string>();
-  selected.forEach((idx, n) => idxToRef.set(idx, String(n + 1)));
+  selected.forEach((idx, n) =>
+    idxToRef.set(idx, candidates[idx]!.node.nodeId ?? String(n + 1)),
+  );
 
   function nearestSelectedAncestor(idx: number): number | -1 {
     let walk = candidates[idx]!.parentIdx;

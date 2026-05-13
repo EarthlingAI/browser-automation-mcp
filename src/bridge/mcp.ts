@@ -13,7 +13,9 @@ Observe-act loop: browser_snapshot returns a pruned a11y tree with stable numeri
 Use refs in browser_click / browser_type / etc. Action tools auto-snapshot after.
 
 Lease model: claim a tab with browser_switch_tab (or browser_open_tab auto-claims) before acting.
-Multiple agents coexist by holding leases on different tabs. browser_release_tab hands over.`;
+Multiple agents coexist by holding leases on different tabs. browser_release_tab hands over.
+If another agent revoked your lease (or the tab closed), the next action returns lease_required
+with a hint — re-claim via browser_switch_tab and continue.`;
 
 export async function startBridge(opts: {
   agentLabel?: string;
@@ -32,10 +34,6 @@ export async function startBridge(opts: {
   registerTabTools(server, ctx);
   registerObserveTools(server, ctx);
   registerInteractTools(server, ctx);
-
-  daemon.onNotification((_msg) => {
-    // TODO: forward `lease_revoked` / `tab_closed` to the agent via `server.sendNotification` once the MCP SDK's notification API settles. Hook is wired; the call site is the only missing piece.
-  });
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

@@ -134,6 +134,10 @@
     return rect.right > 0 && rect.bottom > 0 && rect.left < vw && rect.top < vh;
   }
 
+  /** @type {Map<string, Element>} */
+  let nodeMap = new Map();
+  let nodeCounter = 0;
+
   /**
    * @param {Element} el
    * @param {number} depth
@@ -143,7 +147,10 @@
     if (!isVisible(el, rect)) return null;
     const role = roleOf(el);
     const name = role ? nameOf(el) : "";
+    const nodeId = String(++nodeCounter);
+    nodeMap.set(nodeId, el);
     const node = {
+      nodeId,
       role: role || "generic",
       name,
       depth,
@@ -172,33 +179,13 @@
     return node;
   }
 
-  function buildInteractiveIndex() {
-    // BFS over the DOM, collecting interactive elements in the order the
-    // daemon's pruner will see them. Sequential refs start at 1.
-    /** @type {Element[]} */
-    const out = [];
-    /** @type {Element[]} */
-    const queue = [document.body];
-    while (queue.length) {
-      const el = queue.shift();
-      if (!el) continue;
-      if (isInteractive(el)) {
-        const rect = el.getBoundingClientRect();
-        if (isVisible(el, rect)) out.push(el);
-      }
-      for (const c of el.children) queue.push(c);
-    }
-    return out;
-  }
-
   function findByRef(ref) {
-    const n = parseInt(ref, 10);
-    if (!n || n < 1) return null;
-    const idx = buildInteractiveIndex();
-    return idx[n - 1] || null;
+    return nodeMap.get(String(ref)) || null;
   }
 
   globalThis.__earthlingA11y = function () {
+    nodeMap = new Map();
+    nodeCounter = 0;
     const root = walkA11y(document.body, 0) || {
       role: "WebArea",
       name: document.title,
@@ -347,6 +334,29 @@
     return { waited: opts.timeout };
   }
 
+  function actUpload(opts) {
+    const raw = findByRef(opts.ref);
+    if (!raw) return { error: `ref ${opts.ref} not found` };
+    let el = raw;
+    if (!(el instanceof HTMLInputElement) || el.type !== "file") {
+      const inner = el.querySelector?.('input[type="file"]');
+      if (inner) el = inner;
+    }
+    if (!(el instanceof HTMLInputElement) || el.type !== "file")
+      return { error: `ref ${opts.ref} is not a file input` };
+    const dt = new DataTransfer();
+    for (const f of opts.files) {
+      const bin = atob(f.dataBase64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      dt.items.add(new File([bytes], f.name, { type: f.mimeType }));
+    }
+    el.files = dt.files;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    return { uploaded: opts.files.map((f) => f.name), ref: opts.ref };
+  }
+
   globalThis.__earthlingAct = function (kind, opts) {
     switch (kind) {
       case "click":
@@ -363,6 +373,8 @@
         return actPressKey(opts);
       case "wait_for":
         return actWaitFor(opts);
+      case "upload":
+        return actUpload(opts);
       default:
         return { error: `unknown act kind: ${kind}` };
     }

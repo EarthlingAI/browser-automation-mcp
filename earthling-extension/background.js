@@ -114,7 +114,7 @@ async function dispatch(req) {
     case "scroll":
       return runHelper(tabId, "scroll", c);
     case "upload":
-      throw new Error("upload not yet implemented");
+      return runHelper(tabId, "upload", c);
     case "press_key":
       return runHelper(tabId, "press_key", c);
     case "evaluate":

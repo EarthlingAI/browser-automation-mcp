@@ -12,7 +12,6 @@ import { WebSocketServer, WebSocket } from "ws";
 import {
   BridgeRequest,
   BridgeResponse,
-  BridgeNotification,
   ExtRequest,
   ExtMessage,
   ExtResponse,
@@ -49,7 +48,6 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
   const token = randomBytes(24).toString("hex");
   const leases = new TabLeaseManager();
 
-  const bridges = new Set<BridgeClient>();
   const bySession = new Map<string, BridgeClient>();
   let extSocket: WebSocket | null = null;
   const pendingExt = new Map<string, (m: ExtResponse) => void>();
@@ -87,7 +85,6 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
     });
     ws.on("close", () => {
       if (extSocket === ws) extSocket = null;
-      broadcastBridges({ type: "extension_disconnected" });
     });
   });
 
@@ -115,11 +112,7 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
       tabsCache.set(ev.tab.id, ev.tab);
     } else if (ev.type === "tab_closed") {
       tabsCache.delete(ev.tabId);
-      const lease = leases.dropTab(ev.tabId);
-      if (lease) {
-        const client = bySession.get(lease.sessionId);
-        notify(client, { type: "tab_closed", tabId: ev.tabId });
-      }
+      leases.dropTab(ev.tabId);
     }
   }
 
@@ -169,7 +162,6 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
           );
         }
       }
-      bridges.delete(client);
     });
   });
 
@@ -207,7 +199,6 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
         if (req.token !== token) throw new Error("bad token");
         client.sessionId = req.sessionId;
         client.agentLabel = req.agentLabel;
-        bridges.add(client);
         bySession.set(req.sessionId, client);
         return { ok: true };
       }
@@ -245,15 +236,6 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
           e.since = new Date(r.held.claimedAt).toISOString();
           e.hint = "call again with force:true and reason:'…' to revoke";
           throw e;
-        }
-        if (r.previous) {
-          const prevClient = bySession.get(r.previous.sessionId);
-          notify(prevClient, {
-            type: "lease_revoked",
-            tabId: req.tabId,
-            reason: req.reason,
-            by: client.agentLabel ?? client.sessionId,
-          });
         }
         return { claimed: req.tabId };
       }
@@ -302,22 +284,6 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
     } catch {
       /* socket gone */
     }
-  }
-
-  function notify(
-    client: BridgeClient | undefined,
-    msg: BridgeNotification,
-  ): void {
-    if (!client) return;
-    try {
-      client.socket.write(JSON.stringify(msg) + "\n");
-    } catch {
-      /* socket gone */
-    }
-  }
-
-  function broadcastBridges(msg: BridgeNotification): void {
-    for (const c of bridges) notify(c, msg);
   }
 
   await new Promise<void>((resolve) => tcp.listen(0, "127.0.0.1", resolve));

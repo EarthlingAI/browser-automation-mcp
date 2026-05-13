@@ -14,11 +14,17 @@ import {
   readFileSync,
   writeFileSync,
   openSync,
+  unlinkSync,
 } from "node:fs";
+import { createConnection } from "node:net";
 import { join } from "node:path";
 import { startDaemon, readDaemonEndpoint } from "./daemon/server";
 import { startBridge } from "./bridge/mcp";
-import { DAEMON_LOCK_FILE } from "./protocol";
+import {
+  DAEMON_LOCK_FILE,
+  DAEMON_PORT_FILE,
+  DAEMON_TOKEN_FILE,
+} from "./protocol";
 
 /**
  * Resolution order:
@@ -32,12 +38,23 @@ function resolveRuntimeDir(): string {
     return process.env.BROWSER_AUTOMATION_MCP_RUNTIME_DIR;
   const home = process.env.HOME ?? process.env.USERPROFILE;
   if (process.platform === "win32") {
-    const base = process.env.LOCALAPPDATA ?? (home ? join(home, "AppData", "Local") : null);
+    const base =
+      process.env.LOCALAPPDATA ??
+      (home ? join(home, "AppData", "Local") : null);
     if (base) return join(base, "earthling", "browser-automation-mcp");
   } else if (process.platform === "darwin") {
-    if (home) return join(home, "Library", "Application Support", "earthling", "browser-automation-mcp");
+    if (home)
+      return join(
+        home,
+        "Library",
+        "Application Support",
+        "earthling",
+        "browser-automation-mcp",
+      );
   } else {
-    const base = process.env.XDG_STATE_HOME ?? (home ? join(home, ".local", "state") : null);
+    const base =
+      process.env.XDG_STATE_HOME ??
+      (home ? join(home, ".local", "state") : null);
     if (base) return join(base, "earthling", "browser-automation-mcp");
   }
   return join(__dirname, "..", ".runtime");
@@ -60,10 +77,45 @@ async function main(): Promise<void> {
   await startBridge({ agentLabel, endpoint });
 }
 
+function probePort(port: number, timeoutMs = 500): Promise<boolean> {
+  return new Promise((resolve) => {
+    const sock = createConnection({ host: "127.0.0.1", port });
+    const done = (ok: boolean) => {
+      try {
+        sock.destroy();
+      } catch {
+        /* ignore */
+      }
+      resolve(ok);
+    };
+    sock.once("connect", () => done(true));
+    sock.once("error", () => done(false));
+    setTimeout(() => done(false), timeoutMs);
+  });
+}
+
+function clearStaleEndpoint(): void {
+  for (const f of [DAEMON_PORT_FILE, DAEMON_TOKEN_FILE, DAEMON_LOCK_FILE]) {
+    try {
+      unlinkSync(join(runtimeDir, f));
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 async function ensureDaemon(): Promise<{ port: number; token: string }> {
   mkdirSync(runtimeDir, { recursive: true });
   const existing = readDaemonEndpoint(runtimeDir);
-  if (existing) return existing;
+  // Daemon cleans up its endpoint files on SIGINT/SIGTERM, but a hard kill (reboot,
+  // Task Manager, OOM) leaves them behind. Probe before trusting them so we self-heal.
+  if (existing) {
+    if (await probePort(existing.port)) return existing;
+    console.error(
+      `[browser-automation-mcp] stale endpoint on :${existing.port}; respawning daemon`,
+    );
+    clearStaleEndpoint();
+  }
 
   const lockPath = join(runtimeDir, DAEMON_LOCK_FILE);
   if (

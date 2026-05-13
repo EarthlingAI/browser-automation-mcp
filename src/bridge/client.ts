@@ -3,20 +3,17 @@ import { randomBytes } from "node:crypto";
 import {
   BridgeRequest,
   BridgeResponse,
-  BridgeNotification,
   DistributiveOmit,
   ExtCommand,
   TabId,
 } from "../protocol";
 
 type Resolver = (m: BridgeResponse) => void;
-export type NotificationHandler = (m: BridgeNotification) => void;
 
 export class DaemonClient {
   private socket: Socket | null = null;
   private buffer = "";
   private pending = new Map<string, Resolver>();
-  private notifyHandlers = new Set<NotificationHandler>();
   readonly sessionId: string;
   private connected = false;
 
@@ -25,10 +22,6 @@ export class DaemonClient {
     readonly agentLabel?: string,
   ) {
     this.sessionId = randomBytes(8).toString("hex");
-  }
-
-  onNotification(handler: NotificationHandler): void {
-    this.notifyHandlers.add(handler);
   }
 
   async connect(): Promise<void> {
@@ -67,8 +60,6 @@ export class DaemonClient {
       if (msg.id && this.pending.has(msg.id)) {
         this.pending.get(msg.id)!(msg);
         this.pending.delete(msg.id);
-      } else if (msg.type) {
-        for (const h of this.notifyHandlers) h(msg);
       }
     }
   }

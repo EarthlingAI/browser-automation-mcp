@@ -68,11 +68,6 @@ export type BridgeResponse =
       hint?: string;
     };
 
-export type BridgeNotification =
-  | { type: "lease_revoked"; tabId: TabId; reason?: string; by: string }
-  | { type: "tab_closed"; tabId: TabId }
-  | { type: "extension_disconnected" };
-
 // ─── daemon ↔ extension ─────────────────────────────────────────────
 
 export type ExtCommand =
@@ -96,7 +91,11 @@ export type ExtCommand =
   | { kind: "select_option"; ref: string; value: string }
   | { kind: "hover"; ref: string }
   | { kind: "scroll"; ref?: string; deltaY?: number; deltaX?: number }
-  | { kind: "upload"; ref: string; files: string[] }
+  | {
+      kind: "upload";
+      ref: string;
+      files: Array<{ name: string; mimeType: string; dataBase64: string }>;
+    }
   | { kind: "press_key"; key: string; modifiers?: string[] }
   | { kind: "evaluate"; expression: string }
   | {

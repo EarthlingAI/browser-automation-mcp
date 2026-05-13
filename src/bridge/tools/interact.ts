@@ -1,6 +1,60 @@
+import { readFileSync, statSync } from "node:fs";
+import { basename, extname } from "node:path";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerActionTool, ToolContext, execOnLeasedTab } from "../registry";
+
+const UPLOAD_MAX_FILES = 10;
+const UPLOAD_MAX_FILE_BYTES = 25 * 1024 * 1024;
+const UPLOAD_MAX_TOTAL_BYTES = 50 * 1024 * 1024;
+
+const MIME_BY_EXT: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".svg": "image/svg+xml",
+  ".pdf": "application/pdf",
+  ".txt": "text/plain",
+  ".csv": "text/csv",
+  ".json": "application/json",
+  ".zip": "application/zip",
+  ".mp4": "video/mp4",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".docx":
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+};
+
+function readUploadPayloads(
+  paths: string[],
+): Array<{ name: string; mimeType: string; dataBase64: string }> {
+  if (paths.length > UPLOAD_MAX_FILES)
+    throw new Error(`too many files: ${paths.length} > ${UPLOAD_MAX_FILES}`);
+  let total = 0;
+  return paths.map((p) => {
+    const st = statSync(p);
+    if (!st.isFile()) throw new Error(`not a regular file: ${p}`);
+    if (st.size > UPLOAD_MAX_FILE_BYTES)
+      throw new Error(
+        `file exceeds ${UPLOAD_MAX_FILE_BYTES} bytes: ${p} (${st.size})`,
+      );
+    total += st.size;
+    if (total > UPLOAD_MAX_TOTAL_BYTES)
+      throw new Error(
+        `total upload size exceeds ${UPLOAD_MAX_TOTAL_BYTES} bytes`,
+      );
+    const buf = readFileSync(p);
+    return {
+      name: basename(p),
+      mimeType:
+        MIME_BY_EXT[extname(p).toLowerCase()] ?? "application/octet-stream",
+      dataBase64: buf.toString("base64"),
+    };
+  });
+}
 
 export function registerInteractTools(
   server: McpServer,
@@ -112,7 +166,6 @@ export function registerInteractTools(
       execOnLeasedTab(ctx, tabId, { kind: "scroll", ref, deltaY, deltaX }),
   });
 
-  // TODO: `browser_upload` extension handler is stubbed (throws "upload not yet implemented" in background.js). Implement via `chrome.debugger Input.setFileInputFiles` or `chrome.scripting.executeScript` + `DataTransfer` injection.
   registerActionTool(server, ctx, {
     name: "browser_upload",
     description: "Upload local files to a file input by `ref`.",
@@ -124,8 +177,14 @@ export function registerInteractTools(
         .describe("Absolute paths to local files."),
       tabId: z.number().int().optional(),
     },
-    handler: async ({ ref, files, tabId }) =>
-      execOnLeasedTab(ctx, tabId, { kind: "upload", ref, files }),
+    handler: async ({ ref, files, tabId }) => {
+      const payloads = readUploadPayloads(files);
+      return execOnLeasedTab(ctx, tabId, {
+        kind: "upload",
+        ref,
+        files: payloads,
+      });
+    },
   });
 
   registerActionTool(server, ctx, {
