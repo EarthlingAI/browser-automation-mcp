@@ -42,6 +42,7 @@ other/
 tools_optimize.md
 Agents.md
 CLAUDE.md
+.runtime/
 
 **/*/coverage/*
 
