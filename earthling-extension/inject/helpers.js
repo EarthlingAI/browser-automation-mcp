@@ -171,7 +171,7 @@
     if (expanded !== null && expanded !== undefined)
       node.expanded = expanded === "true";
 
-    for (const child of el.children) {
+    for (const child of Array.from(el.children)) {
       const sub = walkA11y(child, depth + 1);
       if (sub) node.children.push(sub);
     }
@@ -181,6 +181,24 @@
 
   function findByRef(ref) {
     return nodeMap.get(String(ref)) || null;
+  }
+
+  globalThis.__earthlingResolveRef = function (ref) {
+    const el = findByRef(ref);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return {
+      name: nameOf(el),
+      role: roleOf(el),
+      tag: el.tagName,
+      rect: { x: r.left, y: r.top, w: r.width, h: r.height },
+    };
+  };
+
+  function notifyAction(phase, kind, ref) {
+    try {
+      globalThis.__earthlingIndicator?.onAction?.({ phase, kind, ref });
+    } catch {}
   }
 
   globalThis.__earthlingA11y = function () {
@@ -357,7 +375,7 @@
     return { uploaded: opts.files.map((f) => f.name), ref: opts.ref };
   }
 
-  globalThis.__earthlingAct = function (kind, opts) {
+  function runAct(kind, opts) {
     switch (kind) {
       case "click":
         return actClick(opts);
@@ -378,5 +396,18 @@
       default:
         return { error: `unknown act kind: ${kind}` };
     }
+  }
+
+  globalThis.__earthlingAct = function (kind, opts) {
+    notifyAction("start", kind, opts?.ref);
+    const out = /** @type {any} */ (runAct(kind, opts));
+    if (out && typeof out.then === "function") {
+      return out.then((r) => {
+        notifyAction("end", kind, opts?.ref);
+        return r;
+      });
+    }
+    notifyAction("end", kind, opts?.ref);
+    return out;
   };
 })();

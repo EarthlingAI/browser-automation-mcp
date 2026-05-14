@@ -5,10 +5,12 @@
   "description": "Connect Earthling AI agent to your browser tabs. Passive — never steals focus.",
   "permissions": [
     "tabs",
+    "tabGroups",
     "scripting",
     "debugger",
     "webNavigation",
-    "webRequest"
+    "webRequest",
+    "storage"
   ],
   "host_permissions": ["<all_urls>"],
   "background": { "service_worker": "background.js", "type": "module" },

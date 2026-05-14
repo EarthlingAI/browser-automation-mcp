@@ -23,6 +23,32 @@ let backoffMs = 500;
 
 const consoleBuffers = new Map(); // tabId → string[]
 const networkBuffers = new Map(); // tabId → request entries
+const indicatorState = new Map(); // tabId → {state, agentLabel}
+const indicatorInjected = new Set(); // tabIds where inject/indicator.js has been pushed
+const actingTabs = new Map(); // tabId → in-flight action count (drives tab-group color)
+const actingLingerTimers = new Map(); // tabId → timeout id
+const tabGroupRegistry = new Map(); // windowId → Map<agentLabel, groupId>
+
+const ACTION_KINDS = new Set([
+  "navigate",
+  "navigate_back",
+  "click",
+  "type",
+  "select_option",
+  "hover",
+  "scroll",
+  "upload",
+  "press_key",
+]);
+const ACTING_LINGER_MS = 400;
+
+try {
+  chrome.storage.session.setAccessLevel({
+    accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS",
+  });
+} catch (e) {
+  console.error("[earthling-bg] setAccessLevel failed:", e?.message ?? e);
+}
 
 function connect() {
   try {
@@ -82,6 +108,16 @@ async function handleMessage(raw) {
 }
 
 async function dispatch(req) {
+  const c = req.command;
+  const tabId = req.tabId;
+  if (c.kind === "indicator_state") return applyIndicatorState(tabId, c.state);
+  if (ACTION_KINDS.has(c.kind) && tabId != null) {
+    return withActing(tabId, () => dispatchInner(req));
+  }
+  return dispatchInner(req);
+}
+
+async function dispatchInner(req) {
   const c = req.command;
   const tabId = req.tabId;
   switch (c.kind) {
@@ -275,12 +311,177 @@ function debuggerDetachLater(tabId) {
 
 async function runHelper(tabId, kind, opts) {
   await ensureHelpers(tabId);
+  await ensureIndicatorInjected(tabId);
   const [result] = await chrome.scripting.executeScript({
     target: { tabId, allFrames: false },
     func: (k, o) => globalThis.__earthlingAct(k, o),
     args: [kind, opts],
   });
   return result?.result;
+}
+
+// ─── indicator (in-page + tab-group) ────────────────────────────────
+
+async function applyIndicatorState(tabId, state) {
+  if (tabId == null) return { ok: false };
+  if (state.state === "released") indicatorState.delete(tabId);
+  else indicatorState.set(tabId, state);
+  await Promise.allSettled([
+    pushIndicatorToPage(tabId, state),
+    updateTabGroup(tabId, state),
+  ]);
+  if (state.state === "released") {
+    actingTabs.delete(tabId);
+    const t = actingLingerTimers.get(tabId);
+    if (t) {
+      clearTimeout(t);
+      actingLingerTimers.delete(tabId);
+    }
+  }
+  return { ok: true };
+}
+
+async function pushIndicatorToPage(tabId, state) {
+  if (!(await canInject(tabId))) return;
+  try {
+    await ensureIndicatorInjected(tabId);
+    await chrome.scripting.executeScript({
+      target: { tabId, allFrames: false },
+      func: (s) => globalThis.__earthlingIndicator?.set?.(s),
+      args: [state],
+    });
+  } catch (e) {
+    console.error(
+      `[earthling-bg] pushIndicatorToPage(${tabId}) failed:`,
+      e?.message ?? e,
+    );
+  }
+}
+
+async function ensureIndicatorInjected(tabId) {
+  if (indicatorInjected.has(tabId)) return;
+  if (!(await canInject(tabId))) return;
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId, allFrames: false },
+      files: ["inject/indicator.js"],
+    });
+    indicatorInjected.add(tabId);
+    const cached = indicatorState.get(tabId);
+    if (cached) {
+      await chrome.scripting.executeScript({
+        target: { tabId, allFrames: false },
+        func: (s) => globalThis.__earthlingIndicator?.set?.(s),
+        args: [cached],
+      });
+    }
+  } catch (e) {
+    console.error(
+      `[earthling-bg] ensureIndicatorInjected(${tabId}) failed:`,
+      e?.message ?? e,
+    );
+  }
+}
+
+async function canInject(tabId) {
+  try {
+    const t = await chrome.tabs.get(tabId);
+    const url = t?.url || "";
+    return /^(https?|file):/.test(url);
+  } catch {
+    return false;
+  }
+}
+
+async function withActing(tabId, fn) {
+  bumpActing(tabId, 1);
+  try {
+    return await fn();
+  } finally {
+    bumpActing(tabId, -1);
+  }
+}
+
+function bumpActing(tabId, delta) {
+  const next = (actingTabs.get(tabId) || 0) + delta;
+  if (next <= 0) {
+    actingTabs.delete(tabId);
+    if (actingLingerTimers.has(tabId)) return;
+    const t = setTimeout(() => {
+      actingLingerTimers.delete(tabId);
+      void recolorGroupForTab(tabId);
+    }, ACTING_LINGER_MS);
+    actingLingerTimers.set(tabId, t);
+  } else {
+    actingTabs.set(tabId, next);
+    if (actingLingerTimers.has(tabId)) {
+      clearTimeout(actingLingerTimers.get(tabId));
+      actingLingerTimers.delete(tabId);
+    }
+    void recolorGroupForTab(tabId);
+  }
+}
+
+async function recolorGroupForTab(tabId) {
+  const state = indicatorState.get(tabId);
+  if (!state || state.state !== "leased") return;
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    const groupId = tab.groupId;
+    if (groupId == null || groupId < 0) return;
+    const color = actingTabs.has(tabId) ? "orange" : "pink";
+    await chrome.tabGroups.update(groupId, { color });
+  } catch (e) {
+    console.error(
+      `[earthling-bg] recolorGroupForTab(${tabId}) failed:`,
+      e?.message ?? e,
+    );
+  }
+}
+
+async function updateTabGroup(tabId, state) {
+  if (!chrome.tabGroups) return;
+  if (state.state === "released") {
+    try {
+      await chrome.tabs.ungroup(tabId);
+    } catch {}
+    return;
+  }
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    const label = state.agentLabel || "";
+    const groupKey = label || "_default";
+    const groupId = await ensureGroup(tab.windowId, groupKey, tabId);
+    const color = actingTabs.has(tabId) ? "orange" : "pink";
+    const title = label ? `Earthling — ${label}` : "Earthling";
+    await chrome.tabGroups.update(groupId, { title, color });
+  } catch (e) {
+    console.error("[earthling] updateTabGroup failed:", e?.message ?? e);
+  }
+}
+
+async function ensureGroup(windowId, label, tabId) {
+  let perWindow = tabGroupRegistry.get(windowId);
+  if (!perWindow) {
+    perWindow = new Map();
+    tabGroupRegistry.set(windowId, perWindow);
+  }
+  let groupId = perWindow.get(label);
+  if (groupId != null) {
+    try {
+      await chrome.tabGroups.get(groupId);
+      await chrome.tabs.group({ groupId, tabIds: [tabId] });
+      return groupId;
+    } catch {
+      perWindow.delete(label);
+    }
+  }
+  groupId = await chrome.tabs.group({
+    tabIds: [tabId],
+    createProperties: { windowId },
+  });
+  perWindow.set(label, groupId);
+  return groupId;
 }
 
 async function runEvaluate(tabId, expression) {
@@ -352,7 +553,19 @@ chrome.webRequest.onCompleted.addListener(
 chrome.tabs.onRemoved.addListener((tabId) => {
   consoleBuffers.delete(tabId);
   networkBuffers.delete(tabId);
+  indicatorState.delete(tabId);
+  indicatorInjected.delete(tabId);
+  actingTabs.delete(tabId);
+  const t = actingLingerTimers.get(tabId);
+  if (t) {
+    clearTimeout(t);
+    actingLingerTimers.delete(tabId);
+  }
   send({ type: "tab_closed", tabId });
+});
+chrome.tabs.onAttached.addListener((tabId) => {
+  const state = indicatorState.get(tabId);
+  if (state && state.state === "leased") void updateTabGroup(tabId, state);
 });
 chrome.tabs.onCreated.addListener((tab) => {
   send({
@@ -367,6 +580,12 @@ chrome.tabs.onCreated.addListener((tab) => {
   });
 });
 chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
+  if (info.status === "loading") indicatorInjected.delete(tabId);
+  if (info.status === "complete") {
+    const state = indicatorState.get(tabId);
+    if (state && state.state === "leased")
+      void pushIndicatorToPage(tabId, state);
+  }
   if (info.status !== "complete" && !info.url && !info.title) return;
   send({
     type: "tab_updated",

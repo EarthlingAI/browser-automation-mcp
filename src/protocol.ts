@@ -103,7 +103,13 @@ export type ExtCommand =
       selector?: string;
       timeout?: number;
       networkIdle?: boolean;
-    };
+    }
+  | { kind: "indicator_state"; state: IndicatorState };
+
+export interface IndicatorState {
+  state: "leased" | "released";
+  agentLabel?: string;
+}
 
 export interface ExtRequest {
   id: string;

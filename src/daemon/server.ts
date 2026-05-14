@@ -17,6 +17,7 @@ import {
   ExtResponse,
   ExtCommand,
   ExtEvent,
+  IndicatorState,
   TabInfo,
   TabId,
   EXT_PORT_DEFAULT,
@@ -86,7 +87,20 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
     ws.on("close", () => {
       if (extSocket === ws) extSocket = null;
     });
+    rebroadcastIndicators();
   });
+
+  // Extension service workers are wiped on every reload; their per-tab Maps come back empty.
+  // Daemon leases survive, so on each fresh WS connect we re-emit them so the extension can
+  // rehydrate its tab-group colours and in-page indicator state.
+  function rebroadcastIndicators(): void {
+    for (const lease of leases.all()) {
+      pushIndicator(lease.tabId, {
+        state: "leased",
+        agentLabel: lease.agentLabel,
+      });
+    }
+  }
 
   function handleExtMessage(text: string): void {
     let msg: ExtMessage;
@@ -114,6 +128,10 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
       tabsCache.delete(ev.tabId);
       leases.dropTab(ev.tabId);
     }
+  }
+
+  function pushIndicator(tabId: TabId, state: IndicatorState): void {
+    void sendExt({ kind: "indicator_state", state }, tabId).catch(() => {});
   }
 
   function sendExt(command: ExtCommand, tabId?: TabId): Promise<unknown> {
@@ -156,6 +174,7 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
       if (client.sessionId) {
         bySession.delete(client.sessionId);
         const released = leases.releaseAll(client.sessionId);
+        for (const id of released) pushIndicator(id, { state: "released" });
         if (released.length) {
           console.error(
             `[daemon] released ${released.length} lease(s) from disconnected session ${client.sessionId}`,
@@ -217,6 +236,10 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
         })) as TabInfo;
         tabsCache.set(tab.id, tab);
         leases.claim(tab.id, client.sessionId, client.agentLabel);
+        pushIndicator(tab.id, {
+          state: "leased",
+          agentLabel: client.agentLabel,
+        });
         return annotateLease(tab);
       }
       case "close_tab": {
@@ -237,14 +260,20 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
           e.hint = "call again with force:true and reason:'…' to revoke";
           throw e;
         }
+        pushIndicator(req.tabId, {
+          state: "leased",
+          agentLabel: client.agentLabel,
+        });
         return { claimed: req.tabId };
       }
       case "release_tab": {
         if (req.tabId === undefined) {
           const released = leases.releaseAll(client.sessionId);
+          for (const id of released) pushIndicator(id, { state: "released" });
           return { released };
         }
         const ok = leases.release(req.tabId, client.sessionId);
+        if (ok) pushIndicator(req.tabId, { state: "released" });
         return { released: ok ? [req.tabId] : [] };
       }
       case "exec": {
