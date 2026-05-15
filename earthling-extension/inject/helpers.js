@@ -406,9 +406,12 @@
       };
     }
     if (opts.condition) {
-      // Evaluate a JS predicate on a polling loop. Returns when truthy or at
-      // timeout. The expression is wrapped in an IIFE so statement blocks are
-      // accepted alongside bare expressions.
+      // Helper-contract completeness: an in-page caller invoking
+      // __earthlingAct("wait_for", {condition}) directly still works. The
+      // bridge's normal path NEVER reaches here — background.js::dispatchInner
+      // intercepts condition mode and routes through chrome.debugger
+      // Runtime.evaluate, which bypasses strict-CSP sites' unsafe-eval
+      // rejection of `new Function(...)`.
       let lastValue;
       let lastError;
       const evalOnce = () => {

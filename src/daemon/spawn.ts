@@ -110,7 +110,8 @@ export async function ensureDaemon(
   } else {
     // Compiled host mode: source is compiled into the host binary and run in
     // memory, so scriptPath is synthetic. Re-enter through the host dispatcher
-    // (same contract ai-image-mcp uses for its sidecar).
+    // contract — the host injects MCP_HOST_DISPATCHER on every spawned MCP
+    // child so sidecar processes can re-invoke themselves by name.
     const dispatcher = process.env.MCP_HOST_DISPATCHER;
     if (!dispatcher) {
       throw new Error(

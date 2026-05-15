@@ -8,6 +8,7 @@ import {
   updateSnapshotParams,
 } from "../registry";
 import { prune, RawNode } from "../../snapshot/prune";
+import { coerceToArray, coerceBoolean } from "./coerce";
 
 export function registerObserveTools(
   server: McpServer,
@@ -26,7 +27,7 @@ export function registerObserveTools(
     },
     schema: {
       tabId: z
-        .number()
+        .coerce.number()
         .int()
         .optional()
         .describe("Tab to snapshot. Defaults to the most recently leased tab."),
@@ -37,15 +38,14 @@ export function registerObserveTools(
           "standard = interactive elements only; full = entire a11y tree.",
         ),
       limit: z
-        .number()
+        .coerce.number()
         .int()
         .min(1)
         .max(5000)
         .default(500)
         .describe("Max nodes returned (ranked)."),
       viewportOnly: z
-        .boolean()
-        .default(true)
+        .preprocess(coerceBoolean, z.boolean().default(true))
         .describe("Exclude nodes outside the visible viewport."),
     },
     handler: async ({ tabId, detail, limit, viewportOnly }) => {
@@ -85,20 +85,20 @@ export function registerObserveTools(
     },
     schema: {
       tabId: z
-        .number()
+        .coerce.number()
         .int()
         .optional()
         .describe("Tab to capture. Defaults to the most recently leased tab."),
       format: z.enum(["png", "jpeg"]).default("jpeg"),
       quality: z
-        .number()
+        .coerce.number()
         .int()
         .min(1)
         .max(100)
         .default(70)
         .describe("JPEG quality (1–100). Ignored for PNG."),
       maxWidth: z
-        .number()
+        .coerce.number()
         .int()
         .min(64)
         .max(4096)
@@ -129,8 +129,8 @@ export function registerObserveTools(
       openWorldHint: true,
     },
     schema: {
-      tabId: z.number().int().optional(),
-      limit: z.number().int().min(1).max(500).default(50),
+      tabId: z.coerce.number().int().optional(),
+      limit: z.coerce.number().int().min(1).max(500).default(50),
       cursor: z
         .string()
         .optional()
@@ -152,8 +152,8 @@ export function registerObserveTools(
       openWorldHint: true,
     },
     schema: {
-      tabId: z.number().int().optional(),
-      limit: z.number().int().min(1).max(500).default(50),
+      tabId: z.coerce.number().int().optional(),
+      limit: z.coerce.number().int().min(1).max(500).default(50),
       cursor: z
         .string()
         .optional()
@@ -165,34 +165,50 @@ export function registerObserveTools(
           "URL filter. Plain string = substring match. Wrap in /…/ to use a regex (e.g. `/\\/api\\/v2\\//`).",
         ),
       type: z
-        .array(
-          z.enum([
-            "xmlhttprequest",
-            "fetch",
-            "image",
-            "script",
-            "document",
-            "stylesheet",
-            "other",
-          ]),
+        .preprocess(
+          coerceToArray,
+          z
+            .array(
+              z.enum([
+                "xmlhttprequest",
+                "fetch",
+                "image",
+                "script",
+                "document",
+                "stylesheet",
+                "other",
+              ]),
+            )
+            .optional(),
         )
-        .optional()
         .describe(
           "Resource types to include. Defaults to ['xmlhttprequest','fetch','document'] for API discovery (drops image/script noise).",
         ),
       methodIn: z
-        .array(
-          z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]),
+        .preprocess(
+          coerceToArray,
+          z
+            .array(
+              z.enum([
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "PATCH",
+                "OPTIONS",
+                "HEAD",
+              ]),
+            )
+            .optional(),
         )
-        .optional()
         .describe("HTTP methods to include. Omit to include all."),
       statusGte: z
-        .number()
+        .coerce.number()
         .int()
         .optional()
         .describe("Include only responses with status >= statusGte."),
       statusLt: z
-        .number()
+        .coerce.number()
         .int()
         .optional()
         .describe("Include only responses with status < statusLt."),

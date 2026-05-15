@@ -5,6 +5,7 @@ import { DaemonClient } from "./client";
 import { BridgeSession, RefMeta, SnapshotParams } from "./session";
 import { ExtCommand, SettleOptions, TabId } from "../protocol";
 import { prune, PrunedNode, RawNode } from "../snapshot/prune";
+import { coerceBoolean } from "./tools/coerce";
 
 export interface ToolContext {
   daemon: DaemonClient;
@@ -18,11 +19,10 @@ export interface ToolContext {
 
 const AUTO_SNAPSHOT_FIELDS = {
   snapshot: z
-    .boolean()
-    .default(true)
+    .preprocess(coerceBoolean, z.boolean().default(true))
     .describe("Auto-refresh UI tree after this action. Set false to skip."),
   delay: z
-    .number()
+    .coerce.number()
     .min(0)
     .max(10)
     .default(0.1)
@@ -40,7 +40,7 @@ const AUTO_SNAPSHOT_FIELDS = {
         "Set to none for actions you know are pure UI-state nudges.",
     ),
   settle_timeout: z
-    .number()
+    .coerce.number()
     .int()
     .min(0)
     .max(30_000)
@@ -202,11 +202,11 @@ export async function replaySnapshot(ctx: ToolContext): Promise<unknown> {
     populateRefs(ctx.session, pruned, raw, tabId);
     return pruned;
   } catch (err: any) {
-    // Preserve structured error fields so the engine reconnect URL (and any
-    // lease metadata) survives the auto-snapshot failure path. Otherwise an
-    // action that succeeded but whose auto-snapshot failed would surface a
-    // bare `{error:"extension not connected"}` snapshot stub without the
-    // recovery hint.
+    // Preserve structured error fields so the recovery hint (and any lease
+    // metadata) survives the auto-snapshot failure path. Otherwise an action
+    // that succeeded but whose auto-snapshot failed would surface a bare
+    // `{error:"extension not connected"}` snapshot stub without the
+    // actionable recovery instruction.
     const stub: Record<string, unknown> = {
       error: err?.message ?? String(err),
     };

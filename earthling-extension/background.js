@@ -360,6 +360,11 @@ async function dispatchInner(req) {
     case "evaluate":
       return runEvaluate(tabId, c.expression);
     case "wait_for":
+      // Route condition-mode through chrome.debugger Runtime.evaluate so the
+      // predicate runs as the debugger (bypassing strict-CSP sites like Suno/
+      // ChatGPT that block `new Function()` in injected scripts). Selector and
+      // pure-timeout modes stay in helpers.js — they don't use eval.
+      if (c.condition) return runWaitForCondition(tabId, c);
       return runHelper(tabId, "wait_for", c);
     default:
       throw new Error(`unknown command: ${c.kind}`);
@@ -370,13 +375,21 @@ async function dispatchInner(req) {
 
 async function queryTabs(query) {
   const tabs = await chrome.tabs.query({});
-  return tabs.map((t) => ({
+  const mapped = tabs.map((t) => ({
     id: t.id,
     url: t.url ?? "",
     title: t.title ?? "",
     windowId: t.windowId,
     active: !!t.active,
   }));
+  if (!query) return mapped;
+  // Case-insensitive substring match against title OR url. Mirrors the
+  // bridge-side `browser_list_tabs` query schema description so the agent's
+  // mental model holds.
+  const q = String(query).toLowerCase();
+  return mapped.filter(
+    (t) => t.title.toLowerCase().includes(q) || t.url.toLowerCase().includes(q),
+  );
 }
 
 async function getFocusedTab() {
@@ -811,6 +824,73 @@ async function ensureGroup(windowId, label, tabId) {
   return groupId;
 }
 
+async function runWaitForCondition(tabId, c) {
+  // CSP-safe replacement for helpers.js::actWaitFor condition mode. The
+  // helper's `new Function(predicate)` path is rejected by `script-src`
+  // directives that omit 'unsafe-eval' (Suno, ChatGPT, banks). Routing the
+  // predicate through chrome.debugger Runtime.evaluate runs it in the page's
+  // JS context but as the debugger, bypassing CSP entirely.
+  //
+  // We attach the debugger ONCE around the whole poll loop instead of letting
+  // each `runEvaluate` call attach/schedule-detach. With a 5-min max timeout,
+  // the per-eval attach would keep Chrome's "started debugging this browser"
+  // infobar pinned to the schema-max duration after the wait completes.
+  const startedAt = Date.now();
+  const deadline = startedAt + (c.timeout ?? 10_000);
+  const pollMs = c.pollIntervalMs ?? 250;
+  // Wrap in an IIFE so the agent can pass either an expression ("a+b") or a
+  // statement block — matches helpers.js semantics.
+  const expression = `(function(){ return (${c.condition}); })()`;
+  let lastValue;
+  let lastError;
+  await debuggerAttach(tabId);
+  try {
+    const evalOnce = async () => {
+      try {
+        const result = await new Promise((resolve, reject) => {
+          chrome.debugger.sendCommand(
+            { tabId },
+            "Runtime.evaluate",
+            { expression, returnByValue: true, awaitPromise: true, userGesture: false },
+            (r) => {
+              if (chrome.runtime.lastError)
+                reject(new Error(chrome.runtime.lastError.message));
+              else resolve(r);
+            },
+          );
+        });
+        if (result?.exceptionDetails) {
+          const ex = result.exceptionDetails;
+          throw new Error(ex.exception?.description || ex.text || "evaluation failed");
+        }
+        const v = result?.result?.value;
+        lastValue = v;
+        return v;
+      } catch (e) {
+        lastError = e?.message ?? String(e);
+        return undefined;
+      }
+    };
+    const v0 = await evalOnce();
+    if (v0) return { met: true, value: v0, elapsedMs: 0 };
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, pollMs));
+      const v = await evalOnce();
+      if (v) return { met: true, value: v, elapsedMs: Date.now() - startedAt };
+    }
+    return {
+      met: false,
+      value: lastValue,
+      error: lastError
+        ? `predicate threw: ${lastError}`
+        : "predicate did not become truthy within timeout",
+      elapsedMs: Date.now() - startedAt,
+    };
+  } finally {
+    debuggerDetachLater(tabId);
+  }
+}
+
 async function runEvaluate(tabId, expression) {
   // Use chrome.debugger Runtime.evaluate — runs in the page's JS context but as the debugger,
   // so it bypasses the page's CSP (which would otherwise reject `new Function()` on strict sites
@@ -825,8 +905,6 @@ async function runEvaluate(tabId, expression) {
           expression,
           returnByValue: true,
           awaitPromise: true,
-          // Wrapping in an IIFE lets the agent pass either an expression ("a+b") or a statement block
-          // because Runtime.evaluate treats the whole string as an expression by default.
           userGesture: false,
         },
         (r) => {

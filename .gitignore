@@ -38,15 +38,10 @@ metadata-v1.3/
 registry.npmmirror.com/
 registry.npmjs.com/
 
-other/
-tools_optimize.md
-Agents.md
-CLAUDE.md
 .runtime/
 
 **/*/coverage/*
 
-.docs/
 .claude/
 
 # Install marker written by `engine setup-deps` (engine.cli.setup_deps.provision_mcps)

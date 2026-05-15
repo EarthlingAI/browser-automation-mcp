@@ -100,10 +100,12 @@ export class DaemonClient {
       }
       // Narrow extension-not-connected retry: the extension service worker
       // sleeps aggressively and the first call after a long idle window can
-      // race the reconnect. One ~200ms retry recovers transparently; if the
+      // race the reconnect. One ~500ms retry recovers transparently; if the
       // retry also fails, propagate the error with the recovery hint intact.
+      // MV3 SW cold-wake is empirically ~300-400ms — 500ms leaves headroom
+      // without making the warm-path noticeably slower.
       if (this.isExtensionDisconnect(err)) {
-        await new Promise((r) => setTimeout(r, 200));
+        await new Promise((r) => setTimeout(r, 500));
         return await this.sendOnce(req);
       }
       throw err;

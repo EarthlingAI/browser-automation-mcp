@@ -26,6 +26,17 @@ import {
   EARTHLING_EXTENSION_ORIGIN,
 } from "../protocol";
 import { TabLeaseManager } from "./leases";
+import { inferExtTimeout } from "./timeouts";
+
+/**
+ * Recovery hint surfaced when the WebSocket between the daemon and the MV3
+ * extension is not open at call time. The actionable user-side fix is always
+ * the same: reload the unpacked extension at chrome://extensions. The agent
+ * cannot programmatically fix this from inside the MCP — the message is for
+ * the user via the agent's error surfacing.
+ */
+const EXT_DISCONNECT_RECOVERY_HINT =
+  "extension not connected — reload the Earthling Browser Bridge extension at chrome://extensions";
 
 interface BridgeClient {
   socket: Socket;
@@ -151,14 +162,12 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
 
   function sendExt(command: ExtCommand, tabId?: TabId): Promise<unknown> {
     return new Promise((resolve, reject) => {
-      const makeRecoveryHint = () =>
-        "extension not connected — try POST http://127.0.0.1:42042/api/mcp/browser-automation-mcp/reconnect, or reload the Earthling Browser Bridge extension at chrome://extensions";
       if (!extSocket || extSocket.readyState !== WebSocket.OPEN) {
         const err: any = new Error("extension not connected");
         err.kind = "extension_disconnected";
         err.tabId = tabId;
-        err.recovery = makeRecoveryHint();
-        err.hint = err.recovery;
+        err.recovery = EXT_DISCONNECT_RECOVERY_HINT;
+        err.hint = EXT_DISCONNECT_RECOVERY_HINT;
         reject(err);
         return;
       }
@@ -186,7 +195,7 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
           err.hint = `extension call timed out (tabId ${tabId ?? "n/a"}); check that the tab is still alive and the extension is responsive`;
           reject(err);
         }
-      }, 30_000);
+      }, inferExtTimeout(command));
       extSocket!.send(JSON.stringify(req));
     });
   }
@@ -276,7 +285,7 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
         })) as TabInfo & {
           navigated?: boolean;
           settledAt?: number;
-          previousActiveTab?: { id: TabId; title: string };
+          previousActiveTab: { id: TabId; title: string; url: string } | null;
         };
         tabsCache.set(tab.id, {
           id: tab.id,
@@ -301,14 +310,22 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
       case "switch_tab": {
         // Capture the user's currently-focused tab BEFORE the claim so the
         // agent can restore focus later if it has nudged the user's context.
-        let previousActiveTab: { id: TabId; title: string } | undefined;
+        // Distinguish three cases explicitly so the agent can tell "no
+        // foreground tab" from "couldn't ask the extension":
+        //   - extension returned a tab → { id, title }
+        //   - extension returned null  → null (no foreground tab)
+        //   - lookup threw              → null + previousActiveTabError
+        // Cosmetic capture must not fail the claim — that's an existing
+        // invariant — but the error surfaces alongside the success result.
+        let previousActiveTab: { id: TabId; title: string; url: string } | null = null;
+        let previousActiveTabError: string | undefined;
         try {
           previousActiveTab =
             ((await sendExt({ kind: "get_focused_tab" })) as
-              | { id: TabId; title: string }
-              | null) ?? undefined;
-        } catch {
-          /* extension may be disconnected; don't fail the claim for cosmetics */
+              | { id: TabId; title: string; url: string }
+              | null) ?? null;
+        } catch (e: any) {
+          previousActiveTabError = e?.message ?? "get_focused_tab failed";
         }
         const r = leases.claim(req.tabId, client.sessionId, client.agentLabel, {
           force: req.force,
@@ -325,7 +342,11 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
           state: "leased",
           agentLabel: client.agentLabel,
         });
-        return { claimed: req.tabId, previousActiveTab };
+        return {
+          claimed: req.tabId,
+          previousActiveTab,
+          ...(previousActiveTabError ? { previousActiveTabError } : {}),
+        };
       }
       case "release_tab": {
         if (req.tabId === undefined) {

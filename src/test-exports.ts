@@ -8,11 +8,7 @@
  */
 
 export { prune, type RawNode, type PrunedNode } from "./snapshot/prune";
-export {
-  BridgeSession,
-  type RefMeta,
-  DEFAULT_SNAPSHOT_PARAMS,
-} from "./bridge/session";
+export { BridgeSession } from "./bridge/session";
 export {
   toolResult,
   toolError,
@@ -22,3 +18,6 @@ export {
 export { registerTabTools } from "./bridge/tools/tabs";
 export { registerObserveTools } from "./bridge/tools/observe";
 export { registerInteractTools } from "./bridge/tools/interact";
+export { coerceToArray, coerceLiteralNumber, coerceBoolean } from "./bridge/tools/coerce";
+export { BUILD_STAMP, SERVER_INSTRUCTIONS } from "./bridge/meta";
+export { inferExtTimeout } from "./daemon/timeouts";

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerTool, ToolContext } from "../registry";
 import { TabInfo } from "../../protocol";
+import { coerceBoolean } from "./coerce";
 
 export function registerTabTools(server: McpServer, ctx: ToolContext): void {
   registerTool(server, ctx, {
@@ -56,8 +57,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
     schema: {
       url: z.string().url().describe("URL to open."),
       background: z
-        .boolean()
-        .default(true)
+        .preprocess(coerceBoolean, z.boolean().default(true))
         .describe(
           "Open without raising the browser window or activating the tab.",
         ),
@@ -84,7 +84,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
       openWorldHint: true,
     },
     schema: {
-      tabId: z.number().int().describe("Tab id from browser_list_tabs."),
+      tabId: z.coerce.number().int().describe("Tab id from browser_list_tabs."),
     },
     handler: async ({ tabId }) => {
       const r = await ctx.daemon.send({ type: "close_tab", tabId });
@@ -106,10 +106,9 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
       openWorldHint: true,
     },
     schema: {
-      tabId: z.number().int().describe("Tab id from browser_list_tabs."),
+      tabId: z.coerce.number().int().describe("Tab id from browser_list_tabs."),
       force: z
-        .boolean()
-        .default(false)
+        .preprocess(coerceBoolean, z.boolean().default(false))
         .describe("Revoke another session's lease. Required reason."),
       reason: z
         .string()
@@ -142,7 +141,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
     },
     schema: {
       tabId: z
-        .number()
+        .coerce.number()
         .int()
         .optional()
         .describe("Tab id to release. Omit to release all."),

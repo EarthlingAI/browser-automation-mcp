@@ -1,10 +1,30 @@
 #!/usr/bin/env node
 const path = require("node:path");
 const fs = require("node:fs");
+const { execSync } = require("node:child_process");
 const esbuild = require("esbuild");
 
 const root = path.resolve(__dirname, "..");
 const watch = process.argv.includes("--watch");
+
+// Build fingerprint — surfaces in SERVER_INSTRUCTIONS so the host agent can
+// detect schema staleness (its cached schema vs. what the server is actually
+// serving). Falls back to a timestamp-only stamp outside a git checkout.
+const buildStamp = (() => {
+  const ts = new Date().toISOString().slice(0, 19) + "Z";
+  try {
+    const sha = execSync("git rev-parse --short HEAD", { cwd: root })
+      .toString()
+      .trim();
+    return `${sha}@${ts}`;
+  } catch {
+    return ts;
+  }
+})();
+
+const define = {
+  __BUILD_STAMP__: JSON.stringify(buildStamp),
+};
 
 // Production bundle — the MCP server entry consumed by host agents.
 const main = {
@@ -16,6 +36,7 @@ const main = {
   format: "cjs",
   sourcemap: true,
   external: [],
+  define,
   logLevel: "info",
 };
 
@@ -31,6 +52,7 @@ const testExports = {
   format: "esm",
   sourcemap: false,
   external: [],
+  define,
   logLevel: "info",
 };
 

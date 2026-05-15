@@ -3,6 +3,7 @@ import { basename, extname } from "node:path";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerActionTool, ToolContext, execOnLeasedTab } from "../registry";
+import { coerceToArray, coerceLiteralNumber, coerceBoolean } from "./coerce";
 
 const UPLOAD_MAX_FILES = 10;
 const UPLOAD_MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -92,7 +93,7 @@ export function registerInteractTools(
         .url()
         .optional()
         .describe("URL to navigate to. Omit to reload the current page."),
-      tabId: z.number().int().optional(),
+      tabId: z.coerce.number().int().optional(),
       waitUntil: z
         .enum(["load", "domcontentloaded"])
         .default("domcontentloaded"),
@@ -107,7 +108,7 @@ export function registerInteractTools(
     description: "Go back one entry in the leased tab's history.",
     annotations: ACTION_WRITE,
     schema: {
-      tabId: z.number().int().optional(),
+      tabId: z.coerce.number().int().optional(),
     },
     handler: async ({ tabId }) =>
       execOnLeasedTab(ctx, tabId, { kind: "navigate_back" }),
@@ -121,14 +122,14 @@ export function registerInteractTools(
     annotations: ACTION_WRITE,
     schema: {
       ref: z.string().describe('Element ref from browser_snapshot (e.g. "5").'),
-      tabId: z.number().int().optional(),
+      tabId: z.coerce.number().int().optional(),
       button: z.enum(["left", "right", "middle"]).default("left"),
-      clickCount: z
-        .union([z.literal(1), z.literal(2), z.literal(3)])
-        .default(1),
+      clickCount: z.preprocess(
+        coerceLiteralNumber,
+        z.union([z.literal(1), z.literal(2), z.literal(3)]).default(1),
+      ),
       modifiers: z
-        .array(z.string())
-        .optional()
+        .preprocess(coerceToArray, z.array(z.string()).optional())
         .describe('Keys held during click, e.g. ["Control"], ["Shift"].'),
     },
     handler: async ({ ref, tabId, button, clickCount, modifiers }) =>
@@ -150,8 +151,8 @@ export function registerInteractTools(
     schema: {
       ref: z.string(),
       text: z.string(),
-      tabId: z.number().int().optional(),
-      append: z.boolean().default(false),
+      tabId: z.coerce.number().int().optional(),
+      append: z.preprocess(coerceBoolean, z.boolean().default(false)),
     },
     handler: async ({ ref, text, tabId, append }) =>
       execOnLeasedTab(ctx, tabId, { kind: "type", ref, text, append }),
@@ -166,7 +167,7 @@ export function registerInteractTools(
     schema: {
       ref: z.string(),
       value: z.string().describe("Option value or visible label."),
-      tabId: z.number().int().optional(),
+      tabId: z.coerce.number().int().optional(),
     },
     handler: async ({ ref, value, tabId }) =>
       execOnLeasedTab(ctx, tabId, { kind: "select_option", ref, value }),
@@ -180,7 +181,7 @@ export function registerInteractTools(
     annotations: ACTION_SOFT,
     schema: {
       ref: z.string(),
-      tabId: z.number().int().optional(),
+      tabId: z.coerce.number().int().optional(),
     },
     handler: async ({ ref, tabId }) =>
       execOnLeasedTab(ctx, tabId, { kind: "hover", ref }),
@@ -197,9 +198,9 @@ export function registerInteractTools(
         .string()
         .optional()
         .describe("Element ref to scroll. Omit to scroll the page."),
-      tabId: z.number().int().optional(),
-      deltaY: z.number().default(400),
-      deltaX: z.number().default(0),
+      tabId: z.coerce.number().int().optional(),
+      deltaY: z.coerce.number().default(400),
+      deltaX: z.coerce.number().default(0),
     },
     handler: async ({ ref, tabId, deltaY, deltaX }) =>
       execOnLeasedTab(ctx, tabId, { kind: "scroll", ref, deltaY, deltaX }),
@@ -213,10 +214,9 @@ export function registerInteractTools(
     schema: {
       ref: z.string(),
       files: z
-        .array(z.string())
-        .min(1)
+        .preprocess(coerceToArray, z.array(z.string()).min(1))
         .describe("Absolute paths to local files."),
-      tabId: z.number().int().optional(),
+      tabId: z.coerce.number().int().optional(),
     },
     handler: async ({ ref, files, tabId }) => {
       const payloads = readUploadPayloads(files);
@@ -236,10 +236,9 @@ export function registerInteractTools(
     annotations: ACTION_WRITE,
     schema: {
       key: z.string().describe('e.g. "Enter", "Tab", "a", "F5".'),
-      tabId: z.number().int().optional(),
+      tabId: z.coerce.number().int().optional(),
       modifiers: z
-        .array(z.string())
-        .optional()
+        .preprocess(coerceToArray, z.array(z.string()).optional())
         .describe('e.g. ["Control"], ["Shift", "Alt"].'),
     },
     handler: async ({ key, tabId, modifiers }) =>
@@ -250,7 +249,7 @@ export function registerInteractTools(
     name: "browser_evaluate",
     title: "Evaluate JavaScript in the leased tab",
     description:
-      'Run a JS expression in the leased tab and return the JSON-serialisable result. Strings come back as strings (not char-indexed objects). For unfamiliar SPAs, call browser_network_requests first to discover real backend endpoints from xhr/fetch traffic before guessing endpoint paths. In fetch helpers, read the Response body once into text then conditionally JSON.parse — the body stream is single-use (`await r.text()` then `JSON.parse(text)`, not `await r.json().catch(...)` then `await r.text()`).',
+      "Run a JS expression in the leased tab and return the JSON-serialisable result. Strings come back as strings (not char-indexed objects). For unfamiliar SPAs, call browser_network_requests first to discover real backend endpoints from xhr/fetch traffic before guessing endpoint paths.",
     annotations: ACTION_WRITE,
     schema: {
       expression: z
@@ -258,7 +257,7 @@ export function registerInteractTools(
         .describe(
           "JS expression; the value of the last expression is returned.",
         ),
-      tabId: z.number().int().optional(),
+      tabId: z.coerce.number().int().optional(),
     },
     handler: async ({ expression, tabId }) =>
       execOnLeasedTab(ctx, tabId, { kind: "evaluate", expression }),
@@ -290,24 +289,23 @@ export function registerInteractTools(
           "JS expression evaluated in-page on a polling loop. Returns when the expression is truthy. Use for attribute-value transitions and state-machine SPAs (data-status, aria-busy, react state etc.).",
         ),
       networkIdle: z
-        .boolean()
-        .default(false)
+        .preprocess(coerceBoolean, z.boolean().default(false))
         .describe("Wait until no network activity for 500ms."),
       timeout: z
-        .number()
+        .coerce.number()
         .int()
         .min(0)
         .max(300_000)
         .default(10_000)
         .describe("Max wait in ms. Default 10s, max 5 minutes."),
       poll_interval_ms: z
-        .number()
+        .coerce.number()
         .int()
         .min(50)
         .max(5000)
         .default(250)
         .describe("Polling interval for `condition` mode."),
-      tabId: z.number().int().optional(),
+      tabId: z.coerce.number().int().optional(),
     },
     handler: async ({
       selector,
