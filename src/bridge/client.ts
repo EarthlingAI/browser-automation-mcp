@@ -98,8 +98,24 @@ export class DaemonClient {
         await this.recover();
         return await this.sendOnce(req);
       }
+      // Narrow extension-not-connected retry: the extension service worker
+      // sleeps aggressively and the first call after a long idle window can
+      // race the reconnect. One ~200ms retry recovers transparently; if the
+      // retry also fails, propagate the error with the recovery hint intact.
+      if (this.isExtensionDisconnect(err)) {
+        await new Promise((r) => setTimeout(r, 200));
+        return await this.sendOnce(req);
+      }
       throw err;
     }
+  }
+
+  private isExtensionDisconnect(err: unknown): boolean {
+    if (!err || typeof err !== "object") return false;
+    const kind = (err as { kind?: string }).kind;
+    if (kind === "extension_disconnected") return true;
+    const msg = (err as { message?: string }).message ?? "";
+    return msg === "extension not connected";
   }
 
   private sendOnce(
@@ -115,6 +131,8 @@ export class DaemonClient {
           err.leasedBy = msg.leasedBy;
           err.since = msg.since;
           err.hint = msg.hint;
+          err.recovery = msg.recovery;
+          err.kind = msg.kind;
           reject(err);
         }
       });

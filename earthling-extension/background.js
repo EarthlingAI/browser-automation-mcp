@@ -50,6 +50,31 @@ try {
   console.error("[earthling-bg] setAccessLevel failed:", e?.message ?? e);
 }
 
+// MV3 service workers are killed after ~30s idle. While an agent might issue
+// the next tool call at any moment, we keep the SW alive by firing a
+// chrome.alarms heartbeat every 24s — its handler does just enough work to
+// keep the worker in the "active" pool. Cost is negligible (one no-op alarm
+// fire every 24s). Without this, the first call after idle returns
+// "extension not connected" even though everything is healthy.
+try {
+  chrome.alarms.create("earthling-keepalive", { periodInMinutes: 0.4 });
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name !== "earthling-keepalive") return;
+    // Touch a chrome.* API and the WS so both stay warm. Errors are silent —
+    // a bad alarm should never break the worker.
+    try {
+      chrome.runtime.getPlatformInfo(() => {});
+    } catch {}
+    try {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "ping", ts: Date.now() }));
+      }
+    } catch {}
+  });
+} catch (e) {
+  console.error("[earthling-bg] keepalive setup failed:", e?.message ?? e);
+}
+
 function connect() {
   try {
     ws = new WebSocket(DAEMON_URL);
@@ -112,9 +137,178 @@ async function dispatch(req) {
   const tabId = req.tabId;
   if (c.kind === "indicator_state") return applyIndicatorState(tabId, c.state);
   if (ACTION_KINDS.has(c.kind) && tabId != null) {
-    return withActing(tabId, () => dispatchInner(req));
+    return withActing(tabId, () => runWithSettle(req, () => dispatchInner(req)));
   }
   return dispatchInner(req);
+}
+
+// ─── settle observer ────────────────────────────────────────────────
+//
+// After an action lands in the page, install a brief observer and resolve the
+// command response only once the page has shown a signal of having processed
+// the action — OR after a short timeout, whichever fires first. This is what
+// stops the "click returned but nothing visibly happened → agent re-fires it
+// → double-submit" failure mode (see Issue #1 in the 2026-05-14 report).
+const SETTLE_KINDS = new Set([
+  "click",
+  "type",
+  "select_option",
+  "hover",
+  "scroll",
+  "upload",
+  "press_key",
+]);
+
+async function runWithSettle(req, exec) {
+  const c = req.command;
+  const tabId = req.tabId;
+  const settle = c.settle;
+  // navigate / navigate_back / tabs_create run their own bespoke settle
+  // (tabs.onUpdated complete). We only install the generic observer for
+  // in-page action kinds.
+  if (!settle || settle.mode === "none" || !SETTLE_KINDS.has(c.kind)) {
+    const out = await exec();
+    return out;
+  }
+  // Start the watcher BEFORE the action so we don't miss the first event for
+  // very-fast pages. Both promises race against the timeout.
+  const watcher = watchSettle(tabId, settle).catch(() => null);
+  const t0 = Date.now();
+  const out = await exec();
+  const settled = await watcher;
+  const elapsed = Date.now() - t0;
+  const settledVia = settled ?? { via: "timeout", elapsedMs: elapsed };
+  if (out && typeof out === "object") {
+    return { ...out, settled: settledVia };
+  }
+  return { result: out, settled: settledVia };
+}
+
+async function watchSettle(tabId, opts) {
+  const timeout = opts.timeout ?? 1500;
+  if (opts.mode === "dom") {
+    return watchDomSettle(tabId, timeout);
+  }
+  if (opts.mode === "network") {
+    return watchNetworkSettle(tabId, timeout);
+  }
+  if (opts.mode === "selector" && opts.selector) {
+    return watchSelectorSettle(tabId, opts.selector, timeout);
+  }
+  return null;
+}
+
+async function watchDomSettle(tabId, timeout) {
+  const t0 = Date.now();
+  // Inject a tiny one-shot observer in the page; resolve when it fires once.
+  try {
+    const [res] = await chrome.scripting.executeScript({
+      target: { tabId, allFrames: false },
+      func: (ms) =>
+        new Promise((resolve) => {
+          const start = performance.now();
+          const finalize = (via) =>
+            resolve({ via, elapsedMs: Math.round(performance.now() - start) });
+          let done = false;
+          const obs = new MutationObserver(() => {
+            if (done) return;
+            done = true;
+            obs.disconnect();
+            finalize("dom");
+          });
+          obs.observe(document.body || document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            characterData: true,
+          });
+          setTimeout(() => {
+            if (done) return;
+            done = true;
+            try {
+              obs.disconnect();
+            } catch {}
+            finalize("timeout");
+          }, ms);
+        }),
+      args: [timeout],
+    });
+    return res?.result ?? { via: "timeout", elapsedMs: Date.now() - t0 };
+  } catch {
+    return { via: "timeout", elapsedMs: Date.now() - t0 };
+  }
+}
+
+function watchNetworkSettle(tabId, timeout) {
+  return new Promise((resolve) => {
+    const t0 = Date.now();
+    let done = false;
+    const finalize = (via) => {
+      if (done) return;
+      done = true;
+      try {
+        chrome.webRequest.onBeforeRequest.removeListener(onReq);
+      } catch {}
+      clearTimeout(timer);
+      resolve({ via, elapsedMs: Date.now() - t0 });
+    };
+    const onReq = (details) => {
+      if (details.tabId === tabId) finalize("network");
+    };
+    try {
+      chrome.webRequest.onBeforeRequest.addListener(onReq, {
+        urls: ["<all_urls>"],
+        tabId,
+      });
+    } catch {
+      // tabId-scoped filter not supported in this Chrome; fall back to all and
+      // filter in callback.
+      chrome.webRequest.onBeforeRequest.addListener(onReq, {
+        urls: ["<all_urls>"],
+      });
+    }
+    const timer = setTimeout(() => finalize("timeout"), timeout);
+  });
+}
+
+async function watchSelectorSettle(tabId, selector, timeout) {
+  const t0 = Date.now();
+  try {
+    const [res] = await chrome.scripting.executeScript({
+      target: { tabId, allFrames: false },
+      func: (sel, ms) =>
+        new Promise((resolve) => {
+          const start = performance.now();
+          const finalize = (via) =>
+            resolve({
+              via,
+              elapsedMs: Math.round(performance.now() - start),
+              selector: sel,
+            });
+          if (document.querySelector(sel)) return finalize("selector");
+          const obs = new MutationObserver(() => {
+            if (document.querySelector(sel)) {
+              obs.disconnect();
+              finalize("selector");
+            }
+          });
+          obs.observe(document.body || document.documentElement, {
+            childList: true,
+            subtree: true,
+          });
+          setTimeout(() => {
+            try {
+              obs.disconnect();
+            } catch {}
+            finalize("timeout");
+          }, ms);
+        }),
+      args: [selector, timeout],
+    });
+    return res?.result ?? { via: "timeout", elapsedMs: Date.now() - t0 };
+  } catch {
+    return { via: "timeout", elapsedMs: Date.now() - t0 };
+  }
 }
 
 async function dispatchInner(req) {
@@ -123,22 +317,32 @@ async function dispatchInner(req) {
   switch (c.kind) {
     case "tabs_query":
       return queryTabs(c.query);
+    case "get_focused_tab":
+      return getFocusedTab();
     case "tabs_create":
-      return createTab(c.url, c.background !== false);
+      return createTab(c.url, c.background !== false, c.settle);
     case "tabs_remove":
       return removeTab(c.tabId);
     case "navigate":
-      return navigate(tabId, c.url, c.waitUntil);
+      return navigate(tabId, c.url, c.waitUntil, c.settle);
     case "navigate_back":
-      return navigateBack(tabId);
+      return navigateBack(tabId, c.settle);
     case "snapshot":
       return takeSnapshot(tabId, c);
     case "screenshot":
       return takeScreenshot(tabId, c);
     case "console_messages":
-      return getConsole(tabId, c.limit ?? 50);
+      return getConsole(tabId, c.limit ?? 50, c.cursor);
     case "network_requests":
-      return getNetwork(tabId, c.limit ?? 50);
+      return getNetwork(tabId, {
+        limit: c.limit ?? 50,
+        cursor: c.cursor,
+        urlPattern: c.urlPattern,
+        type: c.type,
+        methodIn: c.methodIn,
+        statusGte: c.statusGte,
+        statusLt: c.statusLt,
+      });
     case "click":
       return runHelper(tabId, "click", c);
     case "type":
@@ -175,15 +379,59 @@ async function queryTabs(query) {
   }));
 }
 
-async function createTab(url, background) {
+async function getFocusedTab() {
+  try {
+    const [t] = await chrome.tabs.query({
+      active: true,
+      lastFocusedWindow: true,
+    });
+    if (!t) return null;
+    return { id: t.id, title: t.title ?? "", url: t.url ?? "" };
+  } catch {
+    return null;
+  }
+}
+
+async function createTab(url, background, settle) {
+  const previousActiveTab = await getFocusedTab();
   const tab = await chrome.tabs.create({ url, active: !background });
+  // Wait for status:complete before returning so the agent sees the actual
+  // loaded URL/title — not the empty placeholder from before the load fires.
+  const settled = await waitForTabComplete(tab.id, 15_000).catch(() => null);
+  const fresh = await chrome.tabs.get(tab.id).catch(() => tab);
+  const requested = url || "";
+  const landed = fresh.url ?? "";
+  // navigated:true if the loaded URL bears any relationship to the requested
+  // URL (same origin+path prefix or full equality). For SPA roots that catch
+  // a path into a hash route, we still consider that navigated.
+  const navigated = urlsLookLikeMatch(requested, landed);
   return {
-    id: tab.id,
-    url: tab.url ?? url,
-    title: tab.title ?? "",
-    windowId: tab.windowId,
-    active: !!tab.active,
+    id: fresh.id,
+    url: landed,
+    title: fresh.title ?? "",
+    windowId: fresh.windowId,
+    active: !!fresh.active,
+    navigated,
+    settledAt: Date.now(),
+    settled: settled ?? { via: "timeout", elapsedMs: 15_000 },
+    previousActiveTab,
   };
+}
+
+function urlsLookLikeMatch(requested, landed) {
+  if (!landed) return false;
+  if (!requested) return true;
+  if (requested === landed) return true;
+  try {
+    const a = new URL(requested);
+    const b = new URL(landed);
+    if (a.origin !== b.origin) return false;
+    // Path-prefix match handles trailing-slash normalisation, hash-only diffs
+    // and most SPA routers' catch-all behaviours.
+    return b.pathname.startsWith(a.pathname) || a.pathname.startsWith(b.pathname);
+  } catch {
+    return false;
+  }
 }
 
 async function removeTab(tabId) {
@@ -191,16 +439,40 @@ async function removeTab(tabId) {
   return { closed: tabId };
 }
 
-async function navigate(tabId, url, waitUntil) {
-  await chrome.tabs.update(tabId, { url });
+async function navigate(tabId, url, waitUntil, _settle) {
+  // url omitted → reload the current tab. tabs.reload preserves the entry in
+  // session history (vs. a fresh navigate, which would clobber it).
+  const t0 = Date.now();
+  if (!url) {
+    await chrome.tabs.reload(tabId);
+  } else {
+    await chrome.tabs.update(tabId, { url });
+  }
   if (waitUntil === "load") await waitForTabComplete(tabId);
   else await waitForTabDomReady(tabId);
-  return { navigated: url };
+  const fresh = await chrome.tabs.get(tabId).catch(() => null);
+  return {
+    navigated: url ?? "reload",
+    url: fresh?.url ?? "",
+    title: fresh?.title ?? "",
+    // Uniform settle shape across all action tools (README/CLAUDE.md claim
+    // this universally) — the "via" here is the load-complete event, not the
+    // generic in-page settle observer used by click/type/etc.
+    settled: { via: waitUntil === "load" ? "load" : "domcontentloaded", elapsedMs: Date.now() - t0 },
+  };
 }
 
-async function navigateBack(tabId) {
+async function navigateBack(tabId, _settle) {
+  const t0 = Date.now();
   await chrome.tabs.goBack(tabId);
-  return { ok: true };
+  await waitForTabDomReady(tabId);
+  const fresh = await chrome.tabs.get(tabId).catch(() => null);
+  return {
+    ok: true,
+    url: fresh?.url ?? "",
+    title: fresh?.title ?? "",
+    settled: { via: "domcontentloaded", elapsedMs: Date.now() - t0 },
+  };
 }
 
 function waitForTabComplete(tabId, timeoutMs = 15_000) {
@@ -244,11 +516,11 @@ async function takeScreenshot(tabId, opts) {
   // chrome.debugger Page.captureScreenshot — does NOT raise the window.
   await debuggerAttach(tabId);
   try {
+    const format = opts.format ?? "jpeg";
+    const quality = opts.quality ?? 70;
     const params = {
-      format: opts.format ?? "png",
-      ...(opts.quality && opts.format === "jpeg"
-        ? { quality: opts.quality }
-        : {}),
+      format,
+      ...(format === "jpeg" ? { quality } : {}),
       captureBeyondViewport: false,
     };
     const result = await new Promise((resolve, reject) => {
@@ -263,10 +535,65 @@ async function takeScreenshot(tabId, opts) {
         },
       );
     });
-    return { format: params.format, dataBase64: result.data };
+    let dataBase64 = result.data;
+    let resized = null;
+    if (opts.maxWidth) {
+      try {
+        const out = await resizeImageBase64(
+          dataBase64,
+          format,
+          quality,
+          opts.maxWidth,
+        );
+        if (out) {
+          dataBase64 = out.dataBase64;
+          resized = { width: out.width, height: out.height };
+        }
+      } catch (e) {
+        console.error(
+          `[earthling-bg] screenshot resize failed; returning native:`,
+          e?.message ?? e,
+        );
+      }
+    }
+    return {
+      format,
+      dataBase64,
+      ...(resized ? { resizedTo: resized } : {}),
+    };
   } finally {
     debuggerDetachLater(tabId);
   }
+}
+
+async function resizeImageBase64(b64, format, quality, maxWidth) {
+  // Service workers don't have <img>, but they do have createImageBitmap +
+  // OffscreenCanvas. Both are available on MV3 service worker context.
+  const mime = format === "jpeg" ? "image/jpeg" : "image/png";
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const blob = new Blob([bytes], { type: mime });
+  const bmp = await createImageBitmap(blob);
+  if (bmp.width <= maxWidth) {
+    bmp.close?.();
+    return null; // no need to resize
+  }
+  const scale = maxWidth / bmp.width;
+  const w = maxWidth;
+  const h = Math.round(bmp.height * scale);
+  const canvas = new OffscreenCanvas(w, h);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(bmp, 0, 0, w, h);
+  bmp.close?.();
+  const outBlob = await canvas.convertToBlob({
+    type: mime,
+    ...(format === "jpeg" ? { quality: quality / 100 } : {}),
+  });
+  const buf = new Uint8Array(await outBlob.arrayBuffer());
+  let bin2 = "";
+  for (let i = 0; i < buf.length; i++) bin2 += String.fromCharCode(buf[i]);
+  return { dataBase64: btoa(bin2), width: w, height: h };
 }
 
 const attached = new Set();
@@ -523,28 +850,102 @@ async function runEvaluate(tabId, expression) {
 
 // ─── console & network buffering ────────────────────────────────────
 
-function getConsole(tabId, limit) {
-  const buf = consoleBuffers.get(tabId) ?? [];
-  return buf.slice(-limit);
+// Each buffered request gets a monotonic per-tab `seq` so cursor pagination
+// can address "everything older than this seq". Console messages get the same
+// treatment for consistency.
+const networkSeq = new Map(); // tabId → next seq
+const consoleSeq = new Map(); // tabId → next seq
+
+function paginate(buf, limit, cursor) {
+  // Cursor is the seq of the OLDEST item already-returned in a prior call;
+  // we return items strictly older than cursor for "page back" behaviour, or
+  // newest-first slice when cursor is missing.
+  let pool = buf;
+  if (cursor) {
+    const c = Number(cursor);
+    if (!Number.isNaN(c)) pool = buf.filter((e) => e.seq < c);
+  }
+  // Newest-first slice
+  const items = pool.slice(-limit);
+  const truncated = pool.length > items.length;
+  const next_cursor = truncated && items.length > 0 ? String(items[0].seq) : undefined;
+  return { items, truncated, next_cursor };
 }
 
-function getNetwork(tabId, limit) {
+const DEFAULT_NETWORK_TYPES = new Set([
+  "xmlhttprequest",
+  "fetch",
+  "document",
+]);
+
+function filterNetwork(buf, opts) {
+  const typeFilter = opts.type && opts.type.length ? new Set(opts.type) : DEFAULT_NETWORK_TYPES;
+  const methodFilter =
+    opts.methodIn && opts.methodIn.length ? new Set(opts.methodIn) : null;
+  let urlMatcher = null;
+  if (opts.urlPattern) {
+    const p = opts.urlPattern;
+    if (p.startsWith("/") && p.lastIndexOf("/") > 0) {
+      const last = p.lastIndexOf("/");
+      try {
+        urlMatcher = new RegExp(p.slice(1, last), p.slice(last + 1));
+      } catch {
+        urlMatcher = { test: (s) => s.includes(p) };
+      }
+    } else {
+      urlMatcher = { test: (s) => s.includes(p) };
+    }
+  }
+  return buf.filter((e) => {
+    if (!typeFilter.has(e.type)) return false;
+    if (methodFilter && !methodFilter.has(e.method)) return false;
+    if (urlMatcher && !urlMatcher.test(e.url)) return false;
+    if (opts.statusGte !== undefined && e.status < opts.statusGte) return false;
+    if (opts.statusLt !== undefined && e.status >= opts.statusLt) return false;
+    return true;
+  });
+}
+
+function getConsole(tabId, limit, cursor) {
+  const buf = consoleBuffers.get(tabId) ?? [];
+  const page = paginate(buf, limit, cursor);
+  return {
+    count: page.items.length,
+    items: page.items,
+    truncated: page.truncated,
+    ...(page.next_cursor ? { next_cursor: page.next_cursor } : {}),
+  };
+}
+
+function getNetwork(tabId, opts) {
   const buf = networkBuffers.get(tabId) ?? [];
-  return buf.slice(-limit);
+  const filtered = filterNetwork(buf, opts);
+  const page = paginate(filtered, opts.limit ?? 50, opts.cursor);
+  return {
+    count: page.items.length,
+    items: page.items,
+    truncated: page.truncated,
+    ...(page.next_cursor ? { next_cursor: page.next_cursor } : {}),
+  };
 }
 
 chrome.webRequest.onCompleted.addListener(
   (details) => {
     if (details.tabId < 0) return;
     const buf = networkBuffers.get(details.tabId) ?? [];
+    const seq = (networkSeq.get(details.tabId) ?? 0) + 1;
+    networkSeq.set(details.tabId, seq);
     buf.push({
+      seq,
       method: details.method,
       url: details.url,
       status: details.statusCode,
       type: details.type,
       ts: details.timeStamp,
     });
-    if (buf.length > 200) buf.splice(0, buf.length - 200);
+    // Buffer 500 entries (up from 200) so cursor pagination can page back
+    // through more history before falling off the end.
+    if (buf.length > 500) buf.splice(0, buf.length - 500);
     networkBuffers.set(details.tabId, buf);
   },
   { urls: ["<all_urls>"] },

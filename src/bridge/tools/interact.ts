@@ -56,15 +56,42 @@ function readUploadPayloads(
   });
 }
 
+// Standard annotations for write-y action tools (click, type, navigate, etc).
+// These mutate page state, are not safely repeatable, and may touch external services.
+const ACTION_WRITE: import("@modelcontextprotocol/sdk/types.js").ToolAnnotations =
+  {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: true,
+  };
+
+// Annotations for non-destructive interactions (hover, scroll) — mutate
+// transient UI state but don't trigger submissions or destructive actions.
+const ACTION_SOFT: import("@modelcontextprotocol/sdk/types.js").ToolAnnotations =
+  {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+  };
+
 export function registerInteractTools(
   server: McpServer,
   ctx: ToolContext,
 ): void {
   registerActionTool(server, ctx, {
     name: "browser_navigate",
-    description: "Navigate the leased tab to a URL.",
+    title: "Navigate or reload the leased tab",
+    description:
+      "Navigate the leased tab to a URL. Omit `url` to reload the current page.",
+    annotations: ACTION_WRITE,
     schema: {
-      url: z.string().url(),
+      url: z
+        .string()
+        .url()
+        .optional()
+        .describe("URL to navigate to. Omit to reload the current page."),
       tabId: z.number().int().optional(),
       waitUntil: z
         .enum(["load", "domcontentloaded"])
@@ -76,7 +103,9 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_navigate_back",
+    title: "Navigate back in history",
     description: "Go back one entry in the leased tab's history.",
+    annotations: ACTION_WRITE,
     schema: {
       tabId: z.number().int().optional(),
     },
@@ -86,8 +115,10 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_click",
+    title: "Click an element",
     description:
       "Click an element by `ref` from a recent snapshot. Supports modifiers, double/right click.",
+    annotations: ACTION_WRITE,
     schema: {
       ref: z.string().describe('Element ref from browser_snapshot (e.g. "5").'),
       tabId: z.number().int().optional(),
@@ -112,8 +143,10 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_type",
+    title: "Type into an element",
     description:
       "Type text into a textbox by `ref`. Clears existing value unless append:true.",
+    annotations: ACTION_WRITE,
     schema: {
       ref: z.string(),
       text: z.string(),
@@ -126,8 +159,10 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_select_option",
+    title: "Select a <select> option",
     description:
       "Select an option in a <select> element by value or visible label.",
+    annotations: ACTION_WRITE,
     schema: {
       ref: z.string(),
       value: z.string().describe("Option value or visible label."),
@@ -139,8 +174,10 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_hover",
+    title: "Hover over an element",
     description:
       "Hover the pointer over an element by `ref`. Useful for revealing hover menus.",
+    annotations: ACTION_SOFT,
     schema: {
       ref: z.string(),
       tabId: z.number().int().optional(),
@@ -151,8 +188,10 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_scroll",
+    title: "Scroll the page or an element",
     description:
       "Scroll the page or a specific scrollable element by deltas (positive = down/right).",
+    annotations: ACTION_SOFT,
     schema: {
       ref: z
         .string()
@@ -168,7 +207,9 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_upload",
+    title: "Upload files to a file input",
     description: "Upload local files to a file input by `ref`.",
+    annotations: ACTION_WRITE,
     schema: {
       ref: z.string(),
       files: z
@@ -189,8 +230,10 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_press_key",
+    title: "Press a keyboard key/shortcut",
     description:
       "Press a keyboard shortcut at page level. Key names follow KeyboardEvent.key.",
+    annotations: ACTION_WRITE,
     schema: {
       key: z.string().describe('e.g. "Enter", "Tab", "a", "F5".'),
       tabId: z.number().int().optional(),
@@ -205,8 +248,10 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_evaluate",
+    title: "Evaluate JavaScript in the leased tab",
     description:
-      "Run a JS expression in the leased tab and return the JSON-serialisable result.",
+      'Run a JS expression in the leased tab and return the JSON-serialisable result. Strings come back as strings (not char-indexed objects). For unfamiliar SPAs, call browser_network_requests first to discover real backend endpoints from xhr/fetch traffic before guessing endpoint paths. In fetch helpers, read the Response body once into text then conditionally JSON.parse — the body stream is single-use (`await r.text()` then `JSON.parse(text)`, not `await r.json().catch(...)` then `await r.text()`).',
+    annotations: ACTION_WRITE,
     schema: {
       expression: z
         .string()
@@ -221,9 +266,29 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_wait_for",
-    description: "Wait for a CSS selector, network idle, or timeout.",
+    title: "Wait for a condition",
+    description:
+      'Wait for a CSS selector, a JS predicate, network idle, or a timeout. Use `condition` for state-machine SPAs — e.g. condition: "document.querySelectorAll(\'[data-clip-status=\\"complete\\"]\').length === 4" — instead of polling externally. Selectors should be passed raw (the JSON layer handles escaping). Exactly one of `selector`, `condition`, or `networkIdle:true` must be set.',
+    readOnly: true,
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     schema: {
-      selector: z.string().optional().describe("CSS selector to wait for."),
+      selector: z
+        .string()
+        .optional()
+        .describe(
+          'CSS selector to wait for. Pass raw selectors with literal quotes; the JSON layer handles escaping (e.g. `[data-testid="row"]`).',
+        ),
+      condition: z
+        .string()
+        .optional()
+        .describe(
+          "JS expression evaluated in-page on a polling loop. Returns when the expression is truthy. Use for attribute-value transitions and state-machine SPAs (data-status, aria-busy, react state etc.).",
+        ),
       networkIdle: z
         .boolean()
         .default(false)
@@ -232,17 +297,47 @@ export function registerInteractTools(
         .number()
         .int()
         .min(0)
-        .max(60_000)
+        .max(300_000)
         .default(10_000)
-        .describe("Max wait in ms."),
+        .describe("Max wait in ms. Default 10s, max 5 minutes."),
+      poll_interval_ms: z
+        .number()
+        .int()
+        .min(50)
+        .max(5000)
+        .default(250)
+        .describe("Polling interval for `condition` mode."),
       tabId: z.number().int().optional(),
     },
-    handler: async ({ selector, networkIdle, timeout, tabId }) =>
-      execOnLeasedTab(ctx, tabId, {
+    handler: async ({
+      selector,
+      condition,
+      networkIdle,
+      timeout,
+      poll_interval_ms,
+      tabId,
+    }) => {
+      const set = [
+        selector ? 1 : 0,
+        condition ? 1 : 0,
+        networkIdle ? 1 : 0,
+      ].reduce((a, b) => a + b, 0);
+      if (set === 0)
+        throw new Error(
+          "browser_wait_for requires one of: selector, condition, or networkIdle:true",
+        );
+      if (set > 1)
+        throw new Error(
+          "browser_wait_for: pass only one of selector, condition, networkIdle",
+        );
+      return execOnLeasedTab(ctx, tabId, {
         kind: "wait_for",
         selector,
+        condition,
         networkIdle,
         timeout,
-      }),
+        pollIntervalMs: poll_interval_ms,
+      });
+    },
   });
 }
