@@ -57,7 +57,7 @@ export function clearStaleEndpoint(runtimeDir: string): void {
 
 export async function waitForDaemon(
   runtimeDir: string,
-  timeoutMs = 10_000,
+  timeoutMs = 30_000,
 ): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -84,9 +84,10 @@ export async function ensureDaemon(
   }
 
   const lockPath = join(runtimeDir, DAEMON_LOCK_FILE);
+  // Lock TTL must cover a full cold start (waitForDaemon budget) so a concurrent starter waits it out instead of double-spawning a daemon that is merely slow on a loaded machine.
   if (
     existsSync(lockPath) &&
-    Date.now() - parseInt(readFileSync(lockPath, "utf8"), 10) < 5_000
+    Date.now() - parseInt(readFileSync(lockPath, "utf8"), 10) < 30_000
   ) {
     await waitForDaemon(runtimeDir);
     return (
