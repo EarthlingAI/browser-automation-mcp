@@ -46,6 +46,14 @@ The daemon is auto-spawned by the first bridge process that finds the port unbou
 
 Runtime files (`daemon.port`, `daemon.log`, `subscribe.token`) live in a standard OS state location regardless of launch mode: `%LOCALAPPDATA%\earthling\browser-automation-mcp\` on Windows, `$XDG_STATE_HOME/earthling/browser-automation-mcp/` (or `~/.local/state/...`) on Linux, `~/Library/Application Support/earthling/browser-automation-mcp/` on macOS. The fallback chain in `resolveRuntimeDir()` (`src/index.ts`) is the contract; `.runtime/` next to the bundle is the last-resort fallback for smoke tests. `$BROWSER_AUTOMATION_MCP_RUNTIME_DIR` overrides the default — used only by tests that need an isolated runtime dir.
 
+### Daemon recovery
+
+The bridge holds the daemon endpoint in memory but lazily re-resolves it on socket close — the next MCP tool call respawns the daemon via the same `daemon.lock`-protected path used at startup. Multiple concurrent bridges that observe the death simultaneously race-share the spawn; exactly one new daemon process results.
+
+Lease state is lost on respawn (it lives only in the dead daemon's memory). Any subsequent tool call on a previously-leased tab returns `lease_required` — the agent re-claims via `browser_switch_tab`, the same recovery path as a forced lease revocation.
+
+In-flight requests at the moment the daemon dies fail fast with `daemon connection lost` rather than hanging. Recovery is otherwise silent — no agent-visible signal beyond a slightly slower first call after death (~100–300 ms of respawn).
+
 ## Tool surface (v1, 20 tools)
 
 All tools prefixed `browser_*`. All action tools default `snapshot:true` (auto-snapshot after) and operate on the most-recently-leased tab unless `tabId` is given.
@@ -85,6 +93,7 @@ src/
 ├── protocol.ts           # wire types shared by daemon, bridge, extension
 ├── daemon/
 │   ├── server.ts         # WebSocket + bridge TCP server, command router
+│   ├── spawn.ts          # race-safe daemon spawn (shared by startup + recovery)
 │   └── leases.ts         # TabLeaseManager
 ├── bridge/
 │   ├── mcp.ts            # stdio MCP server entry

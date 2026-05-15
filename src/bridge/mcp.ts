@@ -20,8 +20,13 @@ with a hint — re-claim via browser_switch_tab and continue.`;
 export async function startBridge(opts: {
   agentLabel?: string;
   endpoint: { port: number; token: string };
+  ensureDaemonFn: () => Promise<{ port: number; token: string }>;
 }): Promise<void> {
-  const daemon = new DaemonClient(opts.endpoint, opts.agentLabel);
+  const daemon = new DaemonClient(
+    opts.endpoint,
+    opts.agentLabel,
+    opts.ensureDaemonFn,
+  );
   await daemon.connect();
   const session = new BridgeSession();
   const ctx = { daemon, session };
