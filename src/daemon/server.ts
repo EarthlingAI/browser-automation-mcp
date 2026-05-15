@@ -54,6 +54,10 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
   const pendingExt = new Map<string, (m: ExtResponse) => void>();
   const tabsCache = new Map<TabId, TabInfo>();
 
+  // Fail-fast on bind failure: another daemon already owns :9223. Track a `wsStarted` flag
+  // flipped inside `listening` so any pre-listening error (EADDRINUSE, EACCES, …) is fatal,
+  // while post-listening errors stay logged-and-ignored as before.
+  let wsStarted = false;
   const wss = new WebSocketServer({
     port: EXT_PORT_DEFAULT,
     host: "127.0.0.1",
@@ -72,7 +76,17 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
       }
     },
   });
+  wss.on("listening", () => {
+    wsStarted = true;
+  });
   wss.on("error", (err) => {
+    if (!wsStarted) {
+      const code = (err as NodeJS.ErrnoException).code ?? "unknown";
+      console.error(
+        `[daemon] fatal: failed to bind ws://127.0.0.1:${EXT_PORT_DEFAULT} (${code}: ${err.message}). Another browser-automation-mcp daemon is likely already running. Exiting.`,
+      );
+      process.exit(1);
+    }
     console.error(`[daemon] WebSocketServer error: ${err.message}`);
   });
   wss.on("connection", (ws) => {

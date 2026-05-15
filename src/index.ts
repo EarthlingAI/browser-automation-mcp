@@ -28,7 +28,7 @@ import {
 
 /**
  * Resolution order:
- *   1. BROWSER_AUTOMATION_MCP_RUNTIME_DIR — explicit override (engine sets this).
+ *   1. BROWSER_AUTOMATION_MCP_RUNTIME_DIR — explicit override (test harnesses only).
  *   2. %LOCALAPPDATA%\earthling\browser-automation-mcp  (Windows)
  *   3. $XDG_STATE_HOME / ~/.local/state / ~/Library/Application Support (Unix/macOS)
  *   4. <package>/.runtime — fallback for `node dist/index.js --daemon` smoke tests.

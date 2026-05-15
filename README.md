@@ -17,7 +17,7 @@ Three processes for two reasons:
 
 The daemon is auto-spawned by the first bridge process that finds the port unbound. Subsequent bridges connect to the existing daemon. **Auth:** the daemon checks every WebSocket upgrade's `Origin` header against `chrome-extension://<id>` (extension ID is pinned by the CRX `key` in `manifest.json`). Browsers set `Origin` from the executing context and JS cannot override it, so web pages cannot impersonate the extension — no user-visible token paste is required.
 
-Runtime files (`daemon.port`, `daemon.log`, `subscribe.token`) live under `$BROWSER_AUTOMATION_MCP_RUNTIME_DIR` (the engine sets this to `<workspace>/data/mcp/browser-automation-mcp/runtime/`). When the bridge runs outside the engine, the dir resolves to a standard OS state location (`%LOCALAPPDATA%`, `$XDG_STATE_HOME`, `~/Library/Application Support`); `.runtime/` next to the bundle is the last-resort fallback for smoke tests.
+Runtime files (`daemon.port`, `daemon.log`, `subscribe.token`) live in a standard OS state location regardless of launch mode: `%LOCALAPPDATA%\earthling\browser-automation-mcp\` on Windows, `$XDG_STATE_HOME/earthling/browser-automation-mcp/` (or `~/.local/state/...`) on Linux, `~/Library/Application Support/earthling/browser-automation-mcp/` on macOS. The fallback chain in `resolveRuntimeDir()` (`src/index.ts`) is the contract; `.runtime/` next to the bundle is the last-resort fallback for smoke tests. `$BROWSER_AUTOMATION_MCP_RUNTIME_DIR` overrides the default — used only by tests that need an isolated runtime dir.
 
 ## Tool surface (v1, 20 tools)
 
