@@ -1,6 +1,33 @@
 # browser-automation-mcp
 
-Cross-tab Chrome control for the Earthling agent via a passive MV3 extension. **Never steals focus** — every action runs in the background.
+Cross-tab Chrome control via a passive MV3 extension. **Never steals focus** — every action runs in the background.
+
+## Installation
+
+Stdio MCP server. Build, then wire into the host agent's MCP config:
+
+```bash
+npm install
+npm run build
+```
+
+```jsonc
+// .mcp.json (or equivalent MCP client config)
+"browser-automation-mcp": {
+  "command": "node",
+  "args": ["tools/browser-automation-mcp/dist/index.js"]
+}
+```
+
+Optional args/env:
+
+- `--agent <label>` — human-readable label surfaced in lease records (useful when multiple agent sessions share one browser).
+- `BROWSER_AUTOMATION_MCP_RUNTIME_DIR` — override the runtime-files location (`daemon.port`, `daemon.log`, `subscribe.token`). Defaults to a standard OS state dir (`%LOCALAPPDATA%\earthling\browser-automation-mcp` on Windows, `$XDG_STATE_HOME/earthling/...` on Linux, `~/Library/Application Support/earthling/...` on macOS); `.runtime/` next to the bundle is a last-resort fallback for smoke tests.
+- `BROWSER_AUTOMATION_MCP_RELAY_PORT` — override the daemon ↔ extension WebSocket port. Defaults to `9223` (loopback only, origin-gated to the pinned extension ID — see Architecture). Invalid values log a warning and fall back to the default. **If you override this, you must also update `DAEMON_URL` in `earthling-extension/background.js` (and the probe URL in `status.js`/`status.html`) to match — the unpacked extension cannot read process env vars.**
+
+### Load the Chrome extension
+
+Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and select the `earthling-extension/` directory from this package. The extension's options page (`status.html`) shows live daemon-connection state.
 
 ## Architecture
 
@@ -86,7 +113,7 @@ npm run build              # esbuild → dist/index.js
 npm run dev                # esbuild watch mode
 ```
 
-The engine launches the bundle as `engine run-mcp browser-automation-mcp` (stdio MCP). The daemon spawns lazily from the first bridge process.
+The bundle is launched as a stdio MCP (`node dist/index.js`). The daemon spawns lazily from the first bridge process.
 
 ## License
 

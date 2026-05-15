@@ -20,7 +20,7 @@ import {
   IndicatorState,
   TabInfo,
   TabId,
-  EXT_PORT_DEFAULT,
+  resolveExtPort,
   DAEMON_PORT_FILE,
   DAEMON_TOKEN_FILE,
   EARTHLING_EXTENSION_ORIGIN,
@@ -54,12 +54,13 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
   const pendingExt = new Map<string, (m: ExtResponse) => void>();
   const tabsCache = new Map<TabId, TabInfo>();
 
-  // Fail-fast on bind failure: another daemon already owns :9223. Track a `wsStarted` flag
-  // flipped inside `listening` so any pre-listening error (EADDRINUSE, EACCES, …) is fatal,
+  const extPort = resolveExtPort();
+  // Fail-fast on bind failure: another daemon already owns the relay port. Track a `wsStarted`
+  // flag flipped inside `listening` so any pre-listening error (EADDRINUSE, EACCES, …) is fatal,
   // while post-listening errors stay logged-and-ignored as before.
   let wsStarted = false;
   const wss = new WebSocketServer({
-    port: EXT_PORT_DEFAULT,
+    port: extPort,
     host: "127.0.0.1",
     // Origin gate: only our extension's chrome-extension:// URL is accepted. Web pages
     // get https://… origins which browsers set and JS cannot override, so this blocks
@@ -83,7 +84,7 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
     if (!wsStarted) {
       const code = (err as NodeJS.ErrnoException).code ?? "unknown";
       console.error(
-        `[daemon] fatal: failed to bind ws://127.0.0.1:${EXT_PORT_DEFAULT} (${code}: ${err.message}). Another browser-automation-mcp daemon is likely already running. Exiting.`,
+        `[daemon] fatal: failed to bind ws://127.0.0.1:${extPort} (${code}: ${err.message}). Another browser-automation-mcp daemon is likely already running. Exiting.`,
       );
       process.exit(1);
     }
@@ -335,7 +336,7 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
   writeFileSync(join(runtimeDir, DAEMON_TOKEN_FILE), token, { mode: 0o600 });
 
   console.error(
-    `[daemon] bridges on tcp://127.0.0.1:${tcpPort}, extension on ws://127.0.0.1:${EXT_PORT_DEFAULT} (origin-gated)`,
+    `[daemon] bridges on tcp://127.0.0.1:${tcpPort}, extension on ws://127.0.0.1:${extPort} (origin-gated)`,
   );
 
   const cleanup = () => {

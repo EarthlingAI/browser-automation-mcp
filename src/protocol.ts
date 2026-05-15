@@ -137,6 +137,26 @@ export const DAEMON_TOKEN_FILE = "subscribe.token";
 export const DAEMON_LOCK_FILE = "daemon.lock";
 
 /**
+ * Loopback port the daemon binds for the WebSocket the Chrome extension dials.
+ * Override via BROWSER_AUTOMATION_MCP_RELAY_PORT — useful when 9223 is taken.
+ * If you override, you must also update the matching DAEMON_URL constant in
+ * earthling-extension/background.js (and the probe URL in status.js / status.html);
+ * the unpacked extension cannot read env vars.
+ */
+export function resolveExtPort(): number {
+  const raw = process.env.BROWSER_AUTOMATION_MCP_RELAY_PORT;
+  if (!raw) return EXT_PORT_DEFAULT;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
+    console.error(
+      `[browser-automation-mcp] BROWSER_AUTOMATION_MCP_RELAY_PORT="${raw}" is not a valid port; falling back to ${EXT_PORT_DEFAULT}`,
+    );
+    return EXT_PORT_DEFAULT;
+  }
+  return parsed;
+}
+
+/**
  * Chrome extension ID derived from the pinned CRX `key` in `earthling-extension/manifest.json`.
  * The daemon checks every WebSocket upgrade's `Origin` header against `chrome-extension://<id>` —
  * browsers set Origin from the executing context and web pages cannot forge it, so this gives
