@@ -11,7 +11,14 @@
  */
 
 (() => {
-  if (globalThis.__earthlingHelpersLoaded) return;
+  // Versioned guard. On reinjection (chrome.scripting.executeScript pushes
+  // helpers.js on every action call), bail out if the same version is already
+  // loaded — preserves the in-page nodeMap so sequential action tools still
+  // resolve refs from the most recent snapshot. Bump the integer when changing
+  // the in-page contract (new act kind, return-shape change).
+  const HELPERS_VERSION = 3;
+  if (globalThis.__earthlingHelpersVersion === HELPERS_VERSION) return;
+  globalThis.__earthlingHelpersVersion = HELPERS_VERSION;
   globalThis.__earthlingHelpersLoaded = true;
 
   const NATIVE_ROLES = {
@@ -116,15 +123,26 @@
     return undefined;
   }
 
-  function isVisible(el, rect) {
-    if (!rect || rect.width === 0 || rect.height === 0) return false;
+  function isHidden(el) {
     const style = window.getComputedStyle(el);
-    if (
+    return (
       style.visibility === "hidden" ||
       style.display === "none" ||
       style.opacity === "0"
-    )
-      return false;
+    );
+  }
+
+  function isVisible(el, rect) {
+    // Bail only on style-hidden elements. Zero-dimension wrappers are a very
+    // common React/Chakra layout idiom (e.g. Suno's create page has an empty
+    // class=""  div with width:1336 height:0 between the form and body) — the
+    // wrapper itself has no box but its overflowing children render fine. If
+    // we returned false here, walkA11y would prune the whole subtree below,
+    // hiding the entire form from the snapshot. So: zero-rect is OK as long
+    // as we still recurse into children. A LEAF with a zero rect IS hidden;
+    // walkA11y handles that case explicitly below.
+    if (!rect) return false;
+    if (isHidden(el)) return false;
     return true;
   }
 
@@ -145,10 +163,17 @@
   function walkA11y(el, depth) {
     const rect = el.getBoundingClientRect();
     if (!isVisible(el, rect)) return null;
+    // A truly geometric-zero LEAF is hidden — drop. But a zero-rect element
+    // WITH children might be a zero-dim wrapper around overflowing content;
+    // recurse into its children even though the wrapper itself emits nothing
+    // useful.
+    const zeroRect = rect.width === 0 || rect.height === 0;
+    if (zeroRect && el.children.length === 0) return null;
     const role = roleOf(el);
     const name = role ? nameOf(el) : "";
     const nodeId = String(++nodeCounter);
     nodeMap.set(nodeId, el);
+    const style = window.getComputedStyle(el);
     const node = {
       nodeId,
       role: role || "generic",
@@ -170,6 +195,22 @@
     const expanded = el.getAttribute?.("aria-expanded");
     if (expanded !== null && expanded !== undefined)
       node.expanded = expanded === "true";
+    // Extra flags for the pruner's heuristics: cookie-banner collapse, modal
+    // focus, accessibility-hidden filtering, and position-fixed detection
+    // (overlay banners almost always carry position:fixed).
+    if (el.getAttribute?.("aria-hidden") === "true") node.ariaHidden = true;
+    if (el.hasAttribute?.("inert")) node.inert = true;
+    // <dialog open> with modal-style open() shows a top-layer modal — useful
+    // for the pruner to prioritise its descendants.
+    if (
+      el.tagName === "DIALOG" &&
+      /** @type {HTMLDialogElement} */ (el).open === true
+    ) {
+      node.dialogModal = true;
+    }
+    if (style && style.position && style.position !== "static") {
+      node.position = style.position;
+    }
 
     for (const child of Array.from(el.children)) {
       const sub = walkA11y(child, depth + 1);
@@ -339,17 +380,71 @@
   }
 
   async function actWaitFor(opts) {
-    const deadline = Date.now() + (opts.timeout || 10_000);
+    const startedAt = Date.now();
+    const deadline = startedAt + (opts.timeout || 10_000);
+    const pollMs = opts.pollIntervalMs ?? 100;
     if (opts.selector) {
+      // Sync-first check: if the element is already in the DOM at call time,
+      // return immediately. Without this, the poll loop sleeps 100ms before
+      // ever looking — which makes wait_for race with helper re-injection and
+      // miss already-present elements (root cause of Issue #8).
+      if (document.querySelector(opts.selector))
+        return { met: true, found: opts.selector, elapsedMs: 0 };
       while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, pollMs));
         if (document.querySelector(opts.selector))
-          return { found: opts.selector };
-        await new Promise((r) => setTimeout(r, 100));
+          return {
+            met: true,
+            found: opts.selector,
+            elapsedMs: Date.now() - startedAt,
+          };
       }
-      return { error: `selector ${opts.selector} not found within timeout` };
+      return {
+        met: false,
+        error: `selector ${opts.selector} not found within timeout`,
+        elapsedMs: Date.now() - startedAt,
+      };
+    }
+    if (opts.condition) {
+      // Evaluate a JS predicate on a polling loop. Returns when truthy or at
+      // timeout. The expression is wrapped in an IIFE so statement blocks are
+      // accepted alongside bare expressions.
+      let lastValue;
+      let lastError;
+      const evalOnce = () => {
+        try {
+          // eslint-disable-next-line no-new-func
+          const fn = new Function(`return (function(){ return (${opts.condition}); })();`);
+          const v = fn();
+          lastValue = v;
+          return v;
+        } catch (e) {
+          lastError = e && e.message ? e.message : String(e);
+          return undefined;
+        }
+      };
+      const v0 = evalOnce();
+      if (v0) {
+        return { met: true, value: v0, elapsedMs: 0 };
+      }
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, pollMs));
+        const v = evalOnce();
+        if (v) {
+          return { met: true, value: v, elapsedMs: Date.now() - startedAt };
+        }
+      }
+      return {
+        met: false,
+        value: lastValue,
+        error: lastError
+          ? `predicate threw: ${lastError}`
+          : `predicate did not become truthy within timeout`,
+        elapsedMs: Date.now() - startedAt,
+      };
     }
     await new Promise((r) => setTimeout(r, opts.timeout || 100));
-    return { waited: opts.timeout };
+    return { met: true, waited: opts.timeout, elapsedMs: Date.now() - startedAt };
   }
 
   function actUpload(opts) {

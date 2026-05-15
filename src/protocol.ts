@@ -32,6 +32,32 @@ export interface TabInfo {
   leasedBy?: { sessionId: string; agentLabel?: string; since: number };
 }
 
+/**
+ * Settle protocol — when an action command (click/type/scroll/...) lands in the
+ * page, the extension installs a brief observer and resolves only once the page
+ * has shown a signal of having processed the action, OR a timeout elapses. This
+ * is what stops the Suno-class "click returned but nothing visibly happened →
+ * agent re-fires it → double-submit" failure mode.
+ *
+ *  - dom     → resolve on first MutationObserver callback on document.body
+ *  - network → resolve on first webRequest fired from the tab
+ *  - selector → resolve when the named CSS selector matches
+ *  - none    → no settle wait; resolve immediately
+ */
+export interface SettleOptions {
+  mode: "dom" | "network" | "selector" | "none";
+  timeout?: number;
+  selector?: string;
+}
+
+/** Reported back to the agent so it knows what triggered the action to settle. */
+export type SettleResult =
+  | { via: "dom"; elapsedMs: number }
+  | { via: "network"; elapsedMs: number }
+  | { via: "selector"; elapsedMs: number; selector: string }
+  | { via: "timeout"; elapsedMs: number }
+  | { via: "none"; elapsedMs: 0 };
+
 // ─── bridge → daemon ────────────────────────────────────────────────
 
 export type BridgeRequest =
@@ -66,43 +92,100 @@ export type BridgeResponse =
       leasedBy?: string;
       since?: string;
       hint?: string;
+      recovery?: string;
+      kind?: string;
     };
 
 // ─── daemon ↔ extension ─────────────────────────────────────────────
 
 export type ExtCommand =
   | { kind: "tabs_query"; query?: string }
-  | { kind: "tabs_create"; url: string; background?: boolean }
+  | { kind: "get_focused_tab" }
+  | {
+      kind: "tabs_create";
+      url: string;
+      background?: boolean;
+      settle?: SettleOptions;
+    }
   | { kind: "tabs_remove"; tabId: TabId }
-  | { kind: "navigate"; url: string; waitUntil?: "load" | "domcontentloaded" }
-  | { kind: "navigate_back" }
+  | {
+      kind: "navigate";
+      url?: string;
+      waitUntil?: "load" | "domcontentloaded";
+      settle?: SettleOptions;
+    }
+  | { kind: "navigate_back"; settle?: SettleOptions }
   | { kind: "snapshot"; viewportOnly?: boolean; limit?: number }
-  | { kind: "screenshot"; format?: "png" | "jpeg"; quality?: number }
-  | { kind: "console_messages"; limit?: number }
-  | { kind: "network_requests"; limit?: number }
+  | {
+      kind: "screenshot";
+      format?: "png" | "jpeg";
+      quality?: number;
+      maxWidth?: number;
+    }
+  | {
+      kind: "console_messages";
+      limit?: number;
+      cursor?: string;
+    }
+  | {
+      kind: "network_requests";
+      limit?: number;
+      cursor?: string;
+      urlPattern?: string;
+      type?: string[];
+      methodIn?: string[];
+      statusGte?: number;
+      statusLt?: number;
+    }
   | {
       kind: "click";
       ref: string;
       button?: "left" | "right" | "middle";
       clickCount?: 1 | 2 | 3;
       modifiers?: string[];
+      settle?: SettleOptions;
     }
-  | { kind: "type"; ref: string; text: string; append?: boolean }
-  | { kind: "select_option"; ref: string; value: string }
-  | { kind: "hover"; ref: string }
-  | { kind: "scroll"; ref?: string; deltaY?: number; deltaX?: number }
+  | {
+      kind: "type";
+      ref: string;
+      text: string;
+      append?: boolean;
+      settle?: SettleOptions;
+    }
+  | {
+      kind: "select_option";
+      ref: string;
+      value: string;
+      settle?: SettleOptions;
+    }
+  | { kind: "hover"; ref: string; settle?: SettleOptions }
+  | {
+      kind: "scroll";
+      ref?: string;
+      deltaY?: number;
+      deltaX?: number;
+      settle?: SettleOptions;
+    }
   | {
       kind: "upload";
       ref: string;
       files: Array<{ name: string; mimeType: string; dataBase64: string }>;
+      settle?: SettleOptions;
     }
-  | { kind: "press_key"; key: string; modifiers?: string[] }
+  | {
+      kind: "press_key";
+      key: string;
+      modifiers?: string[];
+      settle?: SettleOptions;
+    }
   | { kind: "evaluate"; expression: string }
   | {
       kind: "wait_for";
       selector?: string;
+      condition?: string;
       timeout?: number;
       networkIdle?: boolean;
+      pollIntervalMs?: number;
     }
   | { kind: "indicator_state"; state: IndicatorState };
 

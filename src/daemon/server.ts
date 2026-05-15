@@ -151,18 +151,41 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
 
   function sendExt(command: ExtCommand, tabId?: TabId): Promise<unknown> {
     return new Promise((resolve, reject) => {
+      const makeRecoveryHint = () =>
+        "extension not connected — try POST http://127.0.0.1:42042/api/mcp/browser-automation-mcp/reconnect, or reload the Earthling Browser Bridge extension at chrome://extensions";
       if (!extSocket || extSocket.readyState !== WebSocket.OPEN) {
-        reject(new Error("extension not connected"));
+        const err: any = new Error("extension not connected");
+        err.kind = "extension_disconnected";
+        err.tabId = tabId;
+        err.recovery = makeRecoveryHint();
+        err.hint = err.recovery;
+        reject(err);
         return;
       }
       const id = randomBytes(8).toString("hex");
       const req: ExtRequest = { id, tabId, command };
       pendingExt.set(id, (m) => {
         if (m.ok) resolve(m.result);
-        else reject(new Error(m.error));
+        else {
+          const err: any = new Error(m.error);
+          // Extension-side timeouts often mean a CDP attach is wedged; surface
+          // the same recovery hint shape.
+          if (/timeout/i.test(m.error)) {
+            err.kind = "extension_timeout";
+            err.tabId = tabId;
+            err.hint = `extension call timed out (tabId ${tabId ?? "n/a"}); check that the tab is still alive and the extension is responsive`;
+          }
+          reject(err);
+        }
       });
       setTimeout(() => {
-        if (pendingExt.delete(id)) reject(new Error("extension timeout"));
+        if (pendingExt.delete(id)) {
+          const err: any = new Error("extension timeout");
+          err.kind = "extension_timeout";
+          err.tabId = tabId;
+          err.hint = `extension call timed out (tabId ${tabId ?? "n/a"}); check that the tab is still alive and the extension is responsive`;
+          reject(err);
+        }
       }, 30_000);
       extSocket!.send(JSON.stringify(req));
     });
@@ -220,6 +243,8 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
         leasedBy: err?.leasedBy,
         since: err?.since,
         hint: err?.hint,
+        recovery: err?.recovery,
+        kind: err?.kind,
       });
     }
   }
@@ -248,8 +273,18 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
           kind: "tabs_create",
           url: req.url,
           background: req.background !== false,
-        })) as TabInfo;
-        tabsCache.set(tab.id, tab);
+        })) as TabInfo & {
+          navigated?: boolean;
+          settledAt?: number;
+          previousActiveTab?: { id: TabId; title: string };
+        };
+        tabsCache.set(tab.id, {
+          id: tab.id,
+          url: tab.url,
+          title: tab.title,
+          windowId: tab.windowId,
+          active: tab.active,
+        });
         leases.claim(tab.id, client.sessionId, client.agentLabel);
         pushIndicator(tab.id, {
           state: "leased",
@@ -264,6 +299,17 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
         return { closed: req.tabId };
       }
       case "switch_tab": {
+        // Capture the user's currently-focused tab BEFORE the claim so the
+        // agent can restore focus later if it has nudged the user's context.
+        let previousActiveTab: { id: TabId; title: string } | undefined;
+        try {
+          previousActiveTab =
+            ((await sendExt({ kind: "get_focused_tab" })) as
+              | { id: TabId; title: string }
+              | null) ?? undefined;
+        } catch {
+          /* extension may be disconnected; don't fail the claim for cosmetics */
+        }
         const r = leases.claim(req.tabId, client.sessionId, client.agentLabel, {
           force: req.force,
           reason: req.reason,
@@ -272,14 +318,14 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
           const e: any = new Error("tab_leased");
           e.leasedBy = r.held.agentLabel ?? r.held.sessionId;
           e.since = new Date(r.held.claimedAt).toISOString();
-          e.hint = "call again with force:true and reason:'…' to revoke";
+          e.hint = `tab ${req.tabId} is leased by another session; call browser_switch_tab again with force:true and reason:"…" to revoke`;
           throw e;
         }
         pushIndicator(req.tabId, {
           state: "leased",
           agentLabel: client.agentLabel,
         });
-        return { claimed: req.tabId };
+        return { claimed: req.tabId, previousActiveTab };
       }
       case "release_tab": {
         if (req.tabId === undefined) {
@@ -300,7 +346,7 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
             e.leasedBy = held.agentLabel ?? held.sessionId;
             e.since = new Date(held.claimedAt).toISOString();
           }
-          e.hint = `call switch_tab(tabId:${req.tabId}) first`;
+          e.hint = `lease required for tab ${req.tabId}; call browser_switch_tab(tabId:${req.tabId}) before acting on it`;
           throw e;
         }
         return await sendExt(req.command, req.tabId);

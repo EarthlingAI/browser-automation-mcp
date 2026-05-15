@@ -6,7 +6,8 @@ const esbuild = require("esbuild");
 const root = path.resolve(__dirname, "..");
 const watch = process.argv.includes("--watch");
 
-const ctx = {
+// Production bundle — the MCP server entry consumed by host agents.
+const main = {
   entryPoints: [path.join(root, "src/index.ts")],
   outfile: path.join(root, "dist/index.js"),
   bundle: true,
@@ -18,14 +19,33 @@ const ctx = {
   logLevel: "info",
 };
 
+// Test bundle — re-exports a small subset of internal helpers so Node's
+// --test runner can exercise pure functions without standing up daemon/ext.
+// Built as ESM so .mjs test files can `import` from it directly.
+const testExports = {
+  entryPoints: [path.join(root, "src/test-exports.ts")],
+  outfile: path.join(root, "dist/test-exports.mjs"),
+  bundle: true,
+  platform: "node",
+  target: "node18",
+  format: "esm",
+  sourcemap: false,
+  external: [],
+  logLevel: "info",
+};
+
 (async () => {
   fs.mkdirSync(path.join(root, "dist"), { recursive: true });
   if (watch) {
-    const c = await esbuild.context(ctx);
+    // Watch mode covers the main bundle only — test-exports.mjs is
+    // regenerated only on full `npm run build`. If you're iterating on a
+    // helper covered by tests, run `npm run build` between edits.
+    const c = await esbuild.context(main);
     await c.watch();
     console.log("[build] watching…");
   } else {
-    await esbuild.build(ctx);
+    await esbuild.build(main);
+    await esbuild.build(testExports);
   }
 })().catch((e) => {
   console.error(e);
