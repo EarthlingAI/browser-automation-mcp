@@ -50,6 +50,11 @@ Runtime files (`daemon.port`, `daemon.log`, `subscribe.token`) live in a standar
 
 The bridge holds the daemon endpoint in memory but lazily re-resolves it on socket close — the next MCP tool call respawns the daemon via the same `daemon.lock`-protected path used at startup. Multiple concurrent bridges that observe the death simultaneously race-share the spawn; exactly one new daemon process results.
 
+Daemon re-exec auto-selects between two modes (`src/daemon/spawn.ts`):
+
+- **Entry on disk** (dev / standalone, `node dist/index.js`): re-exec `process.execPath <entry> --daemon` directly.
+- **Entry not on disk** (compiled host mode — source runs from memory, so `process.argv[1]` is synthetic): re-enter via the host dispatcher as `<MCP_HOST_DISPATCHER> run-mcp browser-automation-mcp --daemon`. `MCP_HOST_DISPATCHER` is injected by the host on every spawned MCP child; its absence here is fatal (nothing on disk to re-exec).
+
 Lease state is lost on respawn (it lives only in the dead daemon's memory). Any subsequent tool call on a previously-leased tab returns `lease_required` — the agent re-claims via `browser_switch_tab`, the same recovery path as a forced lease revocation.
 
 In-flight requests at the moment the daemon dies fail fast with `daemon connection lost` rather than hanging. Recovery is otherwise silent — no agent-visible signal beyond a slightly slower first call after death (~100–300 ms of respawn).
@@ -122,7 +127,7 @@ npm run build              # esbuild → dist/index.js
 npm run dev                # esbuild watch mode
 ```
 
-The bundle is launched as a stdio MCP (`node dist/index.js`). The daemon spawns lazily from the first bridge process.
+The bundle is launched as an MCP (`node dist/index.js` standalone, or compiled into and run in memory by a host binary). The daemon spawns lazily from the first bridge process; see [Daemon recovery](#daemon-recovery) for how re-exec adapts to each launch mode.
 
 ## License
 

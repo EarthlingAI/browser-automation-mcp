@@ -3,6 +3,11 @@
  * recovery path. Race protection (daemon.lock + endpoint-file polling +
  * probePort) is identical for cold start and mid-session recovery — a single
  * implementation serves both.
+ *
+ * Daemon re-exec auto-selects by whether the entry script exists on disk:
+ * direct `process.execPath` re-exec when it does (dev / standalone), else
+ * re-enter via the host dispatcher (`MCP_HOST_DISPATCHER`) since the compiled
+ * host runs the source from memory. See `ensureDaemon` for the branch.
  */
 
 import { spawn } from "node:child_process";
@@ -95,7 +100,26 @@ export async function ensureDaemon(
 
   // Redirect daemon output to .runtime/daemon.log so crashes (e.g. EADDRINUSE) are diagnosable.
   const logFd = openSync(join(runtimeDir, "daemon.log"), "a");
-  const child = spawn(process.execPath, [scriptPath, "--daemon"], {
+  let cmd: string;
+  let cmdArgs: string[];
+  if (existsSync(scriptPath)) {
+    // Dev / standalone: real entry file on disk — re-exec it directly.
+    cmd = process.execPath;
+    cmdArgs = [scriptPath, "--daemon"];
+  } else {
+    // Compiled host mode: source is compiled into the host binary and run in
+    // memory, so scriptPath is synthetic. Re-enter through the host dispatcher
+    // (same contract ai-image-mcp uses for its sidecar).
+    const dispatcher = process.env.MCP_HOST_DISPATCHER;
+    if (!dispatcher) {
+      throw new Error(
+        "daemon entry not on disk and MCP_HOST_DISPATCHER unset — cannot spawn daemon",
+      );
+    }
+    cmd = dispatcher;
+    cmdArgs = ["run-mcp", "browser-automation-mcp", "--daemon"];
+  }
+  const child = spawn(cmd, cmdArgs, {
     detached: true,
     stdio: ["ignore", logFd, logFd],
     env: { ...process.env, BROWSER_AUTOMATION_MCP_RUNTIME_DIR: runtimeDir },
