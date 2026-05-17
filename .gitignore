@@ -46,3 +46,5 @@ registry.npmjs.com/
 
 # Install marker written by `engine setup-deps` (engine.cli.setup_deps.provision_mcps)
 .installed_for_engine_version
+
+outputs/
