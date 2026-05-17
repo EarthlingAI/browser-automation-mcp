@@ -19,13 +19,13 @@
     } catch {}
   }
 
-  // Professional red — matches `palette.error` (#e03131) from the host brand
-  // palette. Replaces the previous pink (#D5477E) which read as too feminine
-  // for a "tab under automation" indicator. The same rgb triple drives every
-  // accent in this overlay: viewport-edge glow, pill border + hover shadow,
-  // ripple/outline strokes, panel border, constellation gradient stops, and
-  // favicon halo. Change here = change everywhere.
-  const BRAND = "224, 49, 49";
+  // Brand pink — matches `palette.primary.600` (#D5477E) from the host brand
+  // palette and aligns with Chrome's `"pink"` tab-group preset for visual
+  // continuity between the tab strip and the in-page overlay. The same rgb
+  // triple drives every accent in this overlay: viewport-edge glow, pill
+  // border + hover shadow, ripple/outline strokes, panel border, constellation
+  // gradient stops, and favicon halo. Change here = change everywhere.
+  const BRAND = "213, 71, 126";
   const ACTING_LINGER_MS = 600;
   const LOG_CAP = 50;
   const RELEASED_FADE_MS = 3000;
@@ -282,10 +282,7 @@
     edgeGrad.setAttribute("x2", "1");
     edgeGrad.setAttribute("y2", "1");
     appendStop(edgeGrad, "0%", `rgba(${BRAND}, 1)`);
-    // Light red-tinted highlight at the gradient tail — keeps the constellation
-    // edges reading as warm-toned red rather than washing out to white. Was
-    // pink-tinted (rgb 255,220,230) before the brand colour swap.
-    appendStop(edgeGrad, "100%", `rgba(255, 220, 220, 0.85)`);
+    appendStop(edgeGrad, "100%", `rgba(255, 220, 230, 0.85)`);
     defs.appendChild(edgeGrad);
 
     const nodeGrad = document.createElementNS(NS, "radialGradient");
@@ -472,15 +469,29 @@
     if (panel) panel.classList.add("hidden");
   }
 
+  // Resolve the actor name shown in the pill ("Tab controlled by X" / "Released
+  // by X"). Priority:
+  //   1. `state.agentLabel` — explicit per-session label from the bridge's
+  //      `--agent <label>` flag. Used verbatim ("Tab controlled by Anjuman").
+  //   2. `state.tabGroupBrand` — host brand stamped by the daemon from
+  //      `BROWSER_EXTENSION_TAB_GROUP_LABEL`. Appended with " Agent" to read
+  //      grammatically ("Tab controlled by Earthling Agent"). Skipped when it
+  //      equals the generic default so we don't end up saying "Automation Agent".
+  //   3. `DEFAULT_AGENT_NAME` — generic fallback ("Tab controlled by Automation").
+  function resolveActorName() {
+    if (state.agentLabel) return state.agentLabel;
+    const brand = state.tabGroupBrand;
+    if (brand && brand !== DEFAULT_AGENT_NAME) return `${brand} Agent`;
+    return DEFAULT_AGENT_NAME;
+  }
+
   function setPillTitle() {
-    const name = state.agentLabel || DEFAULT_AGENT_NAME;
-    pill.querySelector(".text").textContent = `Tab controlled by ${name}`;
+    pill.querySelector(".text").textContent = `Tab controlled by ${resolveActorName()}`;
     pill.classList.remove("released");
   }
 
   function pillReleased() {
-    pill.querySelector(".text").textContent =
-      `Released by ${state.agentLabel || DEFAULT_AGENT_NAME}`;
+    pill.querySelector(".text").textContent = `Released by ${resolveActorName()}`;
     pill.classList.add("released");
   }
 

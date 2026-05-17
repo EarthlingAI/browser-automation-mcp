@@ -25,10 +25,12 @@ const consoleBuffers = new Map(); // tabId → string[]
 const networkBuffers = new Map(); // tabId → request entries
 const indicatorState = new Map(); // tabId → {state, agentLabel}
 const indicatorInjected = new Set(); // tabIds where inject/indicator.js has been pushed
-const actingTabs = new Map(); // tabId → in-flight action count (drives tab-group color)
-const actingLingerTimers = new Map(); // tabId → timeout id
 const tabGroupRegistry = new Map(); // windowId → Map<agentLabel, groupId>
 
+// `ACTION_KINDS` gates `runWithSettle` wrapping in `dispatch` so DOM-mutating
+// actions return only after the page shows a state delta (or after the settle
+// timeout). Tab-group colour does NOT vary by in-flight state any more — see
+// `GROUP_COLOR` below.
 const ACTION_KINDS = new Set([
   "navigate",
   "navigate_back",
@@ -40,7 +42,6 @@ const ACTION_KINDS = new Set([
   "upload",
   "press_key",
 ]);
-const ACTING_LINGER_MS = 400;
 
 try {
   chrome.storage.session.setAccessLevel({
@@ -137,7 +138,7 @@ async function dispatch(req) {
   const tabId = req.tabId;
   if (c.kind === "indicator_state") return applyIndicatorState(tabId, c.state);
   if (ACTION_KINDS.has(c.kind) && tabId != null) {
-    return withActing(tabId, () => runWithSettle(req, () => dispatchInner(req)));
+    return runWithSettle(req, () => dispatchInner(req));
   }
   return dispatchInner(req);
 }
@@ -252,9 +253,14 @@ function watchNetworkSettle(tabId, timeout) {
       clearTimeout(timer);
       resolve({ via, elapsedMs: Date.now() - t0 });
     };
-    const onReq = (details) => {
+    // Cast to `any` so TS's chrome.webRequest typings don't insist on a
+    // BlockingResponse return — we never opt into blocking mode (no
+    // "blocking" in extraInfoSpec), so a void listener is safe at runtime.
+    // The cast at the declaration site covers all three references below
+    // (removeListener + two addListener overloads).
+    const onReq = /** @type {any} */ ((details) => {
       if (details.tabId === tabId) finalize("network");
-    };
+    });
     try {
       chrome.webRequest.onBeforeRequest.addListener(onReq, {
         urls: ["<all_urls>"],
@@ -848,14 +854,6 @@ async function applyIndicatorState(tabId, state) {
     pushIndicatorToPage(tabId, state),
     updateTabGroup(tabId, state),
   ]);
-  if (state.state === "released") {
-    actingTabs.delete(tabId);
-    const t = actingLingerTimers.get(tabId);
-    if (t) {
-      clearTimeout(t);
-      actingLingerTimers.delete(tabId);
-    }
-  }
   return { ok: true };
 }
 
@@ -911,58 +909,14 @@ async function canInject(tabId) {
   }
 }
 
-async function withActing(tabId, fn) {
-  bumpActing(tabId, 1);
-  try {
-    return await fn();
-  } finally {
-    bumpActing(tabId, -1);
-  }
-}
-
-function bumpActing(tabId, delta) {
-  const next = (actingTabs.get(tabId) || 0) + delta;
-  if (next <= 0) {
-    actingTabs.delete(tabId);
-    if (actingLingerTimers.has(tabId)) return;
-    const t = setTimeout(() => {
-      actingLingerTimers.delete(tabId);
-      void recolorGroupForTab(tabId);
-    }, ACTING_LINGER_MS);
-    actingLingerTimers.set(tabId, t);
-  } else {
-    actingTabs.set(tabId, next);
-    if (actingLingerTimers.has(tabId)) {
-      clearTimeout(actingLingerTimers.get(tabId));
-      actingLingerTimers.delete(tabId);
-    }
-    void recolorGroupForTab(tabId);
-  }
-}
-
-// Chrome's `chrome.tabGroups` colour API accepts only a fixed preset enum:
-// grey, blue, red, yellow, green, pink, purple, cyan, orange. Idle "red" is the
-// closest professional brand-aligned colour; "orange" stays as the in-action
-// indicator (the contrast between idle red and in-action orange remains crisp).
-const GROUP_COLOR_IDLE = "red";
-const GROUP_COLOR_ACTING = "orange";
-
-async function recolorGroupForTab(tabId) {
-  const state = indicatorState.get(tabId);
-  if (!state || state.state !== "leased") return;
-  try {
-    const tab = await chrome.tabs.get(tabId);
-    const groupId = tab.groupId;
-    if (groupId == null || groupId < 0) return;
-    const color = actingTabs.has(tabId) ? GROUP_COLOR_ACTING : GROUP_COLOR_IDLE;
-    await chrome.tabGroups.update(groupId, { color });
-  } catch (e) {
-    console.error(
-      `[browser-bg] recolorGroupForTab(${tabId}) failed:`,
-      e?.message ?? e,
-    );
-  }
-}
+// Chrome's `chrome.tabGroups` colour API accepts only a fixed preset enum
+// (`grey | blue | red | yellow | green | pink | purple | cyan | orange`) —
+// internal RGB mappings are baked into Chromium's Skia tab-strip rendering and
+// not exposed to extensions. `"pink"` is the closest match to the in-page
+// indicator's brand pink. Always-pink — no idle/acting variation; the in-page
+// action ripple + agent-activity log already convey "stuff is happening"
+// without needing the tab-strip chrome to flicker.
+const GROUP_COLOR = "pink";
 
 async function updateTabGroup(tabId, state) {
   if (!chrome.tabGroups) return;
@@ -977,14 +931,13 @@ async function updateTabGroup(tabId, state) {
     const label = state.agentLabel || "";
     const groupKey = label || "_default";
     const groupId = await ensureGroup(tab.windowId, groupKey, tabId);
-    const color = actingTabs.has(tabId) ? GROUP_COLOR_ACTING : GROUP_COLOR_IDLE;
     // Brand prefix is host-controlled via `BROWSER_EXTENSION_TAB_GROUP_LABEL`
     // env var on the daemon. The daemon stamps it onto every IndicatorState.
     // Defaults to "Automation" for the generic MCP build; Earthling sets it to
     // "Earthling" so the user-visible group title reads "Earthling — <agent>".
     const brand = state.tabGroupBrand || "Automation";
     const title = label ? `${brand} — ${label}` : brand;
-    await chrome.tabGroups.update(groupId, { title, color });
+    await chrome.tabGroups.update(groupId, { title, color: GROUP_COLOR });
   } catch (e) {
     console.error("[browser] updateTabGroup failed:", e?.message ?? e);
   }
@@ -1224,12 +1177,6 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   networkBuffers.delete(tabId);
   indicatorState.delete(tabId);
   indicatorInjected.delete(tabId);
-  actingTabs.delete(tabId);
-  const t = actingLingerTimers.get(tabId);
-  if (t) {
-    clearTimeout(t);
-    actingLingerTimers.delete(tabId);
-  }
   send({ type: "tab_closed", tabId });
 });
 chrome.tabs.onAttached.addListener((tabId) => {
