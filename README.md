@@ -98,27 +98,35 @@ Release the lease on a tab so another session can claim it. Omit `tabId` to rele
 
 #### `browser_snapshot` (read-only)
 
-Pruned accessibility-tree snapshot of the leased tab. Returns nodes with stable numeric `ref` IDs to target in interaction tools. Prefer this over `browser_screenshot`.
+Pruned accessibility-tree snapshot of the leased tab. Returns nodes with stable numeric `ref` IDs to target in interaction tools. With `screenshot:true`, also returns a native MCP image content block with each element's numeric ref badged on the live page — and from that point on, every action's auto-snapshot automatically carries the annotated picture forward (no extra call needed). Pass `screenshot:false` on the next call to drop back to tree-only. Prefer this over `browser_screenshot` when you also need ref badges.
 
-| Parameter      | Type    | Default      | Description                                                              |
-| -------------- | ------- | ------------ | ------------------------------------------------------------------------ |
-| `tabId`        | int     | last leased  | Tab to snapshot.                                                         |
-| `detail`       | enum    | `"standard"` | `"standard"` = interactive elements only; `"full"` = entire a11y tree.   |
-| `limit`        | int     | `500`        | Max nodes returned (ranked). Range 1-5000.                               |
-| `viewportOnly` | boolean | `true`       | Exclude nodes outside the visible viewport.                              |
+| Parameter      | Type             | Default      | Description                                                              |
+| -------------- | ---------------- | ------------ | ------------------------------------------------------------------------ |
+| `tabId`        | int              | last leased  | Tab to snapshot.                                                         |
+| `detail`       | enum             | `"standard"` | `"standard"` = interactive elements only; `"full"` = entire a11y tree.   |
+| `limit`        | int              | `500`        | Max nodes returned (ranked). Range 1-5000.                               |
+| `viewportOnly` | boolean          | `true`       | Exclude nodes outside the visible viewport.                              |
+| `screenshot`   | boolean          | `false`      | Include a vision-ready annotated screenshot. Replays on auto-snapshot until set back to `false`. |
+| `format`       | enum             | `"jpeg"`     | `"png"` or `"jpeg"`. Applies when `screenshot:true`.                     |
+| `quality`      | int              | `70`         | JPEG quality (1-100). Ignored for PNG.                                   |
+| `maxWidth`     | int              | —            | Downscale the screenshot to at most this width (preserves aspect ratio). Range 64-4096. |
+| `save_to_path` | bool \| string   | `false`      | Write the annotated image to disk. See "Save to disk" below.             |
 
 `detail:"full"` at `limit < 1000` raises the effective limit to 1000 and surfaces `meta.limit_adjusted` in the response.
 
+**Auto-snapshot carries the annotated image forward.** Once you call `browser_snapshot(screenshot:true)`, every subsequent action-tool auto-snapshot replays the visual params (`screenshot`, `format`, `quality`, `maxWidth`) — the agent sees one annotated picture per action, not just per explicit snapshot. `save_to_path` is NEVER replayed: saving is per-call opt-in, never a session mode.
+
 #### `browser_screenshot` (read-only)
 
-Background-tab screenshot via CDP `Page.captureScreenshot` — never raises the window. Defaults to JPEG quality 70 (~30-50 KB encoded). Use only when the snapshot tree alone is insufficient.
+Background-tab screenshot via CDP `Page.captureScreenshot` — never raises the window. Returns the image as a native MCP image content block. Defaults to JPEG quality 70 (~30-50 KB encoded). Use for pixel-only captures (saving a chart, capturing a finished artifact, or saving to disk via `save_to_path`); when you also need ref badges and a tree, call `browser_snapshot(screenshot:true)` instead.
 
-| Parameter  | Type    | Default      | Description                                                                                  |
-| ---------- | ------- | ------------ | -------------------------------------------------------------------------------------------- |
-| `tabId`    | int     | last leased  | Tab to capture.                                                                              |
-| `format`   | enum    | `"jpeg"`     | `"png"` or `"jpeg"`.                                                                         |
-| `quality`  | int     | `70`         | JPEG quality (1-100). Ignored for PNG.                                                       |
-| `maxWidth` | int     | —            | Downscale the captured image to at most this width (preserves aspect ratio). Range 64-4096.  |
+| Parameter      | Type             | Default      | Description                                                                                  |
+| -------------- | ---------------- | ------------ | -------------------------------------------------------------------------------------------- |
+| `tabId`        | int              | last leased  | Tab to capture.                                                                              |
+| `format`       | enum             | `"jpeg"`     | `"png"` or `"jpeg"`.                                                                         |
+| `quality`      | int              | `70`         | JPEG quality (1-100). Ignored for PNG.                                                       |
+| `maxWidth`     | int              | —            | Downscale the captured image to at most this width (preserves aspect ratio). Range 64-4096.  |
+| `save_to_path` | bool \| string   | `false`      | Write the image to disk. See "Save to disk" below.                                            |
 
 #### `browser_console_messages` (read-only)
 
@@ -328,10 +336,13 @@ browser-automation-mcp/
 │   │   ├── registry.ts       # Tool registration + per-session ref registry + settle plumbing + envelope helpers
 │   │   ├── session.ts        # Per-bridge session state (lastSnapshotRefs, lastLeasedTab, isStale)
 │   │   └── tools/
-│   │       ├── tabs.ts       # 5 tab/lease tools
-│   │       ├── observe.ts    # 4 observation tools
-│   │       ├── interact.ts   # 11 action tools (auto-snapshot + auto-settle wrapped)
-│   │       └── coerce.ts     # Schema-input coercion helpers (coerceToArray, coerceBoolean, coerceLiteralNumber)
+│   │       ├── tabs.ts            # 5 tab/lease tools
+│   │       ├── observe.ts         # 4 observation tools (browser_snapshot, browser_screenshot, console, network)
+│   │       ├── interact.ts        # 11 action tools (auto-snapshot + auto-settle wrapped)
+│   │       ├── capture.ts         # Unified-capture orchestrator — single source of truth for browser_snapshot, browser_screenshot, and replaySnapshot
+│   │       ├── save.ts            # save_to_path schema + resolver (resolveSavePath, writeImage, getOutputsDir)
+│   │       ├── visual.ts          # Annotation visual constants (badge color, font, sizing) — travel inside annotate_image payload
+│   │       └── coerce.ts          # Schema-input coercion helpers (coerceToArray, coerceBoolean, coerceLiteralNumber)
 │   └── snapshot/
 │       └── prune.ts          # A11y tree pruner — scoring, cookie-collapse, sidebar penalty, data-collapse, full-mode floor
 ├── earthling-extension/
@@ -346,14 +357,18 @@ browser-automation-mcp/
     ├── build.js              # esbuild → dist/index.js + dist/test-exports.mjs (injects __BUILD_STAMP__)
     ├── dump-session.js       # Dev helper — dumps the test-exports session state
     └── tests/
-        ├── annotations.test.mjs   # Sweep test for tool annotation policy
-        ├── coerce.test.mjs        # Schema coercion (stringified numbers/booleans/arrays)
-        ├── envelope.test.mjs      # toolResult / toolError envelope shape
-        ├── evaluate.test.mjs      # browser_evaluate primitive-wrap (Issue #2 regression)
-        ├── fingerprint.test.mjs   # Build fingerprint surfaces in SERVER_INSTRUCTIONS
-        ├── prune.test.mjs         # Pruner heuristics (cookie collapse, sidebar penalty, full-mode floor, etc.)
-        ├── registry.test.mjs      # populateRefs + resolveRef (stale + fresh-state-miss paths)
-        └── timeout.test.mjs       # inferExtTimeout — per-command watchdog inference
+        ├── annotations.test.mjs       # Sweep test for tool annotation policy
+        ├── coerce.test.mjs            # Schema coercion (stringified numbers/booleans/arrays)
+        ├── envelope.test.mjs          # toolResult / toolError envelope shape (incl. mixed image+text content)
+        ├── evaluate.test.mjs          # browser_evaluate primitive-wrap (Issue #2 regression)
+        ├── fingerprint.test.mjs       # Build fingerprint surfaces in SERVER_INSTRUCTIONS
+        ├── prune.test.mjs             # Pruner heuristics (cookie collapse, sidebar penalty, full-mode floor, etc.)
+        ├── registry.test.mjs          # populateRefs + resolveRef (stale + fresh-state-miss paths)
+        ├── replay.test.mjs            # replaySnapshot — visual params replayed; save_to_path never replayed
+        ├── save.test.mjs              # save_to_path resolver (outputs_dir precedence, traversal rejection, non-fatal errors)
+        ├── snapshot-capture.test.mjs  # runUnifiedCapture — snapshot_capture + annotate_image two-hop topology
+        ├── timeout.test.mjs           # inferExtTimeout — per-command watchdog inference
+        └── visual.test.mjs            # VISUAL_CONSTANTS shape — every key the extension's annotate handler reads
 ```
 
 ## Snapshot model
@@ -455,6 +470,45 @@ Tool responses are lean single-line JSON. List-style tools (`browser_list_tabs`,
 
 The wrapper detects primitives and arrays and wraps them under `result` rather than spreading (spreading `"abc"` produces `{0:"a",1:"b",2:"c"}`).
 
+### Mixed-content envelope (snapshot + screenshot tools)
+
+When `browser_snapshot(screenshot:true)` or `browser_screenshot` returns an image, the MCP response carries a two-block `content` array: a native MCP image block at index 0, then a JSON text block at index 1. Image-first ordering is deliberate — Anthropic vision attends to images that precede related text. The text block never duplicates the image bytes; the bytes live exclusively in the image block.
+
+```jsonc
+{
+  "content": [
+    { "type": "image", "data": "<base64>", "mimeType": "image/jpeg" },
+    { "type": "text", "text": "{\"format\":\"jpeg\",\"resizedTo\":{\"width\":1280,\"height\":720},\"savedTo\":\"...\",\"tree\":{...}}" }
+  ]
+}
+```
+
+Text payload fields when a screenshot is returned:
+
+- `format` — `"jpeg"` or `"png"`.
+- `resizedTo` — present only when `maxWidth` downscaled the capture; `{width, height}` in pixels.
+- `savedTo` — absolute path written, present when `save_to_path` was set and the write succeeded.
+- `saveError` — non-fatal save failure message, present when `save_to_path` was set but the write failed (the image still returns inline).
+- `tree` — pruned a11y tree, present only on `browser_snapshot` (omitted by standalone `browser_screenshot`).
+
+Action tools follow the same envelope: when an auto-snapshot returns an image (screenshot mode is on), the action's response includes the image block at index 0 and its JSON text (`{clicked, settled, snapshot:{...}}`) at index 1.
+
+### Save to disk (`save_to_path`)
+
+`save_to_path` is shared by `browser_snapshot` and `browser_screenshot`. Semantics:
+
+- `false` (default) — return inline only, no disk write.
+- `true` — auto-name `<outputs_dir>/screenshot_<tabId>_<unixms>.<ext>` (extension follows `format`).
+- string — explicit path. Relative paths resolve under `outputs_dir`; absolute paths are allowed; any `..` segment is rejected with a non-fatal `saveError`.
+
+`outputs_dir` resolution order:
+
+1. `BROWSER_AUTOMATION_MCP_OUTPUTS_DIR` env var (highest priority).
+2. `<BROWSER_AUTOMATION_MCP_RUNTIME_DIR>/outputs/` when the runtime dir env var is set.
+3. `<cwd>/outputs/browser/` as the final fallback.
+
+Save errors are non-fatal — the image still returns inline; the failure surfaces in the text payload as `saveError`. `save_to_path` is NEVER replayed on auto-snapshot, so a one-off save never accidentally fills the disk over a long session.
+
 **Error (lease):**
 
 ```json
@@ -487,6 +541,7 @@ The hint is a single universal string — the same message covers SW idle-death,
 | `MCP_HTTP_HOST`                       | `127.0.0.1`                                                   | Host for HTTP transport.                                                                     |
 | `MCP_HTTP_PORT`                       | (required for http)                                           | Port for HTTP transport.                                                                     |
 | `BROWSER_AUTOMATION_MCP_RUNTIME_DIR`  | OS state dir (see below)                                      | Override runtime-files location (`daemon.port`, `daemon.log`, `subscribe.token`).            |
+| `BROWSER_AUTOMATION_MCP_OUTPUTS_DIR`  | `<runtime_dir>/outputs/` then `<cwd>/outputs/browser/`        | Override where `save_to_path` writes screenshots. Takes priority over the runtime-dir / cwd fallbacks. |
 | `BROWSER_AUTOMATION_MCP_RELAY_PORT`   | `9223`                                                        | Override the daemon ↔ extension WebSocket port. **Also update `DAEMON_URL` in `earthling-extension/background.js` if you change this** — the unpacked extension cannot read process env vars. |
 | `MCP_HOST_DISPATCHER`                 | (injected by host)                                            | Path to the host's MCP dispatcher executable, used for daemon re-exec when the entry isn't on disk. |
 
@@ -505,7 +560,7 @@ npm test                   # node --test scripts/tests/*.test.mjs
 npm run dev                # esbuild watch mode (main bundle only)
 ```
 
-The test harness imports from `dist/test-exports.mjs`, so run `npm run build` once before `npm test`. Tests cover pruner heuristics, ref registry, envelope shape, schema coercion, build fingerprint, annotation policy, daemon watchdog inference, and the `browser_evaluate` primitive-wrap regression — 37 cases total. All tests run without standing up the daemon or extension; they exercise pure helpers.
+The test harness imports from `dist/test-exports.mjs`, so run `npm run build` once before `npm test`. Tests cover pruner heuristics, ref registry, envelope shape (including the mixed image+text content array), schema coercion, build fingerprint, annotation policy, daemon watchdog inference, the `browser_evaluate` primitive-wrap regression, the unified-capture two-hop topology (`snapshot_capture` + `annotate_image`), `save_to_path` resolution (outputs_dir precedence, traversal rejection, non-fatal save errors), `replaySnapshot` (visual params replayed; `save_to_path` never replayed), and the visual-constants contract — 69 cases total. All tests run without standing up the daemon or extension; they exercise pure helpers.
 
 ## License
 

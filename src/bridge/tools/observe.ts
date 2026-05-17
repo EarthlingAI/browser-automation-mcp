@@ -4,11 +4,11 @@ import {
   registerTool,
   ToolContext,
   execOnLeasedTab,
-  populateRefs,
   updateSnapshotParams,
 } from "../registry";
-import { prune, RawNode } from "../../snapshot/prune";
 import { coerceToArray, coerceBoolean } from "./coerce";
+import { runUnifiedCapture } from "./capture";
+import { saveToPathSchema } from "./save";
 
 export function registerObserveTools(
   server: McpServer,
@@ -16,9 +16,14 @@ export function registerObserveTools(
 ): void {
   registerTool(server, ctx, {
     name: "browser_snapshot",
-    title: "Snapshot the page accessibility tree",
+    title: "Snapshot the page accessibility tree (optionally with annotated screenshot)",
     description:
-      "Pruned accessibility-tree snapshot of the leased tab. Returns nodes with stable numeric `ref` IDs to target in interaction tools. Prefer this over screenshot.",
+      "Pruned accessibility-tree snapshot of the leased tab. Returns nodes with stable numeric `ref` IDs " +
+      "to target in interaction tools. With `screenshot:true`, also returns a native MCP image content block " +
+      "with each element's numeric ref badged on the live page — once enabled, every subsequent action-tool " +
+      "auto-snapshot automatically carries the annotated picture forward (no extra call needed). " +
+      "Costs ~50–150 ms per action when screenshot mode is on; pass `screenshot:false` on the next call to " +
+      "drop back to tree-only.",
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -47,36 +52,86 @@ export function registerObserveTools(
       viewportOnly: z
         .preprocess(coerceBoolean, z.boolean().default(true))
         .describe("Exclude nodes outside the visible viewport."),
+      screenshot: z
+        .preprocess(coerceBoolean, z.boolean().default(false))
+        .describe(
+          "Include a vision-ready screenshot with refs annotated. " +
+            "Once enabled, every subsequent action-tool auto-snapshot also returns the annotated image — " +
+            "set screenshot:false on the next call to drop back to tree-only.",
+        ),
+      format: z
+        .enum(["png", "jpeg"])
+        .default("jpeg")
+        .describe("Image format when screenshot is enabled."),
+      quality: z
+        .coerce.number()
+        .int()
+        .min(1)
+        .max(100)
+        .default(70)
+        .describe("JPEG quality (1–100). Ignored for PNG."),
+      maxWidth: z
+        .coerce.number()
+        .int()
+        .min(64)
+        .max(4096)
+        .optional()
+        .describe(
+          "Downscale the screenshot to at most this width (preserves aspect ratio).",
+        ),
+      save_to_path: saveToPathSchema,
     },
-    handler: async ({ tabId, detail, limit, viewportOnly }) => {
+    handler: async ({
+      tabId,
+      detail,
+      limit,
+      viewportOnly,
+      screenshot,
+      format,
+      quality,
+      maxWidth,
+      save_to_path,
+    }) => {
       const target = tabId ?? ctx.session.lastLeasedTab;
       if (!target)
         throw new Error(
           "no leased tab; call browser_switch_tab or browser_open_tab first",
         );
+      // Persist params for replaySnapshot's auto-snap pipeline. save_to_path
+      // is NEVER persisted — saving is per-call opt-in, never a session mode.
       updateSnapshotParams(ctx.session, {
         tabId: target,
         detail,
         limit,
         viewportOnly,
-        screenshot: false,
+        screenshot,
+        format,
+        quality,
+        maxWidth,
       });
-      const raw = (await ctx.daemon.exec(target, {
-        kind: "snapshot",
-        viewportOnly,
+      return runUnifiedCapture(ctx, target, {
+        detail,
         limit,
-      })) as RawNode;
-      const pruned = prune(raw, { limit, viewportOnly, detail });
-      populateRefs(ctx.session, pruned, raw, target);
-      return pruned;
+        viewportOnly,
+        screenshot,
+        format,
+        quality,
+        maxWidth,
+        save_to_path,
+        withTree: true,
+      });
     },
   });
 
   registerTool(server, ctx, {
     name: "browser_screenshot",
-    title: "Screenshot the leased tab",
+    title: "Screenshot the leased tab (no tree, no ref annotations)",
     description:
-      "Background-tab screenshot via CDP Page.captureScreenshot — never raises the window. Defaults to JPEG quality 70 (typical ~30–50 KB encoded, well within the agent token budget). Use only when the snapshot tree alone is insufficient.",
+      "Background-tab screenshot via CDP `Page.captureScreenshot` — never raises the window. " +
+      "Returns the image as a native MCP image content block. " +
+      "Use for pixel-only captures (saving a chart, capturing a finished artifact, " +
+      "or saving to disk via `save_to_path`) — when you also need ref badges and a tree, " +
+      "use `browser_snapshot(screenshot:true)` instead.",
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -104,15 +159,26 @@ export function registerObserveTools(
         .max(4096)
         .optional()
         .describe(
-          "Downscale the captured image to at most this width (preserves aspect ratio). Omit for native viewport resolution.",
+          "Downscale the captured image to at most this width (preserves aspect ratio).",
         ),
+      save_to_path: saveToPathSchema,
     },
-    handler: async ({ tabId, format, quality, maxWidth }) => {
-      return execOnLeasedTab(ctx, tabId, {
-        kind: "screenshot",
+    handler: async ({ tabId, format, quality, maxWidth, save_to_path }) => {
+      const target = tabId ?? ctx.session.lastLeasedTab;
+      if (!target)
+        throw new Error(
+          "no leased tab; call browser_switch_tab or browser_open_tab first",
+        );
+      return runUnifiedCapture(ctx, target, {
+        detail: "standard",
+        limit: 0,
+        viewportOnly: true,
+        screenshot: true,
         format,
         quality,
         maxWidth,
+        save_to_path,
+        withTree: false,
       });
     },
   });

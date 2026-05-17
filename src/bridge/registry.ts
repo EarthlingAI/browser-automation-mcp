@@ -4,8 +4,9 @@ import { z, ZodRawShape } from "zod";
 import { DaemonClient } from "./client";
 import { BridgeSession, RefMeta, SnapshotParams } from "./session";
 import { ExtCommand, SettleOptions, TabId } from "../protocol";
-import { prune, PrunedNode, RawNode } from "../snapshot/prune";
+import { PrunedNode, RawNode } from "../snapshot/prune";
 import { coerceBoolean } from "./tools/coerce";
+import { runUnifiedCapture } from "./tools/capture";
 
 export interface ToolContext {
   daemon: DaemonClient;
@@ -115,11 +116,34 @@ export function registerTool<S extends ZodRawShape>(
     },
     async (args: any) => {
       try {
-        return toolResult(await def.handler(args, ctx), def.name);
+        const result = await def.handler(args, ctx);
+        // CaptureResult shape `{ payload, image? }` — unified-capture tools
+        // (browser_snapshot, browser_screenshot) return this so the wrapper
+        // can emit a mixed image+text MCP envelope.
+        if (isCaptureResult(result)) {
+          return toolResult(result.payload, def.name, result.image);
+        }
+        return toolResult(result, def.name);
       } catch (err: any) {
         return toolError(err);
       }
     },
+  );
+}
+
+/** Duck-type for the CaptureResult shape from `tools/capture.ts`. Lives here
+ * instead of being imported to avoid a circular dep (capture.ts imports from
+ * registry.ts). */
+function isCaptureResult(
+  v: unknown,
+): v is { payload: Record<string, unknown>; image?: ImagePayload } {
+  return (
+    v !== null &&
+    typeof v === "object" &&
+    !Array.isArray(v) &&
+    "payload" in (v as Record<string, unknown>) &&
+    typeof (v as Record<string, unknown>).payload === "object" &&
+    (v as Record<string, unknown>).payload !== null
   );
 }
 
@@ -168,11 +192,22 @@ export function registerActionTool<S extends ZodRawShape>(
           !Array.isArray(result)
             ? { ...(result as Record<string, unknown>) }
             : { result };
+        let imageForEnvelope: ImagePayload | undefined;
         if (doSnap) {
           if (delay > 0) await new Promise((r) => setTimeout(r, delay * 1000));
-          payload.snapshot = await replaySnapshot(ctx);
+          const snap = await replaySnapshot(ctx);
+          // CaptureResult shape on success — extract image into the outer
+          // envelope so the agent's vision sees ONE annotated picture per
+          // action, not the JSON-buried bytes. On error stub, the whole
+          // {error,...} object becomes the snapshot payload as before.
+          if (isCaptureResult(snap)) {
+            payload.snapshot = snap.payload;
+            imageForEnvelope = snap.image;
+          } else {
+            payload.snapshot = snap;
+          }
         }
-        return toolResult(payload, def.name);
+        return toolResult(payload, def.name, imageForEnvelope);
       } catch (err: any) {
         ctx.pendingSettle = undefined;
         return toolError(err);
@@ -189,32 +224,40 @@ export async function replaySnapshot(ctx: ToolContext): Promise<unknown> {
       error: "no leased tab; call browser_switch_tab or browser_open_tab first",
     };
   try {
-    const raw = (await ctx.daemon.exec(tabId, {
-      kind: "snapshot",
-      viewportOnly: params.viewportOnly,
-      limit: params.limit,
-    })) as RawNode;
-    const pruned = prune(raw, {
-      limit: params.limit,
-      viewportOnly: params.viewportOnly,
+    // Replay every visual param the user opted into — including `screenshot`
+    // so auto-snapshots after a `browser_snapshot(screenshot:true)` carry the
+    // annotated image forward. `save_to_path` is NEVER replayed; saving is a
+    // per-call opt-in, never a session mode (avoids silent disk fill-up over
+    // long sessions).
+    return await runUnifiedCapture(ctx, tabId, {
       detail: params.detail,
+      limit: params.limit,
+      viewportOnly: params.viewportOnly,
+      screenshot: params.screenshot,
+      format: params.format,
+      quality: params.quality,
+      maxWidth: params.maxWidth,
+      save_to_path: false,
+      withTree: true,
     });
-    populateRefs(ctx.session, pruned, raw, tabId);
-    return pruned;
   } catch (err: any) {
     // Preserve structured error fields so the recovery hint (and any lease
     // metadata) survives the auto-snapshot failure path. Otherwise an action
     // that succeeded but whose auto-snapshot failed would surface a bare
     // `{error:"extension not connected"}` snapshot stub without the
-    // actionable recovery instruction.
+    // actionable recovery instruction. Mirror `toolError`'s explicit
+    // null/undefined check pattern so the two paths can't drift apart on
+    // edge cases like `kind:""` or `recovery:0`.
     const stub: Record<string, unknown> = {
       error: err?.message ?? String(err),
     };
-    if (err?.kind) stub.kind = err.kind;
-    if (err?.recovery) stub.recovery = err.recovery;
-    if (err?.hint) stub.hint = err.hint;
-    if (err?.leasedBy) stub.leasedBy = err.leasedBy;
-    if (err?.since) stub.since = err.since;
+    if (err?.kind !== undefined && err.kind !== null) stub.kind = err.kind;
+    if (err?.recovery !== undefined && err.recovery !== null)
+      stub.recovery = err.recovery;
+    if (err?.hint !== undefined && err.hint !== null) stub.hint = err.hint;
+    if (err?.leasedBy !== undefined && err.leasedBy !== null)
+      stub.leasedBy = err.leasedBy;
+    if (err?.since !== undefined && err.since !== null) stub.since = err.since;
     return stub;
   }
 }
@@ -302,21 +345,44 @@ export function resolveRef(session: BridgeSession, ref: string): RefMeta {
   );
 }
 
-export function toolResult(result: unknown, toolName?: string) {
+/** Native MCP image content block — emitted alongside the text payload by the
+ * unified-capture tools so vision-capable hosts can attend to the picture
+ * directly without re-reading base64 from the text envelope. */
+export interface ImagePayload {
+  /** Raw base64, no data: URL prefix. */
+  data: string;
+  /** "image/jpeg" or "image/png". */
+  mimeType: string;
+}
+
+export function toolResult(
+  result: unknown,
+  toolName?: string,
+  image?: ImagePayload,
+) {
   let payload: unknown = result;
   // Lean envelope: wrap array-results from list-style tools so the agent
   // sees a top-level `count` without parsing the array length itself.
   if (toolName && COUNT_WRAPPED_TOOLS.has(toolName) && Array.isArray(result)) {
     payload = { count: result.length, items: result };
   }
-  return {
-    content: [
-      {
-        type: "text" as const,
-        text: typeof payload === "string" ? payload : JSON.stringify(payload),
-      },
-    ],
+  const textBlock = {
+    type: "text" as const,
+    text: typeof payload === "string" ? payload : JSON.stringify(payload),
   };
+  // Image block FIRST when present — Anthropic vision attends to images that
+  // precede related text. The text payload never duplicates the image bytes.
+  const content = image
+    ? [
+        {
+          type: "image" as const,
+          data: image.data,
+          mimeType: image.mimeType,
+        },
+        textBlock,
+      ]
+    : [textBlock];
+  return { content };
 }
 
 export function toolError(err: any) {

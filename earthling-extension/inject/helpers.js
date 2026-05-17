@@ -16,7 +16,7 @@
   // loaded — preserves the in-page nodeMap so sequential action tools still
   // resolve refs from the most recent snapshot. Bump the integer when changing
   // the in-page contract (new act kind, return-shape change).
-  const HELPERS_VERSION = 3;
+  const HELPERS_VERSION = 4;
   if (globalThis.__earthlingHelpersVersion === HELPERS_VERSION) return;
   globalThis.__earthlingHelpersVersion = HELPERS_VERSION;
   globalThis.__earthlingHelpersLoaded = true;
@@ -254,6 +254,10 @@
     };
     root.role = "WebArea";
     root.name = document.title;
+    // Surface devicePixelRatio so the bridge's annotation hop can scale
+    // CSS-pixel rects up to the physical-pixel coordinates of the captured
+    // bitmap (CDP Page.captureScreenshot returns at device-pixel resolution).
+    root.dpr = window.devicePixelRatio || 1;
     return root;
   };
 

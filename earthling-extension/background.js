@@ -327,10 +327,10 @@ async function dispatchInner(req) {
       return navigate(tabId, c.url, c.waitUntil, c.settle);
     case "navigate_back":
       return navigateBack(tabId, c.settle);
-    case "snapshot":
-      return takeSnapshot(tabId, c);
-    case "screenshot":
-      return takeScreenshot(tabId, c);
+    case "snapshot_capture":
+      return doSnapshotCapture(tabId, c);
+    case "annotate_image":
+      return doAnnotateImage(c);
     case "console_messages":
       return getConsole(tabId, c.limit ?? 50, c.cursor);
     case "network_requests":
@@ -509,13 +509,35 @@ function waitForTabDomReady(tabId) {
 
 // ─── snapshot / screenshot ──────────────────────────────────────────
 
-async function takeSnapshot(tabId, opts) {
-  await ensureHelpers(tabId);
-  const [exec] = await chrome.scripting.executeScript({
-    target: { tabId, allFrames: false },
-    func: () => globalThis.__earthlingA11y?.(),
-  });
-  return exec?.result ?? { role: "WebArea", children: [], depth: 0 };
+/**
+ * Unified atomic capture: walks the a11y tree and/or captures the screenshot
+ * in a single hop. Avoids the layout-shift race that two sequential round
+ * trips would have on hydration-heavy SPAs (Suno/ChatGPT). chrome.debugger
+ * attach is amortised — at most one attach/detach cycle per call.
+ */
+async function doSnapshotCapture(tabId, opts) {
+  // DPR is only meaningful when there's a tree-derived rect list to scale
+  // against the captured bitmap. We surface it exclusively via the tree-root
+  // (`__earthlingA11y` sets `root.dpr`) — the only caller that ever needs it
+  // is `annotate_image`, which never runs without a fresh tree on the same
+  // call. For `withTree:false` (standalone `browser_screenshot`), DPR is
+  // omitted; piping a standalone shot into annotate would be a misuse the
+  // bridge already disallows.
+  const result = {};
+  if (opts.withTree) {
+    await ensureHelpers(tabId);
+    const [exec] = await chrome.scripting.executeScript({
+      target: { tabId, allFrames: false },
+      func: () => globalThis.__earthlingA11y?.(),
+    });
+    const tree = exec?.result ?? { role: "WebArea", children: [], depth: 0 };
+    result.tree = tree;
+    result.dpr = typeof tree.dpr === "number" ? tree.dpr : 1;
+  }
+  if (opts.withScreenshot) {
+    result.screenshot = await captureScreenshot(tabId, opts);
+  }
+  return result;
 }
 
 async function ensureHelpers(tabId) {
@@ -525,7 +547,7 @@ async function ensureHelpers(tabId) {
   });
 }
 
-async function takeScreenshot(tabId, opts) {
+async function captureScreenshot(tabId, opts) {
   // chrome.debugger Page.captureScreenshot — does NOT raise the window.
   await debuggerAttach(tabId);
   try {
@@ -550,6 +572,9 @@ async function takeScreenshot(tabId, opts) {
     });
     let dataBase64 = result.data;
     let resized = null;
+    // No-annotation path resize lives here (we won't make a second hop to
+    // annotate_image). The annotated path resizes inside doAnnotateImage so
+    // the badge math sees the already-scaled canvas.
     if (opts.maxWidth) {
       try {
         const out = await resizeImageBase64(
@@ -607,6 +632,105 @@ async function resizeImageBase64(b64, format, quality, maxWidth) {
   let bin2 = "";
   for (let i = 0; i < buf.length; i++) bin2 += String.fromCharCode(buf[i]);
   return { dataBase64: btoa(bin2), width: w, height: h };
+}
+
+/**
+ * Stateless image-in / image-out overlay. Decodes the supplied base64, then
+ * optionally resizes (FIRST — keeps badge font readable at low maxWidth),
+ * scales the CSS-pixel rect list by `dpr * resizeRatio` to land in canvas
+ * coordinates, draws bounding boxes + numeric ref badges, and re-encodes.
+ *
+ * Runs entirely in the privileged service-worker context (OffscreenCanvas),
+ * so it never inherits the page's CSP and never injects scripts.
+ */
+async function doAnnotateImage(c) {
+  const mime = c.format === "jpeg" ? "image/jpeg" : "image/png";
+  const bin = atob(c.imageBase64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const blob = new Blob([bytes], { type: mime });
+  let bmp = await createImageBitmap(blob);
+  let resizedTo = null;
+
+  // Start with CSS-pixel → physical-pixel scale (the captured bitmap is at
+  // device-pixel resolution since CDP doesn't downscale by default).
+  let scale = c.dpr || 1;
+  let imgW = bmp.width;
+  let imgH = bmp.height;
+
+  // Resize FIRST, then annotate. Badge font is a constant 12px regardless of
+  // maxWidth so it stays readable at high downscale ratios. Adjust `scale`
+  // to compose the resize ratio with the DPR factor.
+  if (c.maxWidth && bmp.width > c.maxWidth) {
+    const resizeRatio = c.maxWidth / bmp.width;
+    imgW = c.maxWidth;
+    imgH = Math.round(bmp.height * resizeRatio);
+    scale = (c.dpr || 1) * resizeRatio;
+    resizedTo = { width: imgW, height: imgH };
+  }
+
+  const canvas = new OffscreenCanvas(imgW, imgH);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(bmp, 0, 0, imgW, imgH);
+  bmp.close?.();
+
+  ctx.font = c.constants.BADGE_FONT;
+  ctx.textBaseline = "top";
+
+  for (const { ref, rect } of c.rects) {
+    // Scale CSS-pixel rect to canvas pixels and clip to canvas bounds.
+    let left = Math.round(rect.x * scale);
+    let top = Math.round(rect.y * scale);
+    let right = Math.round((rect.x + rect.w) * scale);
+    let bottom = Math.round((rect.y + rect.h) * scale);
+    left = Math.max(0, Math.min(left, imgW));
+    top = Math.max(0, Math.min(top, imgH));
+    right = Math.max(0, Math.min(right, imgW));
+    bottom = Math.max(0, Math.min(bottom, imgH));
+    // Skip tiny elements (offscreen/clipped to near-zero post-clamp).
+    if (right - left < c.constants.MIN_ANNOTATABLE_PX) continue;
+    if (bottom - top < c.constants.MIN_ANNOTATABLE_PX) continue;
+    // Bounding box. For odd stroke widths, offset by half a pixel so the
+    // stroke aligns to a single pixel row (the canonical anti-blur trick).
+    // For even widths, no offset is needed. Formula handles both so a future
+    // bump of BBOX_STROKE_WIDTH doesn't introduce blurry edges.
+    ctx.strokeStyle = c.constants.BBOX_STROKE;
+    ctx.lineWidth = c.constants.BBOX_STROKE_WIDTH;
+    const halfStroke = (c.constants.BBOX_STROKE_WIDTH % 2) / 2;
+    ctx.strokeRect(
+      left + halfStroke,
+      top + halfStroke,
+      right - left,
+      bottom - top,
+    );
+    // Ref badge at the top-left, sitting just above the bbox.
+    const text = String(ref);
+    const tw = Math.ceil(ctx.measureText(text).width);
+    const th = 12; // matches BADGE_FONT size; OffscreenCanvas doesn't expose ascent reliably
+    const padding = c.constants.BADGE_PADDING;
+    const badgeW = tw + padding * 2;
+    const badgeH = th + padding * 2;
+    let badgeX = left;
+    let badgeY = top - badgeH - c.constants.BADGE_OFFSET_Y;
+    if (badgeY < 0) badgeY = 0;
+    ctx.fillStyle = c.constants.BADGE_FILL;
+    ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+    ctx.fillStyle = c.constants.BADGE_TEXT_COLOR;
+    ctx.fillText(text, badgeX + padding, badgeY + padding);
+  }
+
+  const outBlob = await canvas.convertToBlob({
+    type: mime,
+    ...(c.format === "jpeg" ? { quality: (c.quality ?? 70) / 100 } : {}),
+  });
+  const buf = new Uint8Array(await outBlob.arrayBuffer());
+  let outBin = "";
+  for (let i = 0; i < buf.length; i++) outBin += String.fromCharCode(buf[i]);
+  return {
+    format: c.format,
+    dataBase64: btoa(outBin),
+    ...(resizedTo ? { resizedTo } : {}),
+  };
 }
 
 const attached = new Set();

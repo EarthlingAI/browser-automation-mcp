@@ -6,6 +6,9 @@ export interface SnapshotParams {
   limit: number;
   viewportOnly: boolean;
   screenshot: boolean;
+  format: "png" | "jpeg";
+  quality: number;
+  maxWidth?: number;
 }
 
 export const DEFAULT_SNAPSHOT_PARAMS: SnapshotParams = {
@@ -13,6 +16,9 @@ export const DEFAULT_SNAPSHOT_PARAMS: SnapshotParams = {
   limit: 500,
   viewportOnly: true,
   screenshot: false,
+  format: "jpeg",
+  quality: 70,
+  // maxWidth intentionally undefined — native resolution by default.
 };
 
 /**

@@ -14,10 +14,20 @@ export {
   toolError,
   populateRefs,
   resolveRef,
+  replaySnapshot,
+  updateSnapshotParams,
+  type ImagePayload,
 } from "./bridge/registry";
 export { registerTabTools } from "./bridge/tools/tabs";
 export { registerObserveTools } from "./bridge/tools/observe";
 export { registerInteractTools } from "./bridge/tools/interact";
 export { coerceToArray, coerceLiteralNumber, coerceBoolean } from "./bridge/tools/coerce";
+export {
+  resolveSavePath,
+  getOutputsDir,
+  saveToPathSchema,
+} from "./bridge/tools/save";
+export { VISUAL_CONSTANTS } from "./bridge/tools/visual";
+export { runUnifiedCapture, type CaptureOpts, type CaptureResult } from "./bridge/tools/capture";
 export { BUILD_STAMP, SERVER_INSTRUCTIONS } from "./bridge/meta";
 export { inferExtTimeout } from "./daemon/timeouts";

@@ -115,12 +115,63 @@ export type ExtCommand =
       settle?: SettleOptions;
     }
   | { kind: "navigate_back"; settle?: SettleOptions }
-  | { kind: "snapshot"; viewportOnly?: boolean; limit?: number }
+  /**
+   * Atomic tree + screenshot capture. Eliminates the layout-shift race that
+   * a sequential snapshot-then-screenshot would suffer on SPAs (Suno,
+   * ChatGPT, etc. fire layout-shifts on scroll/focus/hydration). The
+   * extension uses a single `chrome.debugger` attach for the screenshot and
+   * walks the tree inside the same promise.
+   *
+   * Either `withTree` or `withScreenshot` may be false — `browser_screenshot`
+   * uses `{withTree:false, withScreenshot:true}` for a pixels-only payload.
+   *
+   * Response shape (extension → daemon):
+   *   { tree?: RawNode, screenshot?: { format, dataBase64, resizedTo? }, dpr: number }
+   */
   | {
-      kind: "screenshot";
+      kind: "snapshot_capture";
+      withTree: boolean;
+      withScreenshot: boolean;
+      viewportOnly?: boolean;
+      limit?: number;
       format?: "png" | "jpeg";
       quality?: number;
       maxWidth?: number;
+    }
+  /**
+   * Stateless image-in / image-out overlay. The bridge supplies the bitmap,
+   * the CSS-pixel rect list (from the most recent snapshot), and the visual
+   * constants; the extension draws ref badges using OffscreenCanvas in the
+   * privileged service-worker context — no debugger attach, no page-script
+   * injection, no CSP exposure.
+   *
+   * Lives in a separate hop (not folded into snapshot_capture) so the bridge
+   * can decide whether to spend the annotation cycle and so each hop stays
+   * independently testable. Standalone `browser_screenshot` never calls this.
+   *
+   * Response shape: `{ format, dataBase64, resizedTo? }`.
+   */
+  | {
+      kind: "annotate_image";
+      imageBase64: string;
+      format: "png" | "jpeg";
+      quality?: number;
+      rects: Array<{
+        ref: string;
+        rect: { x: number; y: number; w: number; h: number };
+      }>;
+      dpr: number;
+      maxWidth?: number;
+      constants: {
+        BADGE_FILL: string;
+        BADGE_TEXT_COLOR: string;
+        BADGE_FONT: string;
+        BBOX_STROKE: string;
+        BBOX_STROKE_WIDTH: number;
+        BADGE_PADDING: number;
+        BADGE_OFFSET_Y: number;
+        MIN_ANNOTATABLE_PX: number;
+      };
     }
   | {
       kind: "console_messages";

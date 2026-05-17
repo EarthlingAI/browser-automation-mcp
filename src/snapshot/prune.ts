@@ -27,6 +27,13 @@ export interface RawNode {
   inert?: boolean;
   dialogModal?: boolean;
   position?: string;
+  /**
+   * `window.devicePixelRatio` at snapshot time. Set on the tree root only by
+   * `helpers.js::__earthlingA11y`. Used by the bridge's annotation hop to
+   * scale CSS-pixel rects up to the physical-pixel coordinate space of the
+   * captured bitmap.
+   */
+  dpr?: number;
   children: RawNode[];
 }
 

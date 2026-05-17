@@ -23,16 +23,16 @@ This server is consumed by AI agents, not humans. Every design decision flows fr
 browser-automation-mcp/
 ├── src/
 │   ├── index.ts           # Entry — dispatches --daemon vs bridge mode
-│   ├── protocol.ts        # Wire types shared by daemon, bridge, extension
+│   ├── protocol.ts        # Wire types shared by daemon, bridge, extension (incl. snapshot_capture + annotate_image ExtCommand kinds)
 │   ├── daemon/            # Singleton daemon — owns leases, brokers daemon↔extension WS
 │   ├── bridge/            # One-per-agent MCP server (stdio or streamable-HTTP)
-│   │   └── tools/         # One file per tool group (tabs / observe / interact)
+│   │   └── tools/         # One file per tool group (tabs / observe / interact) + shared modules (capture / save / visual / coerce)
 │   └── snapshot/          # A11y tree pruner
-├── earthling-extension/   # Unpacked MV3 extension — service worker + in-page helpers
+├── earthling-extension/   # Unpacked MV3 extension — service worker + in-page helpers (also: OffscreenCanvas annotate handler)
 └── scripts/               # Build (esbuild) + tests (node --test)
 ```
 
-`bridge/registry.ts` is the single chokepoint where tool registration, the per-session ref registry, the settle policy, and the lean-JSON envelope all live — new tools never reach for `server.registerTool` directly. The daemon outlives bridges, so lease state survives bridge respawn. The MV3 service worker is wiped on every extension reload — its per-tab Maps come back empty and are rebuilt from `chrome.tabs.query` on each fresh WS connect, pushed daemon-ward via the initial `tab_updated` flurry.
+`bridge/registry.ts` is the single chokepoint where tool registration, the per-session ref registry, the settle policy, and the lean-JSON envelope (text + optional native MCP image block) all live — new tools never reach for `server.registerTool` directly. `bridge/tools/capture.ts::runUnifiedCapture` is the single source of truth for every "look at the page" call — shared by `browser_snapshot`, `browser_screenshot`, and the auto-snapshot replay path — and emits a two-hop sequence (`snapshot_capture` atomic tree+screenshot, then optional `annotate_image` OffscreenCanvas overlay). The daemon outlives bridges, so lease state survives bridge respawn. The MV3 service worker is wiped on every extension reload — its per-tab Maps come back empty and are rebuilt from `chrome.tabs.query` on each fresh WS connect, pushed daemon-ward via the initial `tab_updated` flurry.
 
 ## Conventions
 
@@ -53,7 +53,7 @@ browser-automation-mcp/
 2. Implement the in-page side in `earthling-extension/inject/helpers.js` (if it touches the DOM) or the service-worker side in `earthling-extension/background.js` (if it's a `chrome.*` glue call). Bump `HELPERS_VERSION` if you changed the in-page contract.
 3. Wire the dispatch case in `background.js::dispatchInner`.
 4. If your tool mutates the page, add its kind to `ACTION_KINDS` in `background.js` (drives the "acting" indicator) and `SETTLE_KINDS` (drives the settle observer).
-5. Register the bridge-side tool in the appropriate `src/bridge/tools/*.ts` file via `registerTool` (read-only) or `registerActionTool` (auto-snapshot + auto-settle wrapper). Both helpers require `title`, `description`, `annotations` (all 4 hints), `schema` (zod), and `handler`.
+5. Register the bridge-side tool in the appropriate `src/bridge/tools/*.ts` file via `registerTool` (read-only) or `registerActionTool` (auto-snapshot + auto-settle wrapper). Both helpers require `title`, `description`, `annotations` (all 4 hints), `schema` (zod), and `handler`. If the tool returns a screenshot, return the `CaptureResult` shape `{payload, image?}` (or call `runUnifiedCapture` directly) — both wrappers auto-detect this shape and emit a mixed image+text MCP content array.
 6. Apply the coerce sweep — every numeric/boolean/array param needs `z.coerce.*` or `z.preprocess(...)` (see Conventions).
 7. Add the tool's expected annotation policy to `scripts/tests/annotations.test.mjs`'s `EXPECTED` table. This is the sweep test that prevents annotation drift.
 8. Update `README.md` — tool table + the full file tree if you added a file.
@@ -69,7 +69,7 @@ These must remain true across all changes:
 5. **Lease state is per-daemon-process and lost on respawn.** Bridges recover transparently: the next action returns `lease_required` and the agent re-claims via `browser_switch_tab`.
 6. **All action tools auto-snapshot by default** (`snapshot=true`). Override only when chaining many actions back-to-back to save round-trips.
 7. **All action tools auto-settle by default** (`wait_for_settle="dom"`, `settle_timeout=1500`). Same-tick re-fires return only after the page has shown a delta or after 1.5s, whichever fires first.
-8. **Auto-snapshot replays the LAST `browser_snapshot` params** — same `detail`, `limit`, `viewportOnly`, `tabId`. Agents that snapshotted full-mode stay in full-mode on auto-refresh.
+8. **Auto-snapshot replays `detail`, `limit`, `viewportOnly`, `tabId`, `screenshot`, `format`, `quality`, `maxWidth` from the last explicit `browser_snapshot` call.** Agents that snapshotted full-mode stay in full-mode on auto-refresh; agents that opted into `screenshot:true` keep getting annotated images per action until they explicitly set `screenshot:false`. `save_to_path` is NEVER replayed — saving is a per-call opt-in, never a session mode (avoids silent disk fill-up over long sessions).
 9. **All 4 tool annotation hints are declared explicitly.** Read-only tools must declare `readOnlyHint:true` (planning-phase agent runtimes gate on it); write tools must never claim it. The full policy table lives in `scripts/tests/annotations.test.mjs` and is sweep-tested on every CI run.
 10. **The per-session ref registry is the source of truth for `ref` validation.** `execOnLeasedTab` calls `resolveRef` BEFORE the daemon hop — bad refs fail fast with an actionable error naming nearby refs. The registry is populated by every `browser_snapshot` and by `replaySnapshot` (auto-snapshot). Action tools flip `isStale=true` after firing; the next action without a fresh snapshot gets the stale-path error message.
 11. **Settle policy is set on `ctx.pendingSettle` by the action-tool wrapper and consumed by the first `execOnLeasedTab` call.** Internal multi-hop handlers do NOT pay the settle cost on every hop — `execOnLeasedTab` clears `pendingSettle` after the first injection.
@@ -78,3 +78,6 @@ These must remain true across all changes:
 14. **`browser_evaluate` returning a primitive (string/number/boolean) is wrapped under `result`** in the response envelope, not spread. Spreading a string produces a char-indexed object (Issue #2 root cause); the wrapper detects primitives and arrays explicitly.
 15. **MCP host runtimes stringify typed params on the wire** — `tabId=1594871391` arrives as `"1594871391"`, `force=true` as `"true"`, `methodIn=["POST"]` as `'["POST"]'`. Every numeric/boolean/array schema param goes through coercion (see Conventions). `z.coerce.boolean()` is unusable because it truthy-coerces any non-empty string; use `z.preprocess(coerceBoolean, z.boolean())` instead, and let empty strings fall through so the wrapping `.default(...)` still applies.
 16. **Strict-CSP sites require `chrome.debugger Runtime.evaluate`, not `new Function()` in an injected script.** Sites like Suno, ChatGPT, GitHub, and banks set `script-src` without `'unsafe-eval'`, so any in-page evaluation of a string-as-JS via `chrome.scripting.executeScript` + `new Function(...)` is rejected. `browser_wait_for condition` mode is intercepted in `background.js::dispatchInner` and routed through `chrome.debugger Runtime.evaluate` (which runs as the debugger and bypasses CSP). The debugger is attached ONCE around the whole poll loop so the "started debugging this browser" infobar matches the wait duration.
+17. **Image annotation runs in the extension's privileged context (OffscreenCanvas in the service worker), never in injected page scripts.** This sidesteps CSP entirely and keeps the annotation contract independent of page-side `script-src` restrictions. The `annotate_image` ExtCommand is stateless — bridge sends bitmap + rects + visual constants, extension returns the overlaid PNG/JPEG.
+18. **Visual constants (badge color, font, sizing) live ONE-WAY on the bridge in `src/bridge/tools/visual.ts` and travel inside the `annotate_image` ExtCommand payload.** The extension is a dumb renderer — visual tweaks do NOT require an extension reload. Adding a new badge property means updating `VISUAL_CONSTANTS`, the `annotate_image` payload type in `protocol.ts`, and the extension's annotate handler in lockstep.
+19. **Mixed-content envelope ordering: image content block at index 0, text at index 1.** Anthropic vision attends to images that precede related text. The text payload NEVER contains `dataBase64` — the bytes live exclusively in the image block. `toolResult` in `bridge/registry.ts` enforces both rules; `runUnifiedCapture` is the only caller that passes a non-undefined `image` argument.

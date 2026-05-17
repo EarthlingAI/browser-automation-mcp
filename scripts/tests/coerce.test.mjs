@@ -13,6 +13,7 @@ import {
   coerceToArray,
   coerceLiteralNumber,
   coerceBoolean,
+  saveToPathSchema,
 } from "../../dist/test-exports.mjs";
 import { z } from "zod";
 
@@ -140,4 +141,34 @@ test("browser_wait_for.timeout + pollIntervalMs coerce", () => {
   assert.ok(r.success, r.error?.message);
   assert.equal(r.data.timeout, 60000);
   assert.equal(r.data.poll_interval_ms, 500);
+});
+
+// saveToPathSchema — preprocess-then-union ensures "true"/"false" strings
+// resolve to booleans BEFORE the z.string() branch can grab them as paths.
+// Critical: a naive z.union([z.string(), z.boolean()]) would write to a
+// file named `./true` when the agent SDK stringifies `true`.
+test("saveToPathSchema: false and true pass through as booleans", () => {
+  assert.equal(saveToPathSchema.parse(false), false);
+  assert.equal(saveToPathSchema.parse(true), true);
+});
+
+test("saveToPathSchema: 'true' / 'false' strings coerce to booleans", () => {
+  assert.equal(saveToPathSchema.parse("true"), true);
+  assert.equal(saveToPathSchema.parse("false"), false);
+});
+
+test("saveToPathSchema: genuine path string passes through", () => {
+  assert.equal(saveToPathSchema.parse("foo.png"), "foo.png");
+  assert.equal(saveToPathSchema.parse("subdir/foo.jpg"), "subdir/foo.jpg");
+});
+
+test("saveToPathSchema: undefined applies the false default", () => {
+  assert.equal(saveToPathSchema.parse(undefined), false);
+});
+
+test("saveToPathSchema: empty string fails both branches", () => {
+  // Neither boolean nor a min(1) string — surfaces a validation error rather
+  // than silently writing to a file named "".
+  const r = saveToPathSchema.safeParse("");
+  assert.equal(r.success, false);
 });

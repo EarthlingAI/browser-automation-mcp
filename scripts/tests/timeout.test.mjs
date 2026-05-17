@@ -9,7 +9,10 @@ import { inferExtTimeout } from "../../dist/test-exports.mjs";
 
 test("inferExtTimeout: non-wait_for commands get the 30s default", () => {
   assert.equal(inferExtTimeout({ kind: "click", ref: "1" }), 30_000);
-  assert.equal(inferExtTimeout({ kind: "snapshot" }), 30_000);
+  assert.equal(
+    inferExtTimeout({ kind: "snapshot_capture", withTree: true, withScreenshot: false }),
+    30_000,
+  );
   assert.equal(inferExtTimeout({ kind: "evaluate", expression: "1+1" }), 30_000);
   assert.equal(inferExtTimeout({ kind: "tabs_query" }), 30_000);
 });
