@@ -1,11 +1,15 @@
 import { TabId } from "../protocol";
+import type { ScreenshotMode } from "./tools/capture";
 
 export interface SnapshotParams {
   tabId?: TabId;
   detail: "standard" | "full";
   limit: number;
   viewportOnly: boolean;
-  screenshot: boolean;
+  // Round 10: tri-state — "off" | "annotated" | "raw". Replayed verbatim by
+  // auto-snapshots so an agent that opted into "annotated" or "raw" keeps
+  // getting the same flavour of image until it explicitly flips back to "off".
+  screenshot: ScreenshotMode;
   // No `format` here (Round 7) — derived from `save_to_path`'s extension on
   // each call; defaults to JPEG when no save is requested.
   quality: number;
@@ -19,7 +23,7 @@ export const DEFAULT_SNAPSHOT_PARAMS: SnapshotParams = {
   // the WHOLE page (capped at `limit`) and auto-falls-back to viewport-only
   // only when the page exceeds 3 × effectiveLimit candidates.
   viewportOnly: false,
-  screenshot: false,
+  screenshot: "off",
   quality: 70,
   // maxWidth intentionally undefined — native resolution by default.
 };

@@ -16,14 +16,15 @@ export function registerObserveTools(
 ): void {
   registerTool(server, ctx, {
     name: "browser_snapshot",
-    title: "Snapshot the page accessibility tree (optionally with annotated screenshot)",
+    title: "Snapshot the page accessibility tree (optionally with screenshot)",
     description:
       "Pruned accessibility-tree snapshot of the leased tab. Returns nodes with stable numeric `ref` IDs " +
-      "to target in interaction tools. With `screenshot:true`, also returns a native MCP image content block " +
-      "with each element's numeric ref badged on the live page — once enabled, every subsequent action-tool " +
-      "auto-snapshot automatically carries the annotated picture forward (no extra call needed). " +
-      "Costs ~150–250 ms per action when screenshot mode is on; pass `screenshot:false` on the next call to " +
-      "drop back to tree-only.",
+      "to target in interaction tools. `screenshot` is tri-state: \"off\" (default, tree only), " +
+      "\"annotated\" (tree + native MCP image content block with each element's numeric ref badged on the live page), " +
+      "or \"raw\" (tree + clean pixels with no badges — for saving artifacts or showing the page as the user sees it). " +
+      "Once `\"annotated\"` or `\"raw\"` is set, every subsequent action-tool auto-snapshot automatically carries " +
+      "the image forward in the same mode (no extra call needed). Costs ~150–250 ms per action when screenshot " +
+      "mode is on; pass `screenshot:\"off\"` on the next call to drop back to tree-only.",
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -58,11 +59,15 @@ export function registerObserveTools(
             "`meta.viewport_fallback`. Pass `true` to force viewport-only unconditionally.",
         ),
       screenshot: z
-        .preprocess(coerceBoolean, z.boolean().default(false))
+        .enum(["off", "annotated", "raw"])
+        .default("off")
         .describe(
-          "Include a vision-ready screenshot with refs annotated. " +
-            "Once enabled, every subsequent action-tool auto-snapshot also returns the annotated image — " +
-            "set screenshot:false on the next call to drop back to tree-only.",
+          "Screenshot mode. \"off\" (default) — tree only, no image. " +
+            "\"annotated\" — tree + image with each ref's numeric badge painted on its element " +
+            "(vision-ready; what you want when planning the next action). " +
+            "\"raw\" — tree + clean pixels with no badges (for saving a chart, capturing an artifact, " +
+            "or showing the page as the user sees it). Once set to \"annotated\" or \"raw\", every " +
+            "subsequent action-tool auto-snapshot returns the image in the same mode — set back to \"off\" to drop it.",
         ),
       // Image format is not an agent-facing arg — it follows `save_to_path`'s
       // extension when a string (".png" → PNG, ".jpg/.jpeg" → JPEG); defaults
@@ -129,14 +134,13 @@ export function registerObserveTools(
 
   registerTool(server, ctx, {
     name: "browser_screenshot",
-    title: "Screenshot the leased tab (no tree, no ref annotations)",
+    title: "[DEPRECATED — use browser_snapshot(screenshot:\"raw\")] Screenshot the leased tab",
     description:
+      "DEPRECATED — superseded by `browser_snapshot(screenshot:\"raw\")` which returns clean pixels " +
+      "alongside the a11y tree from one call. This tool will be removed in an upcoming release. " +
       "Background-tab screenshot via CDP `Page.captureScreenshot` — never raises the window. " +
       "Returns the image as a native MCP image content block. Format follows `save_to_path`'s file " +
-      "extension when a string (\".png\" → PNG, \".jpg/.jpeg\" → JPEG); defaults to JPEG otherwise. " +
-      "Use for pixel-only captures (saving a chart, capturing a finished artifact, " +
-      "or saving to disk via `save_to_path`) — when you also need ref badges and a tree, " +
-      "use `browser_snapshot(screenshot:true)` instead.",
+      "extension when a string (\".png\" → PNG, \".jpg/.jpeg\" → JPEG); defaults to JPEG otherwise.",
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -177,11 +181,15 @@ export function registerObserveTools(
         throw new Error(
           "no leased tab; call browser_switch_tab or browser_open_tab first",
         );
+      // Implementation: route through the same unified pipeline that
+      // browser_snapshot(screenshot:"raw") would use, but with withTree:false
+      // so the legacy contract (no tree in the payload) is preserved until
+      // the tool is removed.
       return runUnifiedCapture(ctx, target, {
         detail: "standard",
         limit: 0,
         viewportOnly: true,
-        screenshot: true,
+        screenshot: "raw",
         quality,
         maxWidth,
         save_to_path,

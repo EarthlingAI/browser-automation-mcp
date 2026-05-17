@@ -225,11 +225,13 @@ export async function replaySnapshot(ctx: ToolContext): Promise<unknown> {
     };
   try {
     // Replay every visual param the user opted into — including `screenshot`
-    // so auto-snapshots after a `browser_snapshot(screenshot:true)` carry the
-    // annotated image forward. `save_to_path` is NEVER replayed; saving is a
-    // per-call opt-in, never a session mode (avoids silent disk fill-up over
-    // long sessions). `format` is no longer a SnapshotParams field (Round 7)
-    // — runUnifiedCapture derives it from save_to_path (false → JPEG).
+    // (tri-state since Round 10: "off" | "annotated" | "raw"), so an agent
+    // that opted into "annotated" or "raw" keeps getting the same flavour of
+    // image on every action's auto-snapshot until it explicitly flips back to
+    // "off". `save_to_path` is NEVER replayed; saving is a per-call opt-in,
+    // never a session mode (avoids silent disk fill-up over long sessions).
+    // `format` is no longer a SnapshotParams field (Round 7) —
+    // runUnifiedCapture derives it from save_to_path (false → JPEG).
     return await runUnifiedCapture(ctx, tabId, {
       detail: params.detail,
       limit: params.limit,

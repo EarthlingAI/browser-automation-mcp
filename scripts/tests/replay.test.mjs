@@ -72,7 +72,7 @@ test("replaySnapshot forwards all visual params and pins save_to_path:false", as
     detail: "standard",
     limit: 500,
     viewportOnly: true,
-    screenshot: true,
+    screenshot: "annotated",
     quality: 60,
     maxWidth: 1280,
   });
@@ -81,7 +81,7 @@ test("replaySnapshot forwards all visual params and pins save_to_path:false", as
   const out = await replaySnapshot(ctx);
   assert.ok(out, "replaySnapshot should return a CaptureResult");
   assert.ok(out.payload, "CaptureResult must have a payload");
-  assert.ok(out.image, "screenshot:true should produce an image block");
+  assert.ok(out.image, "screenshot:\"annotated\" should produce an image block");
 
   // Hop 1 — snapshot_capture must forward the visual params verbatim.
   assert.equal(calls.length, 2);
@@ -127,7 +127,7 @@ test("replaySnapshot never persists save_to_path — even after a save'd snapsho
     detail: "standard",
     limit: 500,
     viewportOnly: true,
-    screenshot: false,
+    screenshot: "off",
     quality: 70,
   });
   session.lastLeasedTab = 1;
@@ -137,7 +137,7 @@ test("replaySnapshot never persists save_to_path — even after a save'd snapsho
   // payload must not contain a savedTo field even if one was somehow leaked.
   assert.equal(out.payload.savedTo, undefined);
   assert.equal(out.payload.saveError, undefined);
-  // Single hop only — no annotation when screenshot:false.
+  // Single hop only — no annotation when screenshot:"off".
   assert.equal(calls.length, 1);
   assert.equal(calls[0].command.withScreenshot, false);
 });
@@ -161,7 +161,7 @@ test("runUnifiedCapture skips annotation hop when there are no refs", async () =
     detail: "standard",
     limit: 500,
     viewportOnly: true,
-    screenshot: true,
+    screenshot: "annotated",
     quality: 70,
     save_to_path: false,
     withTree: true,
@@ -198,7 +198,7 @@ test("replaySnapshot error path preserves structured fields (kind/recovery/hint/
     detail: "standard",
     limit: 500,
     viewportOnly: true,
-    screenshot: false,
+    screenshot: "off",
     quality: 70,
   });
   const stub = await replaySnapshot(ctx);
@@ -210,8 +210,12 @@ test("replaySnapshot error path preserves structured fields (kind/recovery/hint/
   assert.equal(stub.since, "2026-05-17T12:00:00Z");
 });
 
-test("runUnifiedCapture: withTree:false skips tree pruning and annotation", async () => {
-  // browser_screenshot's call path. One hop, no annotation, no tree in payload.
+test("runUnifiedCapture: withTree:false + screenshot:\"raw\" mirrors the deprecated browser_screenshot handler", async () => {
+  // The deprecated `browser_screenshot` handler routes through the unified
+  // pipeline with these exact args. One hop, no tree in payload, raw bytes.
+  // The screenshot:"raw" mode is the contract the deprecated tool ships with
+  // — keep this test mirroring the production handler so a refactor that
+  // breaks the contract fails here, not silently in prod.
   const { ctx, calls } = makeCtx({
     daemonResponses: [
       {
@@ -228,14 +232,44 @@ test("runUnifiedCapture: withTree:false skips tree pruning and annotation", asyn
     detail: "standard",
     limit: 0,
     viewportOnly: true,
-    screenshot: true,
+    screenshot: "raw",
     quality: 70,
     save_to_path: false,
     withTree: false,
   });
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 1, "no annotate_image hop on screenshot:\"raw\"");
   assert.equal(calls[0].command.withTree, false);
   assert.equal(calls[0].command.withScreenshot, true);
   assert.equal(out.payload.tree, undefined);
+  assert.equal(out.image.data, "px", "image carries the raw capture bytes verbatim");
   assert.equal(out.image.mimeType, "image/png");
+});
+
+test("runUnifiedCapture: screenshot:\"annotated\" + withTree:false → annotation hop still skipped (defence in depth)", async () => {
+  // Even though `withTree:false` makes the deprecated tool safe regardless of
+  // the enum, this test guards against a future refactor that changes the
+  // gate. Currently the annotate hop is skipped because `justPopulated`
+  // never flips true without a tree — but a code change that drops that
+  // condition would silently re-introduce annotation on a tree-less call.
+  const { ctx, calls } = makeCtx({
+    daemonResponses: [
+      {
+        screenshot: { format: "jpeg", dataBase64: "raw-bytes", resizedTo: undefined },
+      },
+    ],
+    sessionInit: (s) => {
+      s.lastLeasedTab = 6;
+    },
+  });
+  const out = await runUnifiedCapture(ctx, 6, {
+    detail: "standard",
+    limit: 0,
+    viewportOnly: true,
+    screenshot: "annotated",
+    quality: 70,
+    save_to_path: false,
+    withTree: false,
+  });
+  assert.equal(calls.length, 1, "annotation must NOT fire when there is no tree");
+  assert.equal(out.image.data, "raw-bytes");
 });

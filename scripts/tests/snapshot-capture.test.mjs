@@ -59,7 +59,7 @@ test("snapshot_capture command carries the unified-capture options verbatim", as
     detail: "standard",
     limit: 250,
     viewportOnly: false,
-    screenshot: true,
+    screenshot: "annotated",
     quality: 85,
     maxWidth: 1600,
     save_to_path: false,
@@ -91,7 +91,7 @@ test("annotate_image command carries imageBase64, rects, cssViewport, and the fu
     detail: "standard",
     limit: 500,
     viewportOnly: true,
-    screenshot: true,
+    screenshot: "annotated",
     quality: 70,
     save_to_path: false,
     withTree: true,
@@ -120,7 +120,7 @@ test("annotate_image command carries imageBase64, rects, cssViewport, and the fu
   }
 });
 
-test("screenshot:false → only one hop (no annotate_image)", async () => {
+test("screenshot:\"off\" → only one hop (no annotate_image)", async () => {
   const { ctx, calls } = makeCtx([
     { tree: TREE_ONE_BUTTON, screenshot: undefined, cssViewport: { w: 1024, h: 768 } },
   ]);
@@ -129,7 +129,7 @@ test("screenshot:false → only one hop (no annotate_image)", async () => {
     detail: "standard",
     limit: 500,
     viewportOnly: true,
-    screenshot: false,
+    screenshot: "off",
     quality: 70,
     save_to_path: false,
     withTree: true,
@@ -258,4 +258,85 @@ test("scale formula: empty cssViewport falls back to identity scale", () => {
   });
   assert.equal(scaleX, 1);
   assert.equal(scaleY, 1);
+});
+
+// ─── tri-state screenshot mode (Round 10) ───────────────────────────
+//
+// Promoted `screenshot` from boolean to enum: "off" | "annotated" | "raw".
+// Each value must drive runUnifiedCapture down a distinct path:
+//   "off"        → no screenshot hop, no image in result
+//   "annotated"  → screenshot hop + annotate hop, image carries badged bytes
+//   "raw"        → screenshot hop only, image carries raw captured bytes
+//                  (no annotate_image round trip even though refs exist)
+
+test("screenshot:\"off\" → snapshot_capture hop sets withScreenshot:false, no image returned", async () => {
+  const { ctx, calls } = makeCtx([
+    { tree: TREE_ONE_BUTTON, screenshot: undefined, cssViewport: { w: 1024, h: 768 } },
+  ]);
+  ctx.session.lastLeasedTab = 1;
+  const out = await runUnifiedCapture(ctx, 1, {
+    detail: "standard",
+    limit: 500,
+    viewportOnly: false,
+    screenshot: "off",
+    quality: 70,
+    save_to_path: false,
+    withTree: true,
+  });
+  assert.equal(calls.length, 1, "only the snapshot_capture hop should fire");
+  assert.equal(calls[0].command.withScreenshot, false);
+  assert.equal(out.image, undefined, "no image block on screenshot:\"off\"");
+  assert.ok(out.payload.tree, "tree still returns");
+});
+
+test("screenshot:\"annotated\" → 2 hops, image carries annotated bytes", async () => {
+  const { ctx, calls } = makeCtx([
+    {
+      tree: TREE_ONE_BUTTON,
+      screenshot: { format: "jpeg", dataBase64: "raw-bytes", resizedTo: undefined },
+      cssViewport: { w: 1024, h: 768 },
+    },
+    { format: "jpeg", dataBase64: "annotated-bytes" },
+  ]);
+  ctx.session.lastLeasedTab = 2;
+  const out = await runUnifiedCapture(ctx, 2, {
+    detail: "standard",
+    limit: 500,
+    viewportOnly: false,
+    screenshot: "annotated",
+    quality: 70,
+    save_to_path: false,
+    withTree: true,
+  });
+  assert.equal(calls.length, 2, "snapshot_capture + annotate_image");
+  assert.equal(calls[0].command.withScreenshot, true);
+  assert.equal(calls[1].command.kind, "annotate_image");
+  assert.equal(out.image.data, "annotated-bytes", "image carries the annotated bytes");
+});
+
+test("screenshot:\"raw\" → 1 hop only, image carries the raw capture bytes (no annotate)", async () => {
+  // The discriminator: refs are present (TREE_ONE_BUTTON has an interactive
+  // button) so a buggy gate that fires the annotate hop on \"refs > 0\" would
+  // round-trip a second time. Round 10 gates on the enum value, not refs.
+  const { ctx, calls } = makeCtx([
+    {
+      tree: TREE_ONE_BUTTON,
+      screenshot: { format: "jpeg", dataBase64: "raw-bytes", resizedTo: undefined },
+      cssViewport: { w: 1024, h: 768 },
+    },
+  ]);
+  ctx.session.lastLeasedTab = 3;
+  const out = await runUnifiedCapture(ctx, 3, {
+    detail: "standard",
+    limit: 500,
+    viewportOnly: false,
+    screenshot: "raw",
+    quality: 70,
+    save_to_path: false,
+    withTree: true,
+  });
+  assert.equal(calls.length, 1, "annotate_image must NOT fire on screenshot:\"raw\"");
+  assert.equal(calls[0].command.withScreenshot, true);
+  assert.equal(out.image.data, "raw-bytes", "image carries the unannotated capture bytes");
+  assert.ok(out.payload.tree, "tree still returns alongside the raw image");
 });

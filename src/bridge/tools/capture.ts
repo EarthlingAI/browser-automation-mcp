@@ -2,20 +2,27 @@
  * Unified capture orchestrator — the single core of every "look at the page"
  * call in this MCP. Shared by:
  *
- *   - `browser_snapshot`        (observe.ts)     — withTree:true,  withScreenshot:configurable
- *   - `browser_screenshot`      (observe.ts)     — withTree:false, withScreenshot:true
- *   - `replaySnapshot` auto-snap (registry.ts)    — replays the last params, save_to_path always off
+ *   - `browser_snapshot`        (observe.ts)    — withTree:true; capture hop fires
+ *                                                  when `screenshot !== "off"`.
+ *   - `browser_screenshot`      (observe.ts)    — DEPRECATED; withTree:false +
+ *                                                  screenshot:"raw" (preserves the
+ *                                                  legacy no-tree-in-payload contract
+ *                                                  until removal).
+ *   - `replaySnapshot` auto-snap (registry.ts)   — replays the last params verbatim;
+ *                                                  save_to_path always off.
  *
  * Two extension hops:
  *
  *   1. `snapshot_capture` — atomic tree + screenshot in one debugger cycle.
  *      Eliminates the layout-shift race a sequential snapshot-then-screenshot
- *      would have on SPAs (Suno, ChatGPT) that fire hydration mid-call.
+ *      would have on SPAs (Suno, ChatGPT) that fire hydration mid-call. The
+ *      screenshot half fires only when `screenshot !== "off"`.
  *
- *   2. `annotate_image` (conditional) — only fired when there's a tree AND
- *      `lastSnapshotRefs` is populated, so the badges actually have refs to
- *      paint. Annotation runs in the SW's OffscreenCanvas (no page injection,
- *      no CSP exposure).
+ *   2. `annotate_image` (conditional) — only fired when `screenshot ===
+ *      "annotated"` AND there's a tree AND `lastSnapshotRefs` is populated.
+ *      The `screenshot:"raw"` mode (Round 10) skips this hop and lets the
+ *      captured bytes flow straight through. Annotation runs in the SW's
+ *      OffscreenCanvas (no page injection, no CSP exposure).
  *
  * Returns a `CaptureResult` shape: `{ payload, image? }`. `registry.ts`'s
  * `registerTool` wrapper detects the shape and extracts the image into a
@@ -33,11 +40,25 @@ import { computeDrawStroke } from "./containment";
 import { resolveSavePath, writeImage } from "./save";
 import { VISUAL_CONSTANTS } from "./visual";
 
+/**
+ * Tri-state screenshot mode (Round 10):
+ *
+ *   "off"        — no image, tree only (cheapest; the default)
+ *   "annotated"  — tree + image with red ref badges painted over each rect
+ *   "raw"        — tree + image with NO badges (clean pixels alongside the tree)
+ *
+ * Promoted from a boolean to a 3-state enum so the agent can ask for a clean
+ * screenshot without reaching for the (now-deprecated) `browser_screenshot`
+ * tool. The annotate hop fires only when `screenshot === "annotated"`; for
+ * `"raw"` the captured bytes flow straight through to the image block.
+ */
+export type ScreenshotMode = "off" | "annotated" | "raw";
+
 export interface CaptureOpts {
   detail: "standard" | "full";
   limit: number;
   viewportOnly: boolean;
-  screenshot: boolean;
+  screenshot: ScreenshotMode;
   // No `format` here — Round 7 removed the agent-facing param. Format is
   // derived from `save_to_path`'s file extension when a string; otherwise
   // defaults to JPEG (see save.ts::resolveSavePath).
@@ -45,7 +66,7 @@ export interface CaptureOpts {
   maxWidth?: number;
   /** false → no save (default). true → auto-named in outputs_dir. String → explicit path. */
   save_to_path: boolean | string;
-  /** False for standalone `browser_screenshot` — skip the tree walk entirely. */
+  /** False for `browser_snapshot(screenshot:"raw", withTree:false)` paths — skip the tree walk entirely. */
   withTree: boolean;
 }
 
@@ -100,11 +121,15 @@ export async function runUnifiedCapture(
     format = "jpeg";
   }
 
+  // Round 10: `screenshot` is tri-state — capture pixels when the agent asked
+  // for either annotated OR raw; skip the screenshot hop entirely on "off".
+  const wantImage = opts.screenshot !== "off";
+
   // Hop 1: atomic snapshot + screenshot.
   const captureResp = (await ctx.daemon.exec(tabId, {
     kind: "snapshot_capture",
     withTree: opts.withTree,
-    withScreenshot: opts.screenshot,
+    withScreenshot: wantImage,
     viewportOnly: opts.viewportOnly,
     limit: opts.limit,
     format,
@@ -135,10 +160,12 @@ export async function runUnifiedCapture(
     captureResp.screenshot?.format ?? format;
   let resizedTo = captureResp.screenshot?.resizedTo;
 
-  // Hop 2 (conditional): annotate. Skip when there are no refs to badge —
-  // a graceful no-op rather than an empty-rects round trip.
+  // Hop 2 (conditional): annotate. Round 10: fires ONLY for `screenshot ===
+  // "annotated"`. For `"raw"`, the captured bytes flow straight through —
+  // clean pixels alongside the tree. Also skips when there are no refs to
+  // badge (graceful no-op rather than an empty-rects round trip).
   if (
-    opts.screenshot &&
+    opts.screenshot === "annotated" &&
     imageBase64 &&
     justPopulated &&
     ctx.session.lastSnapshotRefs.size > 0
@@ -181,7 +208,7 @@ export async function runUnifiedCapture(
     }
   }
 
-  if (opts.screenshot && imageBase64) {
+  if (wantImage && imageBase64) {
     payload.format = imageFormat;
     if (resizedTo) payload.resizedTo = resizedTo;
     // Save errors must never break the response — the image still returns

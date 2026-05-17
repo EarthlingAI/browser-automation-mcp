@@ -98,30 +98,38 @@ Release the lease on a tab so another session can claim it. Omit `tabId` to rele
 
 #### `browser_snapshot` (read-only)
 
-Pruned accessibility-tree snapshot of the leased tab. Returns nodes with stable numeric `ref` IDs to target in interaction tools. With `screenshot:true`, also returns a native MCP image content block with each element's numeric ref badged on the live page — and from that point on, every action's auto-snapshot automatically carries the annotated picture forward (no extra call needed). Pass `screenshot:false` on the next call to drop back to tree-only. Prefer this over `browser_screenshot` when you also need ref badges.
+Pruned accessibility-tree snapshot of the leased tab. Returns nodes with stable numeric `ref` IDs to target in interaction tools. `screenshot` is tri-state:
 
-| Parameter      | Type             | Default      | Description                                                              |
-| -------------- | ---------------- | ------------ | ------------------------------------------------------------------------ |
-| `tabId`        | int              | last leased  | Tab to snapshot.                                                         |
-| `detail`       | enum             | `"standard"` | `"standard"` = interactive elements only; `"full"` = entire a11y tree.   |
-| `limit`        | int              | `500`        | Max nodes returned (ranked). Range 1-5000.                               |
-| `viewportOnly` | boolean          | `false`      | Restrict snapshot to the visible viewport. Default `false` — return the whole page's intelligently-pruned tree. Auto-falls-back to viewport-only when the page exceeds `3 × limit` candidates (surfaces `meta.viewport_fallback`). Pass `true` to force viewport-only unconditionally. |
-| `screenshot`   | boolean          | `false`      | Include a vision-ready annotated screenshot. Replays on auto-snapshot until set back to `false`. Costs ~150-250ms per action when on. |
-| `quality`      | int              | `70`         | JPEG quality (1-100). Ignored for PNG saves. Applies to inline (always JPEG) and to any `.jpg`/`.jpeg` save target. |
-| `maxWidth`     | int              | —            | Downscale the screenshot to at most this width (preserves aspect ratio). Range 64-4096. |
-| `save_to_path` | bool \| string   | `false`      | Write the annotated image to disk. **String paths drive the image format** (`.png`/`.jpg`/`.jpeg`); inline-only and auto-name use JPEG. See "Save to disk" below. |
+| `screenshot` | What you get | Use when |
+| --- | --- | --- |
+| `"off"` (default) | Tree only, no image block | You only need refs and don't need to see the page |
+| `"annotated"` | Tree + image with each ref's number badged on its element | Vision-guided action planning (default for "I want to see what I'm doing") |
+| `"raw"` | Tree + clean pixels (no badges) | Saving a chart, capturing an artifact, or showing the page as the user sees it |
+
+Once `"annotated"` or `"raw"` is set, every subsequent action's auto-snapshot returns the image in the same mode. Set back to `"off"` to drop back to tree-only.
+
+| Parameter      | Type                                  | Default      | Description                                                              |
+| -------------- | ------------------------------------- | ------------ | ------------------------------------------------------------------------ |
+| `tabId`        | int                                   | last leased  | Tab to snapshot.                                                         |
+| `detail`       | enum                                  | `"standard"` | `"standard"` = interactive elements only; `"full"` = entire a11y tree.   |
+| `limit`        | int                                   | `500`        | Max nodes returned (ranked). Range 1-5000.                               |
+| `viewportOnly` | boolean                               | `false`      | Restrict snapshot to the visible viewport. Default `false` — return the whole page's intelligently-pruned tree. Auto-falls-back to viewport-only when the page exceeds `3 × limit` candidates (surfaces `meta.viewport_fallback`). Pass `true` to force viewport-only unconditionally. |
+| `screenshot`   | `"off"` \| `"annotated"` \| `"raw"` | `"off"`      | See table above. Replays on auto-snapshot until set back to `"off"`. Costs ~150-250ms per action when `"annotated"`. |
+| `quality`      | int                                   | `70`         | JPEG quality (1-100). Ignored for PNG saves. Applies to inline (always JPEG) and to any `.jpg`/`.jpeg` save target. |
+| `maxWidth`     | int                                   | —            | Downscale the screenshot to at most this width (preserves aspect ratio). Range 64-4096. |
+| `save_to_path` | bool \| string                        | `false`      | Write the image to disk. **String paths drive the image format** (`.png`/`.jpg`/`.jpeg`); inline-only and auto-name use JPEG. See "Save to disk" below. |
 
 `detail:"full"` at `limit < 1000` raises the effective limit to 1000 and surfaces `meta.limit_adjusted` in the response.
 
 **Pruner meta.** Every response includes `meta.total_candidates` (the full count of accessible candidate nodes the pruner saw before any viewport-filtering or limit cap). When the pruner auto-falls-back to viewport-only (`total_candidates > 3 × effectiveLimit` AND the caller did NOT pass `viewportOnly:true`), an additional `meta.viewport_fallback: { active:true, reason:"page_too_large", threshold, total_candidates }` surfaces so the agent knows useful nodes may sit off-screen.
 
-**Auto-snapshot carries the annotated image forward.** Once you call `browser_snapshot(screenshot:true)`, every subsequent action-tool auto-snapshot replays the visual params (`screenshot`, `quality`, `maxWidth`) — the agent sees one annotated picture per action, not just per explicit snapshot. `save_to_path` is NEVER replayed: saving is per-call opt-in, never a session mode.
+**Auto-snapshot carries the image forward.** Once you call `browser_snapshot(screenshot:"annotated")` or `browser_snapshot(screenshot:"raw")`, every subsequent action-tool auto-snapshot replays the visual params (`screenshot`, `quality`, `maxWidth`) — the agent sees one image per action, not just per explicit snapshot. `save_to_path` is NEVER replayed: saving is per-call opt-in, never a session mode.
 
 **Pixel-accurate badges.** The annotation hop derives canvas-pixel scale from the actual final bitmap dimensions vs. the page's CSS viewport (`scaleX = imgW / cssViewport.w`), so ref badges land on the right elements regardless of browser zoom or device pixel ratio — including the `maxWidth`-resized path.
 
-#### `browser_screenshot` (read-only)
+#### `browser_screenshot` (read-only) — **DEPRECATED**
 
-Background-tab screenshot via CDP `Page.captureScreenshot` — never raises the window. Returns the image as a native MCP image content block. Defaults to JPEG quality 70 (~30-50 KB encoded). Use for pixel-only captures (saving a chart, capturing a finished artifact, or saving to disk via `save_to_path`); when you also need ref badges and a tree, call `browser_snapshot(screenshot:true)` instead.
+Superseded by `browser_snapshot(screenshot:"raw")`, which returns clean pixels alongside the a11y tree from one call. This tool will be removed in an upcoming release; new code should use the unified tool. Implementation routes through the same pipeline as `browser_snapshot(screenshot:"raw", withTree:false)` to preserve the legacy "no tree in payload" contract until removal. Background-tab screenshot via CDP `Page.captureScreenshot` — never raises the window. Returns the image as a native MCP image content block. Defaults to JPEG quality 70 (~30-50 KB encoded).
 
 | Parameter      | Type             | Default      | Description                                                                                  |
 | -------------- | ---------------- | ------------ | -------------------------------------------------------------------------------------------- |
@@ -477,7 +485,7 @@ The wrapper detects primitives and arrays and wraps them under `result` rather t
 
 ### Mixed-content envelope (snapshot + screenshot tools)
 
-When `browser_snapshot(screenshot:true)` or `browser_screenshot` returns an image, the MCP response carries a two-block `content` array: a native MCP image block at index 0, then a JSON text block at index 1. Image-first ordering is deliberate — Anthropic vision attends to images that precede related text. The text block never duplicates the image bytes; the bytes live exclusively in the image block.
+When `browser_snapshot(screenshot:"annotated"|"raw")` or (the deprecated) `browser_screenshot` returns an image, the MCP response carries a two-block `content` array: a native MCP image block at index 0, then a JSON text block at index 1. Image-first ordering is deliberate — Anthropic vision attends to images that precede related text. The text block never duplicates the image bytes; the bytes live exclusively in the image block.
 
 ```jsonc
 {
@@ -588,7 +596,7 @@ npm test                   # node --test scripts/tests/*.test.mjs
 npm run dev                # esbuild watch mode (main bundle only)
 ```
 
-The test harness imports from `dist/test-exports.mjs`, so run `npm run build` once before `npm test`. Tests cover pruner heuristics (including viewportOnly auto-fallback, total_candidates surfacing), ref registry, envelope shape (including the mixed image+text content array), schema coercion, build fingerprint, annotation policy, daemon watchdog inference, the `browser_evaluate` primitive-wrap regression, the unified-capture two-hop topology (`snapshot_capture` + `annotate_image`), the annotation scale formula (`scaleX = imgW / cssViewport.w`, pixel-accurate across the DPR × maxWidth matrix), `save_to_path` resolution (format-from-extension inference, unknown-extension rejection, outputs_dir precedence, traversal rejection, non-fatal save errors), `replaySnapshot` (visual params replayed; `save_to_path` never replayed), `computeDrawStroke` (containment-based parent-bbox suppression), and the visual-constants contract — 90 cases total. All tests run without standing up the daemon or extension; they exercise pure helpers.
+The test harness imports from `dist/test-exports.mjs`, so run `npm run build` once before `npm test`. Tests cover pruner heuristics (including viewportOnly auto-fallback, total_candidates surfacing), ref registry, envelope shape (including the mixed image+text content array), schema coercion, build fingerprint, annotation policy, daemon watchdog inference, the `browser_evaluate` primitive-wrap regression, the unified-capture two-hop topology (`snapshot_capture` + `annotate_image`), the tri-state screenshot mode (`"off"` → no image, `"annotated"` → 2 hops, `"raw"` → 1 hop with raw bytes, plus defense-in-depth for `"annotated"` + `withTree:false`), the annotation scale formula (`scaleX = imgW / cssViewport.w`, pixel-accurate across the DPR × maxWidth matrix), `save_to_path` resolution (format-from-extension inference, unknown-extension rejection, outputs_dir precedence, traversal rejection, non-fatal save errors), `replaySnapshot` (visual params replayed; `save_to_path` never replayed), `computeDrawStroke` (containment-based parent-bbox suppression), and the visual-constants contract — 94 cases total. All tests run without standing up the daemon or extension; they exercise pure helpers.
 
 ## License
 
