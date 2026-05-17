@@ -23,7 +23,7 @@ import {
   resolveExtPort,
   DAEMON_PORT_FILE,
   DAEMON_TOKEN_FILE,
-  EARTHLING_EXTENSION_ORIGIN,
+  BROWSER_EXTENSION_ORIGIN,
 } from "../protocol";
 import { TabLeaseManager } from "./leases";
 import { inferExtTimeout } from "./timeouts";
@@ -36,7 +36,22 @@ import { inferExtTimeout } from "./timeouts";
  * the user via the agent's error surfacing.
  */
 const EXT_DISCONNECT_RECOVERY_HINT =
-  "extension not connected — reload the Earthling Browser Bridge extension at chrome://extensions";
+  "extension not connected — reload the Browser Automation Bridge extension at chrome://extensions";
+
+/**
+ * Chrome tab-group title prefix when an agent claims a tab. Default "Automation"
+ * keeps the MCP shippable as a generic standalone tool. Host platforms (e.g.
+ * Earthling) can override via the `BROWSER_EXTENSION_TAB_GROUP_LABEL` env var
+ * to brand the user-visible tab grouping without forking the MCP — set it in
+ * the host's `.mcp.json` env block for `browser-automation-mcp`. The daemon
+ * reads it once at startup and stamps it onto every `IndicatorState` so the
+ * extension can render the group title without needing its own config plumbing.
+ *
+ * Read once at module load — the daemon is restarted alongside the engine, so
+ * a host config change always lands via a fresh process.
+ */
+const TAB_GROUP_BRAND =
+  process.env.BROWSER_EXTENSION_TAB_GROUP_LABEL?.trim() || "Automation";
 
 interface BridgeClient {
   socket: Socket;
@@ -78,7 +93,7 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
     // any malicious page that finds the loopback port — no user-visible token needed.
     verifyClient: (info, done) => {
       const origin = info.origin;
-      if (origin === EARTHLING_EXTENSION_ORIGIN) {
+      if (origin === BROWSER_EXTENSION_ORIGIN) {
         done(true);
       } else {
         console.error(
@@ -157,7 +172,16 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
   }
 
   function pushIndicator(tabId: TabId, state: IndicatorState): void {
-    void sendExt({ kind: "indicator_state", state }, tabId).catch(() => {});
+    // Stamp the host-configured brand label on every indicator push. The
+    // extension uses this for the Chrome tab-group title (e.g. "Earthling — Anjuman").
+    // Caller-supplied tabGroupBrand wins so future callers can override per push.
+    const decorated: IndicatorState = {
+      tabGroupBrand: TAB_GROUP_BRAND,
+      ...state,
+    };
+    void sendExt({ kind: "indicator_state", state: decorated }, tabId).catch(
+      () => {},
+    );
   }
 
   function sendExt(command: ExtCommand, tabId?: TabId): Promise<unknown> {

@@ -214,6 +214,151 @@ test("detail:'full' at low limit floors to 1000 and surfaces limit_adjusted", ()
   assert.ok(findByRef(out, "deep-leaf"), "interactive leaf missing under full+floor");
 });
 
+test("viewportOnly default false: nodes below the fold are included", () => {
+  // 30 buttons, half above the fold, half below. With the new default the
+  // pruner should rank across the whole page (capped at limit:500).
+  const children = Array.from({ length: 30 }, (_, i) =>
+    node({
+      nodeId: `b-${i}`,
+      role: "button",
+      name: `Btn ${i}`,
+      depth: 2,
+      // First 15 inside viewport, last 15 outside (inViewport:false).
+      inViewport: i < 15,
+      rect: { x: 100, y: 100 + i * 20, w: 100, h: 18 },
+    }),
+  );
+  const root = node({
+    nodeId: "r",
+    role: "WebArea",
+    name: "Page",
+    children,
+  });
+  // No viewportOnly arg → default false.
+  const out = prune(root);
+  // Below-the-fold buttons should make it in.
+  assert.ok(findByRef(out, "b-25"), "below-fold button missing when viewportOnly defaults to false");
+  // Meta surfaces total_candidates always (30 buttons + the named WebArea root).
+  assert.equal(out.meta?.total_candidates, 31);
+  // No auto-fallback at this size (31 candidates is well under threshold).
+  assert.equal(out.meta?.viewport_fallback, undefined);
+});
+
+test("viewportOnly:true filters out non-viewport nodes", () => {
+  const children = Array.from({ length: 30 }, (_, i) =>
+    node({
+      nodeId: `b-${i}`,
+      role: "button",
+      name: `Btn ${i}`,
+      depth: 2,
+      inViewport: i < 15,
+      rect: { x: 100, y: 100 + i * 20, w: 100, h: 18 },
+    }),
+  );
+  const root = node({
+    nodeId: "r",
+    role: "WebArea",
+    name: "Page",
+    children,
+  });
+  const out = prune(root, { viewportOnly: true });
+  // Off-viewport buttons should be dropped.
+  for (let i = 15; i < 30; i++) {
+    assert.equal(findByRef(out, `b-${i}`), null, `off-viewport b-${i} leaked when viewportOnly:true`);
+  }
+  // total_candidates still reflects the FULL count (pre-filter) — 30 buttons
+  // + the named WebArea root that survives the keep filter.
+  assert.equal(out.meta?.total_candidates, 31);
+  // Explicit viewportOnly:true → no viewport_fallback surfaced (caller asked).
+  assert.equal(out.meta?.viewport_fallback, undefined);
+});
+
+test("auto-fallback engages when total_candidates exceeds 3× effectiveLimit", () => {
+  // 50 candidates, half inside viewport. limit=10 → threshold=30 → 50 > 30
+  // triggers auto-fallback.
+  const children = Array.from({ length: 50 }, (_, i) =>
+    node({
+      nodeId: `b-${i}`,
+      role: "button",
+      name: `Btn ${i}`,
+      depth: 2,
+      inViewport: i < 25,
+      rect: { x: 100, y: 100 + i * 20, w: 100, h: 18 },
+    }),
+  );
+  const root = node({
+    nodeId: "r",
+    role: "WebArea",
+    name: "Page",
+    children,
+  });
+  const out = prune(root, { limit: 10 });
+  // 50 buttons + the named WebArea root.
+  assert.equal(out.meta?.total_candidates, 51);
+  assert.ok(out.meta?.viewport_fallback, "viewport_fallback meta missing");
+  assert.equal(out.meta.viewport_fallback.active, true);
+  assert.equal(out.meta.viewport_fallback.reason, "page_too_large");
+  assert.equal(out.meta.viewport_fallback.threshold, 30);
+  assert.equal(out.meta.viewport_fallback.total_candidates, 51);
+  // Off-viewport nodes should be dropped post-fallback.
+  for (let i = 25; i < 50; i++) {
+    assert.equal(findByRef(out, `b-${i}`), null, `auto-fallback failed to drop off-viewport b-${i}`);
+  }
+});
+
+test("explicit viewportOnly:true on huge page does NOT surface viewport_fallback", () => {
+  // Same shape as the auto-fallback test but caller asked explicitly.
+  const children = Array.from({ length: 50 }, (_, i) =>
+    node({
+      nodeId: `b-${i}`,
+      role: "button",
+      name: `Btn ${i}`,
+      depth: 2,
+      inViewport: i < 25,
+      rect: { x: 100, y: 100 + i * 20, w: 100, h: 18 },
+    }),
+  );
+  const root = node({
+    nodeId: "r",
+    role: "WebArea",
+    name: "Page",
+    children,
+  });
+  const out = prune(root, { limit: 10, viewportOnly: true });
+  // viewport_fallback only fires on auto-engagement — explicit request is
+  // already the desired state and doesn't need surfacing.
+  assert.equal(out.meta?.viewport_fallback, undefined);
+  // total_candidates still surfaces (50 buttons + named WebArea root).
+  assert.equal(out.meta?.total_candidates, 51);
+});
+
+test("auto-fallback threshold uses effectiveLimit (full-mode floor honoured)", () => {
+  // detail:'full' + limit:30 → effectiveLimit=1000 → threshold=3000 → 1500
+  // candidates is UNDER threshold; no auto-fallback even with huge page.
+  const children = Array.from({ length: 1500 }, (_, i) =>
+    node({
+      nodeId: `n-${i}`,
+      role: "button",
+      name: `N ${i}`,
+      depth: 2,
+      inViewport: i < 500,
+      rect: { x: 10, y: 10 + i, w: 50, h: 18 },
+    }),
+  );
+  const root = node({
+    nodeId: "r",
+    role: "WebArea",
+    name: "Page",
+    children,
+  });
+  const out = prune(root, { detail: "full", limit: 30 });
+  // limit_adjusted to 1000 → threshold 3000 → 1501 < 3000 → no auto-fallback.
+  assert.equal(out.meta?.limit_adjusted, 1000);
+  assert.equal(out.meta?.viewport_fallback, undefined);
+  // 1500 buttons + the named WebArea root.
+  assert.equal(out.meta?.total_candidates, 1501);
+});
+
 test("sidebar list with off-axis position is penalised vs central content", () => {
   // Sidebar = 10 same-role children at the LEFT (off-axis) edge.
   const sidebar = node({

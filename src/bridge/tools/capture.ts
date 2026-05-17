@@ -29,6 +29,7 @@ import {
   populateRefs,
   type ToolContext,
 } from "../registry";
+import { computeDrawStroke } from "./containment";
 import { resolveSavePath, writeImage } from "./save";
 import { VISUAL_CONSTANTS } from "./visual";
 
@@ -37,7 +38,9 @@ export interface CaptureOpts {
   limit: number;
   viewportOnly: boolean;
   screenshot: boolean;
-  format: "png" | "jpeg";
+  // No `format` here — Round 7 removed the agent-facing param. Format is
+  // derived from `save_to_path`'s file extension when a string; otherwise
+  // defaults to JPEG (see save.ts::resolveSavePath).
   quality: number;
   maxWidth?: number;
   /** false → no save (default). true → auto-named in outputs_dir. String → explicit path. */
@@ -76,6 +79,27 @@ export async function runUnifiedCapture(
   tabId: TabId,
   opts: CaptureOpts,
 ): Promise<CaptureResult> {
+  // Round 7: format is no longer an agent-facing arg. Resolve it (and the
+  // optional save path) up-front so the same value flows into both extension
+  // hops (snapshot_capture chooses the encoder; annotate_image preserves it)
+  // AND into the optional disk write at the end. A bad save_to_path string
+  // throws here — short-circuit BEFORE any extension hop so the agent gets
+  // a fast error instead of paying for an unused screenshot.
+  let savePath: string | null = null;
+  let format: "png" | "jpeg";
+  let resolveError: string | undefined;
+  try {
+    const resolved = resolveSavePath(opts.save_to_path, tabId);
+    savePath = resolved.path;
+    format = resolved.format;
+  } catch (err: any) {
+    // Save errors must stay non-fatal — the image still returns inline. Stash
+    // the message for the response and pick the default format for the
+    // capture itself. (Pre-Round-7 traversal rejection had the same contract.)
+    resolveError = err?.message ?? String(err);
+    format = "jpeg";
+  }
+
   // Hop 1: atomic snapshot + screenshot.
   const captureResp = (await ctx.daemon.exec(tabId, {
     kind: "snapshot_capture",
@@ -83,7 +107,7 @@ export async function runUnifiedCapture(
     withScreenshot: opts.screenshot,
     viewportOnly: opts.viewportOnly,
     limit: opts.limit,
-    format: opts.format,
+    format,
     quality: opts.quality,
     maxWidth: opts.maxWidth,
   })) as SnapshotCaptureResponse;
@@ -108,7 +132,7 @@ export async function runUnifiedCapture(
 
   let imageBase64 = captureResp.screenshot?.dataBase64;
   let imageFormat: "png" | "jpeg" =
-    captureResp.screenshot?.format ?? opts.format;
+    captureResp.screenshot?.format ?? format;
   let resizedTo = captureResp.screenshot?.resizedTo;
 
   // Hop 2 (conditional): annotate. Skip when there are no refs to badge —
@@ -119,15 +143,23 @@ export async function runUnifiedCapture(
     justPopulated &&
     ctx.session.lastSnapshotRefs.size > 0
   ) {
-    const rects: Array<{
+    const rawRects: Array<{
       ref: string;
       rect: { x: number; y: number; w: number; h: number };
     }> = [];
     for (const [ref, meta] of ctx.session.lastSnapshotRefs) {
       if (!meta.rect) continue;
-      rects.push({ ref, rect: meta.rect });
+      rawRects.push({ ref, rect: meta.rect });
     }
-    if (rects.length > 0) {
+    if (rawRects.length > 0) {
+      // Containment-based parent suppression. A rect that fully contains
+      // another annotated rect gets `drawStroke:false` so the extension only
+      // draws the badge, not the giant outer border. See containment.ts.
+      const drawStrokeFlags = computeDrawStroke(rawRects);
+      const rects = rawRects.map((r, i) => ({
+        ...r,
+        drawStroke: drawStrokeFlags[i]!,
+      }));
       const annotated = (await ctx.daemon.exec(tabId, {
         kind: "annotate_image",
         imageBase64,
@@ -147,17 +179,20 @@ export async function runUnifiedCapture(
   if (opts.screenshot && imageBase64) {
     payload.format = imageFormat;
     if (resizedTo) payload.resizedTo = resizedTo;
-    // Optional save-to-disk. Errors are non-fatal — the image still returns
+    // Save errors must never break the response — the image still returns
     // inline; the failure surfaces as a `saveError` field so the agent can
-    // recover (try a different path, drop the save, etc.).
-    try {
-      const savePath = resolveSavePath(opts.save_to_path, imageFormat, tabId);
-      if (savePath) {
+    // recover (try a different path, drop the save, etc.). Covers both
+    // resolve-time errors (bad path, ".." segment, unknown extension when
+    // somehow the schema didn't catch it) and write-time errors.
+    if (resolveError) {
+      payload.saveError = resolveError;
+    } else if (savePath) {
+      try {
         writeImage(savePath, imageBase64);
         payload.savedTo = savePath;
+      } catch (err: any) {
+        payload.saveError = err?.message ?? String(err);
       }
-    } catch (err: any) {
-      payload.saveError = err?.message ?? String(err);
     }
     return {
       payload,

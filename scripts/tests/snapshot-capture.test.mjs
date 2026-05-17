@@ -54,12 +54,12 @@ test("snapshot_capture command carries the unified-capture options verbatim", as
     { format: "jpeg", dataBase64: "annotated" },
   ]);
   ctx.session.lastLeasedTab = 11;
+  // Round 7: no `format` arg — derived from save_to_path (false → JPEG).
   await runUnifiedCapture(ctx, 11, {
     detail: "standard",
     limit: 250,
     viewportOnly: false,
     screenshot: true,
-    format: "jpeg",
     quality: 85,
     maxWidth: 1600,
     save_to_path: false,
@@ -71,6 +71,7 @@ test("snapshot_capture command carries the unified-capture options verbatim", as
   assert.equal(cap.withScreenshot, true);
   assert.equal(cap.viewportOnly, false);
   assert.equal(cap.limit, 250);
+  // Format defaults to jpeg when save_to_path:false (no extension to infer from).
   assert.equal(cap.format, "jpeg");
   assert.equal(cap.quality, 85);
   assert.equal(cap.maxWidth, 1600);
@@ -91,7 +92,6 @@ test("annotate_image command carries imageBase64, rects, dpr, and the full const
     limit: 500,
     viewportOnly: true,
     screenshot: true,
-    format: "jpeg",
     quality: 70,
     save_to_path: false,
     withTree: true,
@@ -100,6 +100,7 @@ test("annotate_image command carries imageBase64, rects, dpr, and the full const
   const ann = calls[1].command;
   assert.equal(ann.kind, "annotate_image");
   assert.equal(ann.imageBase64, "raw-bytes");
+  // Format flows through both hops — inferred from save_to_path:false → jpeg.
   assert.equal(ann.format, "jpeg");
   assert.equal(ann.dpr, 1.5);
   assert.ok(Array.isArray(ann.rects));
@@ -110,6 +111,8 @@ test("annotate_image command carries imageBase64, rects, dpr, and the full const
   assert.equal(firstRect.rect.y, 200);
   assert.equal(firstRect.rect.w, 120);
   assert.equal(firstRect.rect.h, 40);
+  // Round 7: each rect carries a drawStroke flag (containment suppression).
+  assert.equal(typeof firstRect.drawStroke, "boolean");
   // Constants must match the bridge-side source of truth — a missing key
   // would surface as undefined paint mid-draw on the extension side.
   for (const k of Object.keys(VISUAL_CONSTANTS)) {
@@ -127,7 +130,6 @@ test("screenshot:false → only one hop (no annotate_image)", async () => {
     limit: 500,
     viewportOnly: true,
     screenshot: false,
-    format: "jpeg",
     quality: 70,
     save_to_path: false,
     withTree: true,

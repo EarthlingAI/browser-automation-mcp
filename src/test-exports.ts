@@ -28,6 +28,7 @@ export {
   saveToPathSchema,
 } from "./bridge/tools/save";
 export { VISUAL_CONSTANTS } from "./bridge/tools/visual";
+export { computeDrawStroke } from "./bridge/tools/containment";
 export { runUnifiedCapture, type CaptureOpts, type CaptureResult } from "./bridge/tools/capture";
 export { BUILD_STAMP, SERVER_INSTRUCTIONS } from "./bridge/meta";
 export { inferExtTimeout } from "./daemon/timeouts";

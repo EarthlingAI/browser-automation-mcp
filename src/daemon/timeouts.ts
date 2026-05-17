@@ -23,7 +23,7 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const WAIT_FOR_BUFFER_MS = 5_000;
 /**
  * Mirrors the extension's own default at `runWaitForCondition` in
- * `earthling-extension/background.js`. Defensive — the bridge schema always
+ * `browser-extension/background.js`. Defensive — the bridge schema always
  * sets `timeout` for `wait_for`, but the daemon shouldn't assume.
  */
 const WAIT_FOR_DEFAULT_MS = 10_000;

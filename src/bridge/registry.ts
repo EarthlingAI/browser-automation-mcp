@@ -228,13 +228,13 @@ export async function replaySnapshot(ctx: ToolContext): Promise<unknown> {
     // so auto-snapshots after a `browser_snapshot(screenshot:true)` carry the
     // annotated image forward. `save_to_path` is NEVER replayed; saving is a
     // per-call opt-in, never a session mode (avoids silent disk fill-up over
-    // long sessions).
+    // long sessions). `format` is no longer a SnapshotParams field (Round 7)
+    // — runUnifiedCapture derives it from save_to_path (false → JPEG).
     return await runUnifiedCapture(ctx, tabId, {
       detail: params.detail,
       limit: params.limit,
       viewportOnly: params.viewportOnly,
       screenshot: params.screenshot,
-      format: params.format,
       quality: params.quality,
       maxWidth: params.maxWidth,
       save_to_path: false,

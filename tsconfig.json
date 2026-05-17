@@ -13,5 +13,5 @@
     "rootDir": "src"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "earthling-extension"]
+  "exclude": ["node_modules", "dist", "browser-extension"]
 }

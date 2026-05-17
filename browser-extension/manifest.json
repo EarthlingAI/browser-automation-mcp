@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Earthling Browser Bridge",
+  "name": "Browser Automation Bridge",
   "version": "0.2.0",
-  "description": "Connect Earthling AI agent to your browser tabs. Passive — never steals focus.",
+  "description": "Connect AI agent to your browser tabs. Passive — never steals focus.",
   "permissions": [
     "tabs",
     "tabGroups",
@@ -16,7 +16,7 @@
   "host_permissions": ["<all_urls>"],
   "background": { "service_worker": "background.js", "type": "module" },
   "action": {
-    "default_title": "Earthling Browser Bridge",
+    "default_title": "Browser Automation Bridge",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png",

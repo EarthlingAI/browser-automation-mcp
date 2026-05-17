@@ -1,5 +1,5 @@
 /**
- * Earthling Browser Bridge — MV3 service worker.
+ * Browser Automation Bridge — MV3 service worker.
  *
  * Connects to the daemon over WebSocket on 127.0.0.1:9223 and executes
  * commands against chrome.tabs / chrome.scripting / chrome.debugger.
@@ -47,7 +47,7 @@ try {
     accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS",
   });
 } catch (e) {
-  console.error("[earthling-bg] setAccessLevel failed:", e?.message ?? e);
+  console.error("[browser-bg] setAccessLevel failed:", e?.message ?? e);
 }
 
 // MV3 service workers are killed after ~30s idle. While an agent might issue
@@ -57,9 +57,9 @@ try {
 // fire every 24s). Without this, the first call after idle returns
 // "extension not connected" even though everything is healthy.
 try {
-  chrome.alarms.create("earthling-keepalive", { periodInMinutes: 0.4 });
+  chrome.alarms.create("browser-keepalive", { periodInMinutes: 0.4 });
   chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name !== "earthling-keepalive") return;
+    if (alarm.name !== "browser-keepalive") return;
     // Touch a chrome.* API and the WS so both stay warm. Errors are silent —
     // a bad alarm should never break the worker.
     try {
@@ -72,7 +72,7 @@ try {
     } catch {}
   });
 } catch (e) {
-  console.error("[earthling-bg] keepalive setup failed:", e?.message ?? e);
+  console.error("[browser-bg] keepalive setup failed:", e?.message ?? e);
 }
 
 function connect() {
@@ -518,26 +518,73 @@ function waitForTabDomReady(tabId) {
 async function doSnapshotCapture(tabId, opts) {
   // DPR is only meaningful when there's a tree-derived rect list to scale
   // against the captured bitmap. We surface it exclusively via the tree-root
-  // (`__earthlingA11y` sets `root.dpr`) — the only caller that ever needs it
+  // (`__mcpA11y` sets `root.dpr`) — the only caller that ever needs it
   // is `annotate_image`, which never runs without a fresh tree on the same
   // call. For `withTree:false` (standalone `browser_screenshot`), DPR is
   // omitted; piping a standalone shot into annotate would be a misuse the
   // bridge already disallows.
-  const result = {};
-  if (opts.withTree) {
-    await ensureHelpers(tabId);
-    const [exec] = await chrome.scripting.executeScript({
+
+  // Round 7: hide the extension's HUD (pill + agent-activity panel + viewport
+  // glow) during the capture hop. CSS rules in inject/indicator.js use
+  // :host-context([data-browser-capturing="1"]) so the bridge can flip this
+  // wholesale. ALWAYS clear in finally — a leaked attribute would keep the
+  // pill invisible for the user.
+  if (opts.withScreenshot) await setCaptureAttribute(tabId, true);
+  try {
+    const result = {};
+    if (opts.withTree) {
+      await ensureHelpers(tabId);
+      const [exec] = await chrome.scripting.executeScript({
+        target: { tabId, allFrames: false },
+        func: () => globalThis.__mcpA11y?.(),
+      });
+      const tree = exec?.result ?? { role: "WebArea", children: [], depth: 0 };
+      result.tree = tree;
+      result.dpr = typeof tree.dpr === "number" ? tree.dpr : 1;
+    }
+    if (opts.withScreenshot) {
+      result.screenshot = await captureScreenshot(tabId, opts);
+    }
+    return result;
+  } finally {
+    if (opts.withScreenshot) await setCaptureAttribute(tabId, false);
+  }
+}
+
+async function setCaptureAttribute(tabId, on) {
+  // Non-fatal: a chrome:// or PDF tab can't accept scripting; we still want
+  // the capture to proceed.
+  //
+  // Stays in the default ISOLATED world — a plain documentElement attribute
+  // write needs no MAIN-world access, and keeping it isolated avoids both
+  // CSP exposure on strict-CSP sites AND any MutationObserver race the page
+  // could otherwise observe. The indicator script lives in the same isolated
+  // context; the attribute it sets is on documentElement (page-side DOM)
+  // which both worlds share regardless.
+  //
+  // No rAF-based paint wait — agent tabs are always background tabs (per
+  // invariant #1) and Chrome throttles requestAnimationFrame to ~0 fps in
+  // background tabs, so a double-rAF wait would hang for seconds (or
+  // forever on a fully-discarded tab). The CDP `Page.captureScreenshot`
+  // call below triggers its own paint pass internally, picking up the
+  // visibility:hidden style invalidation as part of that pass. Empirically
+  // sufficient for hiding the HUD; no synchronisation needed bridge-side.
+  try {
+    await chrome.scripting.executeScript({
       target: { tabId, allFrames: false },
-      func: () => globalThis.__earthlingA11y?.(),
+      func: (v) => {
+        try {
+          document.documentElement.setAttribute(
+            "data-browser-capturing",
+            v ? "1" : "0",
+          );
+        } catch {}
+      },
+      args: [on],
     });
-    const tree = exec?.result ?? { role: "WebArea", children: [], depth: 0 };
-    result.tree = tree;
-    result.dpr = typeof tree.dpr === "number" ? tree.dpr : 1;
+  } catch (e) {
+    console.error("[browser-bg] setCaptureAttribute failed:", e?.message ?? e);
   }
-  if (opts.withScreenshot) {
-    result.screenshot = await captureScreenshot(tabId, opts);
-  }
-  return result;
 }
 
 async function ensureHelpers(tabId) {
@@ -589,7 +636,7 @@ async function captureScreenshot(tabId, opts) {
         }
       } catch (e) {
         console.error(
-          `[earthling-bg] screenshot resize failed; returning native:`,
+          `[browser-bg] screenshot resize failed; returning native:`,
           e?.message ?? e,
         );
       }
@@ -677,7 +724,7 @@ async function doAnnotateImage(c) {
   ctx.font = c.constants.BADGE_FONT;
   ctx.textBaseline = "top";
 
-  for (const { ref, rect } of c.rects) {
+  for (const { ref, rect, drawStroke } of c.rects) {
     // Scale CSS-pixel rect to canvas pixels and clip to canvas bounds.
     let left = Math.round(rect.x * scale);
     let top = Math.round(rect.y * scale);
@@ -690,19 +737,26 @@ async function doAnnotateImage(c) {
     // Skip tiny elements (offscreen/clipped to near-zero post-clamp).
     if (right - left < c.constants.MIN_ANNOTATABLE_PX) continue;
     if (bottom - top < c.constants.MIN_ANNOTATABLE_PX) continue;
-    // Bounding box. For odd stroke widths, offset by half a pixel so the
-    // stroke aligns to a single pixel row (the canonical anti-blur trick).
-    // For even widths, no offset is needed. Formula handles both so a future
-    // bump of BBOX_STROKE_WIDTH doesn't introduce blurry edges.
-    ctx.strokeStyle = c.constants.BBOX_STROKE;
-    ctx.lineWidth = c.constants.BBOX_STROKE_WIDTH;
-    const halfStroke = (c.constants.BBOX_STROKE_WIDTH % 2) / 2;
-    ctx.strokeRect(
-      left + halfStroke,
-      top + halfStroke,
-      right - left,
-      bottom - top,
-    );
+    // Bounding box. `drawStroke:false` means this rect is a parent of another
+    // annotated rect — the bridge's containment pass suppresses the giant
+    // outer stroke. The badge always draws (below) so the agent can still
+    // target the parent. Default-true for backward compat if the bridge ever
+    // sends rects without the flag.
+    if (drawStroke !== false) {
+      // For odd stroke widths, offset by half a pixel so the stroke aligns
+      // to a single pixel row (the canonical anti-blur trick). For even
+      // widths, no offset is needed. Formula handles both so a future bump
+      // of BBOX_STROKE_WIDTH doesn't introduce blurry edges.
+      ctx.strokeStyle = c.constants.BBOX_STROKE;
+      ctx.lineWidth = c.constants.BBOX_STROKE_WIDTH;
+      const halfStroke = (c.constants.BBOX_STROKE_WIDTH % 2) / 2;
+      ctx.strokeRect(
+        left + halfStroke,
+        top + halfStroke,
+        right - left,
+        bottom - top,
+      );
+    }
     // Ref badge at the top-left, sitting just above the bbox.
     const text = String(ref);
     const tw = Math.ceil(ctx.measureText(text).width);
@@ -778,7 +832,7 @@ async function runHelper(tabId, kind, opts) {
   await ensureIndicatorInjected(tabId);
   const [result] = await chrome.scripting.executeScript({
     target: { tabId, allFrames: false },
-    func: (k, o) => globalThis.__earthlingAct(k, o),
+    func: (k, o) => globalThis.__mcpAct(k, o),
     args: [kind, opts],
   });
   return result?.result;
@@ -811,12 +865,12 @@ async function pushIndicatorToPage(tabId, state) {
     await ensureIndicatorInjected(tabId);
     await chrome.scripting.executeScript({
       target: { tabId, allFrames: false },
-      func: (s) => globalThis.__earthlingIndicator?.set?.(s),
+      func: (s) => globalThis.__mcpIndicator?.set?.(s),
       args: [state],
     });
   } catch (e) {
     console.error(
-      `[earthling-bg] pushIndicatorToPage(${tabId}) failed:`,
+      `[browser-bg] pushIndicatorToPage(${tabId}) failed:`,
       e?.message ?? e,
     );
   }
@@ -835,13 +889,13 @@ async function ensureIndicatorInjected(tabId) {
     if (cached) {
       await chrome.scripting.executeScript({
         target: { tabId, allFrames: false },
-        func: (s) => globalThis.__earthlingIndicator?.set?.(s),
+        func: (s) => globalThis.__mcpIndicator?.set?.(s),
         args: [cached],
       });
     }
   } catch (e) {
     console.error(
-      `[earthling-bg] ensureIndicatorInjected(${tabId}) failed:`,
+      `[browser-bg] ensureIndicatorInjected(${tabId}) failed:`,
       e?.message ?? e,
     );
   }
@@ -886,6 +940,13 @@ function bumpActing(tabId, delta) {
   }
 }
 
+// Chrome's `chrome.tabGroups` colour API accepts only a fixed preset enum:
+// grey, blue, red, yellow, green, pink, purple, cyan, orange. Idle "red" is the
+// closest professional brand-aligned colour; "orange" stays as the in-action
+// indicator (the contrast between idle red and in-action orange remains crisp).
+const GROUP_COLOR_IDLE = "red";
+const GROUP_COLOR_ACTING = "orange";
+
 async function recolorGroupForTab(tabId) {
   const state = indicatorState.get(tabId);
   if (!state || state.state !== "leased") return;
@@ -893,11 +954,11 @@ async function recolorGroupForTab(tabId) {
     const tab = await chrome.tabs.get(tabId);
     const groupId = tab.groupId;
     if (groupId == null || groupId < 0) return;
-    const color = actingTabs.has(tabId) ? "orange" : "pink";
+    const color = actingTabs.has(tabId) ? GROUP_COLOR_ACTING : GROUP_COLOR_IDLE;
     await chrome.tabGroups.update(groupId, { color });
   } catch (e) {
     console.error(
-      `[earthling-bg] recolorGroupForTab(${tabId}) failed:`,
+      `[browser-bg] recolorGroupForTab(${tabId}) failed:`,
       e?.message ?? e,
     );
   }
@@ -916,11 +977,16 @@ async function updateTabGroup(tabId, state) {
     const label = state.agentLabel || "";
     const groupKey = label || "_default";
     const groupId = await ensureGroup(tab.windowId, groupKey, tabId);
-    const color = actingTabs.has(tabId) ? "orange" : "pink";
-    const title = label ? `Earthling — ${label}` : "Earthling";
+    const color = actingTabs.has(tabId) ? GROUP_COLOR_ACTING : GROUP_COLOR_IDLE;
+    // Brand prefix is host-controlled via `BROWSER_EXTENSION_TAB_GROUP_LABEL`
+    // env var on the daemon. The daemon stamps it onto every IndicatorState.
+    // Defaults to "Automation" for the generic MCP build; Earthling sets it to
+    // "Earthling" so the user-visible group title reads "Earthling — <agent>".
+    const brand = state.tabGroupBrand || "Automation";
+    const title = label ? `${brand} — ${label}` : brand;
     await chrome.tabGroups.update(groupId, { title, color });
   } catch (e) {
-    console.error("[earthling] updateTabGroup failed:", e?.message ?? e);
+    console.error("[browser] updateTabGroup failed:", e?.message ?? e);
   }
 }
 

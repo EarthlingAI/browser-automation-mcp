@@ -159,6 +159,14 @@ export type ExtCommand =
       rects: Array<{
         ref: string;
         rect: { x: number; y: number; w: number; h: number };
+        /**
+         * Whether the extension should stroke the bounding box for this rect.
+         * Computed bridge-side: a rect that fully contains another annotated
+         * rect has `drawStroke:false` (parent-bbox suppression — kills the
+         * "WebArea root strokes the entire viewport" visual noise). The badge
+         * always draws regardless so the agent can still target the parent.
+         */
+        drawStroke: boolean;
       }>;
       dpr: number;
       maxWidth?: number;
@@ -243,6 +251,13 @@ export type ExtCommand =
 export interface IndicatorState {
   state: "leased" | "released";
   agentLabel?: string;
+  /**
+   * Brand label for the Chrome tab-group title (e.g. "Automation", "Earthling").
+   * Decorated by the daemon from `BROWSER_EXTENSION_TAB_GROUP_LABEL` so the same
+   * generic MCP can ship under host-specific branding without per-build edits to
+   * the extension. The extension uses `tabGroupBrand ?? "Automation"`.
+   */
+  tabGroupBrand?: string;
 }
 
 export interface ExtRequest {
@@ -274,7 +289,7 @@ export const DAEMON_LOCK_FILE = "daemon.lock";
  * Loopback port the daemon binds for the WebSocket the Chrome extension dials.
  * Override via BROWSER_AUTOMATION_MCP_RELAY_PORT — useful when 9223 is taken.
  * If you override, you must also update the matching DAEMON_URL constant in
- * earthling-extension/background.js (and the probe URL in status.js / status.html);
+ * browser-extension/background.js (and the probe URL in status.js / status.html);
  * the unpacked extension cannot read env vars.
  */
 export function resolveExtPort(): number {
@@ -291,10 +306,10 @@ export function resolveExtPort(): number {
 }
 
 /**
- * Chrome extension ID derived from the pinned CRX `key` in `earthling-extension/manifest.json`.
+ * Chrome extension ID derived from the pinned CRX `key` in `browser-extension/manifest.json`.
  * The daemon checks every WebSocket upgrade's `Origin` header against `chrome-extension://<id>` —
  * browsers set Origin from the executing context and web pages cannot forge it, so this gives
  * us per-extension authentication without any user-visible token paste.
  */
-export const EARTHLING_EXTENSION_ID = "ifoggnihepkfpokholefpgpcgiikkeke";
-export const EARTHLING_EXTENSION_ORIGIN = `chrome-extension://${EARTHLING_EXTENSION_ID}`;
+export const BROWSER_EXTENSION_ID = "ifoggnihepkfpokholefpgpcgiikkeke";
+export const BROWSER_EXTENSION_ORIGIN = `chrome-extension://${BROWSER_EXTENSION_ID}`;

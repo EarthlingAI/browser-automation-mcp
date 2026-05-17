@@ -15,7 +15,7 @@ import { startBridge } from "./bridge/mcp";
 /**
  * Resolution order:
  *   1. BROWSER_AUTOMATION_MCP_RUNTIME_DIR — explicit override (test harnesses only).
- *   2. %LOCALAPPDATA%\earthling\browser-automation-mcp  (Windows)
+ *   2. %LOCALAPPDATA%\browser-automation-mcp  (Windows)
  *   3. $XDG_STATE_HOME / ~/.local/state / ~/Library/Application Support (Unix/macOS)
  *   4. <package>/.runtime — fallback for `node dist/index.js --daemon` smoke tests.
  */
@@ -27,21 +27,20 @@ function resolveRuntimeDir(): string {
     const base =
       process.env.LOCALAPPDATA ??
       (home ? join(home, "AppData", "Local") : null);
-    if (base) return join(base, "earthling", "browser-automation-mcp");
+    if (base) return join(base, "browser-automation-mcp");
   } else if (process.platform === "darwin") {
     if (home)
       return join(
         home,
         "Library",
         "Application Support",
-        "earthling",
         "browser-automation-mcp",
       );
   } else {
     const base =
       process.env.XDG_STATE_HOME ??
       (home ? join(home, ".local", "state") : null);
-    if (base) return join(base, "earthling", "browser-automation-mcp");
+    if (base) return join(base, "browser-automation-mcp");
   }
   return join(__dirname, "..", ".runtime");
 }

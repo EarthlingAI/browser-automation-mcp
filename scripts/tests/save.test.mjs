@@ -1,5 +1,6 @@
 // `resolveSavePath` — single source of truth for save_to_path resolution.
 // Tests cover: the three boolean/undefined branches, auto-name generation,
+// extension-driven format inference (Round 7), unknown-extension rejection,
 // relative+absolute path passthrough, traversal rejection, and env-var
 // overrides for the outputs directory.
 
@@ -33,71 +34,87 @@ function withEnv(overrides, fn) {
   }
 }
 
-test("resolveSavePath: false and undefined return null", () => {
-  assert.equal(resolveSavePath(false, "jpeg", 42), null);
-  assert.equal(resolveSavePath(undefined, "jpeg", 42), null);
+test("resolveSavePath: false → {path:null, format:'jpeg'}", () => {
+  const r = resolveSavePath(false, 42);
+  assert.equal(r.path, null);
+  assert.equal(r.format, "jpeg");
 });
 
-test("resolveSavePath: true + jpeg → auto-named .jpg under outputs_dir", () => {
+test("resolveSavePath: undefined → {path:null, format:'jpeg'}", () => {
+  const r = resolveSavePath(undefined, 42);
+  assert.equal(r.path, null);
+  assert.equal(r.format, "jpeg");
+});
+
+test("resolveSavePath: true → auto-named .jpg, format:'jpeg'", () => {
   withEnv(
     {
       BROWSER_AUTOMATION_MCP_OUTPUTS_DIR: undefined,
       BROWSER_AUTOMATION_MCP_RUNTIME_DIR: undefined,
     },
     () => {
-      const out = resolveSavePath(true, "jpeg", 42);
-      assert.ok(path.isAbsolute(out), `expected absolute path, got ${out}`);
-      assert.match(out, /screenshot_42_\d+\.jpg$/);
-      assert.equal(path.dirname(out), getOutputsDir());
+      const r = resolveSavePath(true, 42);
+      assert.ok(path.isAbsolute(r.path), `expected absolute path, got ${r.path}`);
+      assert.match(r.path, /screenshot_42_\d+\.jpg$/);
+      assert.equal(path.dirname(r.path), getOutputsDir());
+      assert.equal(r.format, "jpeg");
     },
   );
 });
 
-test("resolveSavePath: true + png → auto-named .png", () => {
+test("resolveSavePath: string '.png' → format:'png'", () => {
   withEnv(
     {
       BROWSER_AUTOMATION_MCP_OUTPUTS_DIR: undefined,
       BROWSER_AUTOMATION_MCP_RUNTIME_DIR: undefined,
     },
     () => {
-      const out = resolveSavePath(true, "png", 99);
-      assert.match(out, /screenshot_99_\d+\.png$/);
+      const r = resolveSavePath("foo.png", 1);
+      assert.ok(path.isAbsolute(r.path));
+      assert.equal(r.path, path.resolve(getOutputsDir(), "foo.png"));
+      assert.equal(r.format, "png");
     },
   );
 });
 
-test("resolveSavePath: relative string resolves under outputs_dir", () => {
+test("resolveSavePath: string '.jpg' and '.jpeg' both → format:'jpeg'", () => {
   withEnv(
-    {
-      BROWSER_AUTOMATION_MCP_OUTPUTS_DIR: undefined,
-      BROWSER_AUTOMATION_MCP_RUNTIME_DIR: undefined,
-    },
+    { BROWSER_AUTOMATION_MCP_OUTPUTS_DIR: undefined, BROWSER_AUTOMATION_MCP_RUNTIME_DIR: undefined },
     () => {
-      const out = resolveSavePath("foo.png", "png", 1);
-      assert.ok(path.isAbsolute(out));
-      assert.equal(out, path.resolve(getOutputsDir(), "foo.png"));
+      assert.equal(resolveSavePath("a.jpg", 1).format, "jpeg");
+      assert.equal(resolveSavePath("a.jpeg", 1).format, "jpeg");
+      assert.equal(resolveSavePath("A.JPG", 1).format, "jpeg"); // case-insensitive
     },
+  );
+});
+
+test("resolveSavePath: unknown extension throws actionable error", () => {
+  assert.throws(
+    () => resolveSavePath("foo.bin", 1),
+    /unsupported extension/i,
+  );
+  assert.throws(
+    () => resolveSavePath("foo.webp", 1),
+    /unsupported extension/i,
+  );
+  // No extension at all.
+  assert.throws(
+    () => resolveSavePath("no_extension", 1),
+    /unsupported extension/i,
   );
 });
 
 test("resolveSavePath: absolute string passes through unchanged", () => {
-  // Build an absolute target that's not the current working directory so the
-  // test can prove the resolver isn't appending outputs_dir.
   const abs = path.resolve("/tmp/explicit-output.png");
-  const out = resolveSavePath(abs, "png", 1);
-  assert.equal(out, abs);
+  const r = resolveSavePath(abs, 1);
+  assert.equal(r.path, abs);
+  assert.equal(r.format, "png");
 });
 
 test("resolveSavePath: '..' segment is rejected with actionable error", () => {
-  assert.throws(
-    () => resolveSavePath("../../etc/passwd.png", "png", 1),
-    /\.\./,
-  );
+  assert.throws(() => resolveSavePath("../../etc/passwd.png", 1), /\.\./);
   // Backslash-separated paths on Windows are also caught.
-  assert.throws(
-    () => resolveSavePath("..\\evil.png", "png", 1),
-    /\.\./,
-  );
+  assert.throws(() => resolveSavePath("..\\evil.png", 1), /\.\./);
 });
 
 test("getOutputsDir: BROWSER_AUTOMATION_MCP_OUTPUTS_DIR takes priority", () => {
@@ -108,8 +125,8 @@ test("getOutputsDir: BROWSER_AUTOMATION_MCP_OUTPUTS_DIR takes priority", () => {
     },
     () => {
       assert.equal(getOutputsDir(), "/custom/outputs");
-      const out = resolveSavePath("foo.jpg", "jpeg", 1);
-      assert.equal(out, path.resolve("/custom/outputs", "foo.jpg"));
+      const r = resolveSavePath("foo.jpg", 1);
+      assert.equal(r.path, path.resolve("/custom/outputs", "foo.jpg"));
     },
   );
 });
@@ -146,21 +163,70 @@ test("getOutputsDir: bare cwd-relative fallback when no env vars set", () => {
 // write path is wired correctly end-to-end.
 
 test("runUnifiedCapture: save_to_path:true writes the file and reports savedTo", async () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "earthling-save-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "browser-save-"));
   await withEnvAsync(
     {
       BROWSER_AUTOMATION_MCP_OUTPUTS_DIR: tmpDir,
       BROWSER_AUTOMATION_MCP_RUNTIME_DIR: undefined,
     },
     async () => {
-      // Tiny 1x1 PNG (8 bytes of base64 → valid PNG header) so we can write
-      // and re-read without standing up a real Chrome.
       const tinyPng =
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
       const ctx = {
         daemon: {
           sessionId: "save-integration",
           async exec(_tabId, _command) {
+            return {
+              tree: { role: "WebArea", name: "T", depth: 0, children: [] },
+              screenshot: {
+                format: "jpeg",
+                dataBase64: tinyPng,
+                resizedTo: undefined,
+              },
+              dpr: 1,
+            };
+          },
+        },
+        session: new BridgeSession(),
+      };
+      ctx.session.lastLeasedTab = 7;
+      // save_to_path:true → auto-name with .jpg → format jpeg.
+      const out = await runUnifiedCapture(ctx, 7, {
+        detail: "standard",
+        limit: 500,
+        viewportOnly: true,
+        screenshot: true,
+        quality: 70,
+        save_to_path: true,
+        withTree: true,
+      });
+      assert.ok(out.payload.savedTo, "expected savedTo in payload");
+      assert.equal(path.dirname(out.payload.savedTo), tmpDir);
+      assert.match(out.payload.savedTo, /screenshot_7_\d+\.jpg$/);
+      assert.ok(fs.existsSync(out.payload.savedTo));
+      const written = fs.readFileSync(out.payload.savedTo);
+      assert.ok(written.length > 0, "written file must be non-empty");
+    },
+  );
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test("runUnifiedCapture: explicit '.png' path → image format follows extension", async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "browser-save-png-"));
+  await withEnvAsync(
+    {
+      BROWSER_AUTOMATION_MCP_OUTPUTS_DIR: tmpDir,
+      BROWSER_AUTOMATION_MCP_RUNTIME_DIR: undefined,
+    },
+    async () => {
+      const tinyPng =
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+      const seenFormats = [];
+      const ctx = {
+        daemon: {
+          sessionId: "save-png",
+          async exec(_tabId, command) {
+            seenFormats.push(command.format);
             return {
               tree: { role: "WebArea", name: "T", depth: 0, children: [] },
               screenshot: {
@@ -174,33 +240,27 @@ test("runUnifiedCapture: save_to_path:true writes the file and reports savedTo",
         },
         session: new BridgeSession(),
       };
-      ctx.session.lastLeasedTab = 7;
-      const out = await runUnifiedCapture(ctx, 7, {
+      ctx.session.lastLeasedTab = 11;
+      const out = await runUnifiedCapture(ctx, 11, {
         detail: "standard",
         limit: 500,
         viewportOnly: true,
         screenshot: true,
-        format: "png",
         quality: 70,
-        save_to_path: true,
+        save_to_path: "explicit.png",
         withTree: true,
       });
-      // savedTo lands in the text payload as an absolute path under tmpDir.
-      assert.ok(out.payload.savedTo, "expected savedTo in payload");
-      assert.equal(path.dirname(out.payload.savedTo), tmpDir);
-      assert.match(out.payload.savedTo, /screenshot_7_\d+\.png$/);
-      // The file actually exists on disk with the expected bytes.
-      assert.ok(fs.existsSync(out.payload.savedTo));
-      const written = fs.readFileSync(out.payload.savedTo);
-      assert.ok(written.length > 0, "written file must be non-empty");
+      // The snapshot_capture hop receives format:'png' derived from the
+      // .png save path — no separate format arg needed.
+      assert.equal(seenFormats[0], "png");
+      assert.match(out.payload.savedTo, /explicit\.png$/);
+      assert.equal(out.image.mimeType, "image/png");
     },
   );
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
 test("runUnifiedCapture: save_to_path with traversal segment surfaces saveError, image still returns", async () => {
-  // The throw from resolveSavePath is caught and reported via `saveError`,
-  // not propagated as a fatal error. Image content block still emits.
   const ctx = {
     daemon: {
       sessionId: "save-error",
@@ -220,7 +280,6 @@ test("runUnifiedCapture: save_to_path with traversal segment surfaces saveError,
     limit: 500,
     viewportOnly: true,
     screenshot: true,
-    format: "jpeg",
     quality: 70,
     save_to_path: "../../escape.jpg",
     withTree: true,
@@ -228,6 +287,36 @@ test("runUnifiedCapture: save_to_path with traversal segment surfaces saveError,
   assert.ok(out.image, "image block must still emit on save error");
   assert.ok(out.payload.saveError, "expected saveError field");
   assert.match(out.payload.saveError, /\.\./);
+  assert.equal(out.payload.savedTo, undefined);
+});
+
+test("runUnifiedCapture: unsupported save extension surfaces saveError, image still returns", async () => {
+  const ctx = {
+    daemon: {
+      sessionId: "save-bad-ext",
+      async exec() {
+        return {
+          tree: { role: "WebArea", name: "T", depth: 0, children: [] },
+          screenshot: { format: "jpeg", dataBase64: "x", resizedTo: undefined },
+          dpr: 1,
+        };
+      },
+    },
+    session: new BridgeSession(),
+  };
+  ctx.session.lastLeasedTab = 1;
+  const out = await runUnifiedCapture(ctx, 1, {
+    detail: "standard",
+    limit: 500,
+    viewportOnly: true,
+    screenshot: true,
+    quality: 70,
+    save_to_path: "foo.bin",
+    withTree: true,
+  });
+  assert.ok(out.image, "image block must still emit on bad extension");
+  assert.ok(out.payload.saveError, "expected saveError field");
+  assert.match(out.payload.saveError, /unsupported extension/i);
   assert.equal(out.payload.savedTo, undefined);
 });
 

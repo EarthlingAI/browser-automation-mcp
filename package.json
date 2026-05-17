@@ -1,5 +1,5 @@
 {
-	"name": "earthling-browser-automation-mcp",
+	"name": "browser-automation-mcp",
 	"version": "0.1.0",
 	"private": true,
 	"description": "Browser automation MCP — agents drive the user's Chrome via an MV3 extension; never steals focus.",
@@ -7,7 +7,7 @@
 	"type": "commonjs",
 	"main": "dist/index.js",
 	"bin": {
-		"earthling-browser-mcp": "dist/index.js"
+		"browser-automation-mcp": "dist/index.js"
 	},
 	"scripts": {
 		"build": "node scripts/build.js",

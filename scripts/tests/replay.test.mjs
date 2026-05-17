@@ -1,7 +1,9 @@
 // `replaySnapshot` — auto-snapshot pipeline. Mock-daemon test asserting that
 // the unified-capture orchestrator forwards every visual param the user
-// opted into (screenshot/format/quality/maxWidth) AND that save_to_path is
-// hard-coded to false (saving is per-call, never a session mode).
+// opted into (detail/limit/viewportOnly/screenshot/quality/maxWidth) AND
+// that save_to_path is hard-coded to false (saving is per-call, never a
+// session mode). Round 7: `format` is no longer a SnapshotParams field —
+// runUnifiedCapture derives it from save_to_path (false → JPEG).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -71,7 +73,6 @@ test("replaySnapshot forwards all visual params and pins save_to_path:false", as
     limit: 500,
     viewportOnly: true,
     screenshot: true,
-    format: "jpeg",
     quality: 60,
     maxWidth: 1280,
   });
@@ -127,7 +128,6 @@ test("replaySnapshot never persists save_to_path — even after a save'd snapsho
     limit: 500,
     viewportOnly: true,
     screenshot: false,
-    format: "jpeg",
     quality: 70,
   });
   session.lastLeasedTab = 1;
@@ -162,7 +162,6 @@ test("runUnifiedCapture skips annotation hop when there are no refs", async () =
     limit: 500,
     viewportOnly: true,
     screenshot: true,
-    format: "jpeg",
     quality: 70,
     save_to_path: false,
     withTree: true,
@@ -180,7 +179,7 @@ test("replaySnapshot error path preserves structured fields (kind/recovery/hint/
   session.lastLeasedTab = 99;
   const error = Object.assign(new Error("extension not connected"), {
     kind: "extension_disconnected",
-    recovery: "reload the Earthling Browser Bridge extension at chrome://extensions",
+    recovery: "reload the Browser Automation Bridge extension at chrome://extensions",
     hint: "service worker idle-died",
     leasedBy: "agent-a",
     since: "2026-05-17T12:00:00Z",
@@ -200,7 +199,6 @@ test("replaySnapshot error path preserves structured fields (kind/recovery/hint/
     limit: 500,
     viewportOnly: true,
     screenshot: false,
-    format: "jpeg",
     quality: 70,
   });
   const stub = await replaySnapshot(ctx);
@@ -225,12 +223,13 @@ test("runUnifiedCapture: withTree:false skips tree pruning and annotation", asyn
       s.lastLeasedTab = 5;
     },
   });
+  // No format arg — default (jpeg) is overridden by the daemon's "png" reply
+  // shape; the bridge trusts the format the extension actually used.
   const out = await runUnifiedCapture(ctx, 5, {
     detail: "standard",
     limit: 0,
     viewportOnly: true,
     screenshot: true,
-    format: "png",
     quality: 70,
     save_to_path: false,
     withTree: false,

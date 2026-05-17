@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Browser Automation Bridge</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 540px;
+        margin: 24px auto;
+        padding: 0 16px;
+        line-height: 1.5;
+      }
+      h1 {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+      .subtitle {
+        color: #666;
+        margin-top: 0;
+      }
+      .status {
+        margin-top: 16px;
+        padding: 12px 14px;
+        border-radius: 4px;
+        background: #f4f4f4;
+        font-size: 14px;
+      }
+      .ok {
+        background: #e6f4ea;
+      }
+      .err {
+        background: #fce8e6;
+      }
+      .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      .dot.ok {
+        background: #1e8e3e;
+      }
+      .dot.err {
+        background: #d93025;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Browser Automation Bridge</h1>
+    <p class="subtitle">
+      Connection to local browser automation daemon (ws://127.0.0.1:9223)
+    </p>
+    <div id="status" class="status">Checking…</div>
+    <p class="subtitle">
+      No configuration needed. Authentication uses this extension's Chrome
+      origin — the daemon only accepts WebSocket upgrades whose
+      <code>Origin</code> header is
+      <code>chrome-extension://&lt;this-extension-id&gt;</code>, so web pages
+      cannot impersonate it.
+    </p>
+    <script src="status.js"></script>
+  </body>
+</html>

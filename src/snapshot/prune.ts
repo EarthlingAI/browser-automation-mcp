@@ -29,7 +29,7 @@ export interface RawNode {
   position?: string;
   /**
    * `window.devicePixelRatio` at snapshot time. Set on the tree root only by
-   * `helpers.js::__earthlingA11y`. Used by the bridge's annotation hop to
+   * `helpers.js::__mcpA11y`. Used by the bridge's annotation hop to
    * scale CSS-pixel rects up to the physical-pixel coordinate space of the
    * captured bitmap.
    */
@@ -59,6 +59,24 @@ export interface PruneOptions {
 
 export interface PruneMeta {
   limit_adjusted?: number;
+  /**
+   * Total number of accessible (post-aria-hidden / post-cookie-collapse)
+   * candidate nodes the pruner saw before viewport-filtering and limit-cap.
+   * Always surfaced so the agent can tell whether useful nodes were dropped.
+   */
+  total_candidates?: number;
+  /**
+   * Set only when the pruner auto-engaged viewport-only mode because the
+   * page exceeded `FALLBACK_RATIO * effectiveLimit` candidates AND the
+   * caller did not pass `viewportOnly:true` explicitly. The agent can react
+   * by scrolling or by re-snapshotting with a higher `limit`.
+   */
+  viewport_fallback?: {
+    active: true;
+    reason: "page_too_large";
+    threshold: number;
+    total_candidates: number;
+  };
 }
 
 const INTERACTIVE_ROLES = new Set([
@@ -109,6 +127,15 @@ const COOKIE_BANNER_ROLES = new Set([
   "banner",
 ]);
 const FULL_MODE_FLOOR = 1000;
+/**
+ * When `viewportOnly` is left at its default (`false`) and the page surfaces
+ * more than `FALLBACK_RATIO * effectiveLimit` candidate nodes, the pruner
+ * auto-falls-back to viewport-only mode. This keeps the response compact for
+ * gigantic pages (long doc reading, infinite feeds) without the agent having
+ * to discover-and-set `viewportOnly` themselves. Surfaced as
+ * `meta.viewport_fallback` so the agent knows it happened.
+ */
+const FALLBACK_RATIO = 3;
 
 interface Candidate {
   node: RawNode;
@@ -130,7 +157,14 @@ export function prune(
   opts: PruneOptions = {},
 ): PrunedNode & { meta?: PruneMeta } {
   const requestedLimit = opts.limit ?? 500;
-  const viewportOnly = opts.viewportOnly ?? true;
+  // Default flip (Round 7): viewportOnly is now false by default so the
+  // pruner ranks across the WHOLE page instead of forcing the agent to
+  // scroll-and-snapshot before discovering a useful element. For pages that
+  // exceed FALLBACK_RATIO * effectiveLimit candidates we auto-fall-back to
+  // viewport-only and surface `meta.viewport_fallback` so the behaviour is
+  // visible. The caller can still force viewport-only unconditionally by
+  // passing `viewportOnly:true`.
+  const explicitViewportOnly = opts.viewportOnly === true;
   const detail = opts.detail ?? "standard";
   const viewportW = opts.viewport?.w ?? 1920;
   const viewportH = opts.viewport?.h ?? 1080;
@@ -209,11 +243,14 @@ export function prune(
       NAV_ROLES.has(node.role) ||
       DATA_ROLES.has(node.role) ||
       (node.name && node.name.trim() && !CONTAINER_ROLES.has(node.role));
-    const visible = !viewportOnly || node.inViewport !== false;
+    // Viewport-filter is now applied AFTER collection (see "viewport gate"
+    // below) so `total_candidates` reflects the full page even when we
+    // ultimately restrict the output to the viewport. This also unlocks the
+    // auto-fallback decision, which needs to know the full count.
     const idx = candidates.length;
     const inFormSubtree = entry.inFormSubtree || node.role === "form";
     const inModalSubtree = entry.inModalSubtree || node.dialogModal === true;
-    if (keep && visible) {
+    if (keep) {
       const area = node.rect
         ? Math.max(0, node.rect.w) * Math.max(0, node.rect.h)
         : 0;
@@ -273,6 +310,18 @@ export function prune(
     c.siblingSameRoleCount = siblingMap.get(key) ?? 1;
   }
 
+  // Viewport gate (Round 7). Apply explicit viewportOnly:true OR auto-fallback
+  // for huge pages. Filtering is done at pick-time (not by mutating the
+  // candidates array) so parentIdx references stay stable for the tree-build
+  // step below. `nearestSelectedAncestor` naturally skips dropped candidates.
+  const total_candidates = candidates.length;
+  const fallbackThreshold = effectiveLimit * FALLBACK_RATIO;
+  const autoFallback =
+    !explicitViewportOnly && total_candidates > fallbackThreshold;
+  const applyViewportFilter = explicitViewportOnly || autoFallback;
+  const isPickable = (i: number): boolean =>
+    !applyViewportFilter || candidates[i]!.node.inViewport !== false;
+
   // Pass 2: score + rank
   const scored: ScoredCandidate[] = candidates.map((c, i) => ({
     idx: i,
@@ -283,7 +332,10 @@ export function prune(
       b.score - a.score ||
       candidates[a.idx]!.bfsOrder - candidates[b.idx]!.bfsOrder,
   );
-  let selected = scored.slice(0, effectiveLimit).map((s) => s.idx);
+  let selected = scored
+    .filter((s) => isPickable(s.idx))
+    .slice(0, effectiveLimit)
+    .map((s) => s.idx);
 
   // Pass 2.5: reserve slots — nav (existing) + form fields (new for Issue #6)
   if (candidates.length > effectiveLimit) {
@@ -294,6 +346,7 @@ export function prune(
     const maxFormReserved = Math.min(10, Math.floor(effectiveLimit / 20));
     for (let i = 0; i < candidates.length; i++) {
       if (selectedSet.has(i)) continue;
+      if (!isPickable(i)) continue;
       const c = candidates[i]!;
       if (navReserved.length < maxNavReserved) {
         const isNav =
@@ -398,9 +451,20 @@ export function prune(
       children: roots.map(build),
     };
   }
-  if (limitAdjusted !== undefined) {
-    out.meta = { limit_adjusted: limitAdjusted };
+  // Meta — always surface total_candidates so the agent knows how much the
+  // pruner had to work with. Conditionally surface limit_adjusted (full-mode
+  // floor) and viewport_fallback (auto-engaged viewport-only).
+  const meta: PruneMeta = { total_candidates };
+  if (limitAdjusted !== undefined) meta.limit_adjusted = limitAdjusted;
+  if (autoFallback) {
+    meta.viewport_fallback = {
+      active: true,
+      reason: "page_too_large",
+      threshold: fallbackThreshold,
+      total_candidates,
+    };
   }
+  out.meta = meta;
   return out;
 }
 

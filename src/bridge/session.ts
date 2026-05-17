@@ -6,7 +6,8 @@ export interface SnapshotParams {
   limit: number;
   viewportOnly: boolean;
   screenshot: boolean;
-  format: "png" | "jpeg";
+  // No `format` here (Round 7) — derived from `save_to_path`'s extension on
+  // each call; defaults to JPEG when no save is requested.
   quality: number;
   maxWidth?: number;
 }
@@ -14,9 +15,11 @@ export interface SnapshotParams {
 export const DEFAULT_SNAPSHOT_PARAMS: SnapshotParams = {
   detail: "standard",
   limit: 500,
-  viewportOnly: true,
+  // Round 7 default flip: viewportOnly is now false. The pruner ranks across
+  // the WHOLE page (capped at `limit`) and auto-falls-back to viewport-only
+  // only when the page exceeds 3 × effectiveLimit candidates.
+  viewportOnly: false,
   screenshot: false,
-  format: "jpeg",
   quality: 70,
   // maxWidth intentionally undefined — native resolution by default.
 };

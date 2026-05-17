@@ -22,7 +22,7 @@ export function registerObserveTools(
       "to target in interaction tools. With `screenshot:true`, also returns a native MCP image content block " +
       "with each element's numeric ref badged on the live page — once enabled, every subsequent action-tool " +
       "auto-snapshot automatically carries the annotated picture forward (no extra call needed). " +
-      "Costs ~50–150 ms per action when screenshot mode is on; pass `screenshot:false` on the next call to " +
+      "Costs ~150–250 ms per action when screenshot mode is on; pass `screenshot:false` on the next call to " +
       "drop back to tree-only.",
     annotations: {
       readOnlyHint: true,
@@ -50,8 +50,13 @@ export function registerObserveTools(
         .default(500)
         .describe("Max nodes returned (ranked)."),
       viewportOnly: z
-        .preprocess(coerceBoolean, z.boolean().default(true))
-        .describe("Exclude nodes outside the visible viewport."),
+        .preprocess(coerceBoolean, z.boolean().default(false))
+        .describe(
+          "Restrict snapshot to the visible viewport. Default false — return the whole page's " +
+            "intelligently-pruned tree (ranked + capped at `limit`). When the page exceeds 3 × `limit` " +
+            "candidate nodes the snapshot auto-falls-back to viewport-only and surfaces " +
+            "`meta.viewport_fallback`. Pass `true` to force viewport-only unconditionally.",
+        ),
       screenshot: z
         .preprocess(coerceBoolean, z.boolean().default(false))
         .describe(
@@ -59,17 +64,19 @@ export function registerObserveTools(
             "Once enabled, every subsequent action-tool auto-snapshot also returns the annotated image — " +
             "set screenshot:false on the next call to drop back to tree-only.",
         ),
-      format: z
-        .enum(["png", "jpeg"])
-        .default("jpeg")
-        .describe("Image format when screenshot is enabled."),
+      // Image format is not an agent-facing arg — it follows `save_to_path`'s
+      // extension when a string (".png" → PNG, ".jpg/.jpeg" → JPEG); defaults
+      // to JPEG when no save is requested or when save_to_path:true (which
+      // auto-names ".jpg"). See save.ts::resolveSavePath.
       quality: z
         .coerce.number()
         .int()
         .min(1)
         .max(100)
         .default(70)
-        .describe("JPEG quality (1–100). Ignored for PNG."),
+        .describe(
+          "JPEG quality (1–100). Ignored for PNG saves. Applies to inline (always JPEG) and to any `.jpg`/`.jpeg` save target.",
+        ),
       maxWidth: z
         .coerce.number()
         .int()
@@ -87,7 +94,6 @@ export function registerObserveTools(
       limit,
       viewportOnly,
       screenshot,
-      format,
       quality,
       maxWidth,
       save_to_path,
@@ -105,7 +111,6 @@ export function registerObserveTools(
         limit,
         viewportOnly,
         screenshot,
-        format,
         quality,
         maxWidth,
       });
@@ -114,7 +119,6 @@ export function registerObserveTools(
         limit,
         viewportOnly,
         screenshot,
-        format,
         quality,
         maxWidth,
         save_to_path,
@@ -128,7 +132,8 @@ export function registerObserveTools(
     title: "Screenshot the leased tab (no tree, no ref annotations)",
     description:
       "Background-tab screenshot via CDP `Page.captureScreenshot` — never raises the window. " +
-      "Returns the image as a native MCP image content block. " +
+      "Returns the image as a native MCP image content block. Format follows `save_to_path`'s file " +
+      "extension when a string (\".png\" → PNG, \".jpg/.jpeg\" → JPEG); defaults to JPEG otherwise. " +
       "Use for pixel-only captures (saving a chart, capturing a finished artifact, " +
       "or saving to disk via `save_to_path`) — when you also need ref badges and a tree, " +
       "use `browser_snapshot(screenshot:true)` instead.",
@@ -144,14 +149,17 @@ export function registerObserveTools(
         .int()
         .optional()
         .describe("Tab to capture. Defaults to the most recently leased tab."),
-      format: z.enum(["png", "jpeg"]).default("jpeg"),
+      // Image format is not an agent-facing arg — follows `save_to_path`'s
+      // extension when a string; defaults to JPEG otherwise.
       quality: z
         .coerce.number()
         .int()
         .min(1)
         .max(100)
         .default(70)
-        .describe("JPEG quality (1–100). Ignored for PNG."),
+        .describe(
+          "JPEG quality (1–100). Ignored for PNG saves. Applies to inline (always JPEG) and to any `.jpg`/`.jpeg` save target.",
+        ),
       maxWidth: z
         .coerce.number()
         .int()
@@ -163,7 +171,7 @@ export function registerObserveTools(
         ),
       save_to_path: saveToPathSchema,
     },
-    handler: async ({ tabId, format, quality, maxWidth, save_to_path }) => {
+    handler: async ({ tabId, quality, maxWidth, save_to_path }) => {
       const target = tabId ?? ctx.session.lastLeasedTab;
       if (!target)
         throw new Error(
@@ -174,7 +182,6 @@ export function registerObserveTools(
         limit: 0,
         viewportOnly: true,
         screenshot: true,
-        format,
         quality,
         maxWidth,
         save_to_path,

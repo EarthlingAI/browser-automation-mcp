@@ -3,8 +3,8 @@
  *
  * Defines two globals on the page's isolated world (or MAIN, per how the
  * service worker injects this):
- *   - globalThis.__earthlingA11y()             → raw a11y tree
- *   - globalThis.__earthlingAct(kind, opts)    → click/type/hover/scroll/...
+ *   - globalThis.__mcpA11y()             → raw a11y tree
+ *   - globalThis.__mcpAct(kind, opts)    → click/type/hover/scroll/...
  *
  * Refs are sequential numeric IDs assigned by walking the same interactive
  * elements in the same BFS order both here and in the daemon's pruner.
@@ -16,10 +16,10 @@
   // loaded — preserves the in-page nodeMap so sequential action tools still
   // resolve refs from the most recent snapshot. Bump the integer when changing
   // the in-page contract (new act kind, return-shape change).
-  const HELPERS_VERSION = 4;
-  if (globalThis.__earthlingHelpersVersion === HELPERS_VERSION) return;
-  globalThis.__earthlingHelpersVersion = HELPERS_VERSION;
-  globalThis.__earthlingHelpersLoaded = true;
+  const HELPERS_VERSION = 5;
+  if (globalThis.__mcpHelpersVersion === HELPERS_VERSION) return;
+  globalThis.__mcpHelpersVersion = HELPERS_VERSION;
+  globalThis.__mcpHelpersLoaded = true;
 
   const NATIVE_ROLES = {
     A: "link",
@@ -224,7 +224,7 @@
     return nodeMap.get(String(ref)) || null;
   }
 
-  globalThis.__earthlingResolveRef = function (ref) {
+  globalThis.__mcpResolveRef = function (ref) {
     const el = findByRef(ref);
     if (!el) return null;
     const r = el.getBoundingClientRect();
@@ -238,11 +238,11 @@
 
   function notifyAction(phase, kind, ref) {
     try {
-      globalThis.__earthlingIndicator?.onAction?.({ phase, kind, ref });
+      globalThis.__mcpIndicator?.onAction?.({ phase, kind, ref });
     } catch {}
   }
 
-  globalThis.__earthlingA11y = function () {
+  globalThis.__mcpA11y = function () {
     nodeMap = new Map();
     nodeCounter = 0;
     const root = walkA11y(document.body, 0) || {
@@ -411,7 +411,7 @@
     }
     if (opts.condition) {
       // Helper-contract completeness: an in-page caller invoking
-      // __earthlingAct("wait_for", {condition}) directly still works. The
+      // __mcpAct("wait_for", {condition}) directly still works. The
       // bridge's normal path NEVER reaches here — background.js::dispatchInner
       // intercepts condition mode and routes through chrome.debugger
       // Runtime.evaluate, which bypasses strict-CSP sites' unsafe-eval
@@ -500,7 +500,7 @@
     }
   }
 
-  globalThis.__earthlingAct = function (kind, opts) {
+  globalThis.__mcpAct = function (kind, opts) {
     notifyAction("start", kind, opts?.ref);
     const out = /** @type {any} */ (runAct(kind, opts));
     if (out && typeof out.then === "function") {

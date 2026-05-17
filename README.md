@@ -21,7 +21,7 @@ Wire into the host agent's MCP config:
 
 ### Load the Chrome extension
 
-Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and select the `earthling-extension/` directory. The extension's options page (`status.html`) shows live daemon-connection state.
+Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and select the `browser-extension/` directory. The extension's options page (`status.html`) shows live daemon-connection state.
 
 If a Reload doesn't take after rebuilding the extension, do a full Remove + Load unpacked — Chrome's Reload button sometimes leaves the MV3 service worker on stale handlers.
 
@@ -105,16 +105,17 @@ Pruned accessibility-tree snapshot of the leased tab. Returns nodes with stable 
 | `tabId`        | int              | last leased  | Tab to snapshot.                                                         |
 | `detail`       | enum             | `"standard"` | `"standard"` = interactive elements only; `"full"` = entire a11y tree.   |
 | `limit`        | int              | `500`        | Max nodes returned (ranked). Range 1-5000.                               |
-| `viewportOnly` | boolean          | `true`       | Exclude nodes outside the visible viewport.                              |
-| `screenshot`   | boolean          | `false`      | Include a vision-ready annotated screenshot. Replays on auto-snapshot until set back to `false`. |
-| `format`       | enum             | `"jpeg"`     | `"png"` or `"jpeg"`. Applies when `screenshot:true`.                     |
-| `quality`      | int              | `70`         | JPEG quality (1-100). Ignored for PNG.                                   |
+| `viewportOnly` | boolean          | `false`      | Restrict snapshot to the visible viewport. Default `false` — return the whole page's intelligently-pruned tree. Auto-falls-back to viewport-only when the page exceeds `3 × limit` candidates (surfaces `meta.viewport_fallback`). Pass `true` to force viewport-only unconditionally. |
+| `screenshot`   | boolean          | `false`      | Include a vision-ready annotated screenshot. Replays on auto-snapshot until set back to `false`. Costs ~150-250ms per action when on. |
+| `quality`      | int              | `70`         | JPEG quality (1-100). Ignored for PNG saves. Applies to inline (always JPEG) and to any `.jpg`/`.jpeg` save target. |
 | `maxWidth`     | int              | —            | Downscale the screenshot to at most this width (preserves aspect ratio). Range 64-4096. |
-| `save_to_path` | bool \| string   | `false`      | Write the annotated image to disk. See "Save to disk" below.             |
+| `save_to_path` | bool \| string   | `false`      | Write the annotated image to disk. **String paths drive the image format** (`.png`/`.jpg`/`.jpeg`); inline-only and auto-name use JPEG. See "Save to disk" below. |
 
 `detail:"full"` at `limit < 1000` raises the effective limit to 1000 and surfaces `meta.limit_adjusted` in the response.
 
-**Auto-snapshot carries the annotated image forward.** Once you call `browser_snapshot(screenshot:true)`, every subsequent action-tool auto-snapshot replays the visual params (`screenshot`, `format`, `quality`, `maxWidth`) — the agent sees one annotated picture per action, not just per explicit snapshot. `save_to_path` is NEVER replayed: saving is per-call opt-in, never a session mode.
+**Pruner meta.** Every response includes `meta.total_candidates` (the full count of accessible candidate nodes the pruner saw before any viewport-filtering or limit cap). When the pruner auto-falls-back to viewport-only (`total_candidates > 3 × effectiveLimit` AND the caller did NOT pass `viewportOnly:true`), an additional `meta.viewport_fallback: { active:true, reason:"page_too_large", threshold, total_candidates }` surfaces so the agent knows useful nodes may sit off-screen.
+
+**Auto-snapshot carries the annotated image forward.** Once you call `browser_snapshot(screenshot:true)`, every subsequent action-tool auto-snapshot replays the visual params (`screenshot`, `quality`, `maxWidth`) — the agent sees one annotated picture per action, not just per explicit snapshot. `save_to_path` is NEVER replayed: saving is per-call opt-in, never a session mode.
 
 #### `browser_screenshot` (read-only)
 
@@ -123,10 +124,9 @@ Background-tab screenshot via CDP `Page.captureScreenshot` — never raises the 
 | Parameter      | Type             | Default      | Description                                                                                  |
 | -------------- | ---------------- | ------------ | -------------------------------------------------------------------------------------------- |
 | `tabId`        | int              | last leased  | Tab to capture.                                                                              |
-| `format`       | enum             | `"jpeg"`     | `"png"` or `"jpeg"`.                                                                         |
-| `quality`      | int              | `70`         | JPEG quality (1-100). Ignored for PNG.                                                       |
+| `quality`      | int              | `70`         | JPEG quality (1-100). Ignored for PNG saves. Applies to inline (always JPEG) and to any `.jpg`/`.jpeg` save target. |
 | `maxWidth`     | int              | —            | Downscale the captured image to at most this width (preserves aspect ratio). Range 64-4096.  |
-| `save_to_path` | bool \| string   | `false`      | Write the image to disk. See "Save to disk" below.                                            |
+| `save_to_path` | bool \| string   | `false`      | Write the image to disk. **String paths drive the image format** (`.png`/`.jpg`/`.jpeg`); inline-only and auto-name use JPEG. See "Save to disk" below. |
 
 #### `browser_console_messages` (read-only)
 
@@ -304,9 +304,9 @@ The full policy is sweep-tested in `scripts/tests/annotations.test.mjs`.
 ## Architecture
 
 ```
-Earthling agent ──MCP/stdio──▶ bridge process ──TCP loopback──▶ daemon ──WebSocket :9223──▶ MV3 extension ──chrome.tabs/.scripting/.debugger──▶ user's tabs
-                  (one per                                       (singleton,                   ("Earthling Browser Bridge",
-                  agent session)                                  owns leases)                  loaded into user's Chrome)
+AI agent ──MCP/stdio──▶ bridge process ──TCP loopback──▶ daemon ──WebSocket :9223──▶ MV3 extension ──chrome.tabs/.scripting/.debugger──▶ user's tabs
+          (one per                                       (singleton,                   ("Browser Automation Bridge",
+          agent session)                                  owns leases)                  loaded into user's Chrome)
 ```
 
 Three processes for two reasons:
@@ -342,10 +342,11 @@ browser-automation-mcp/
 │   │       ├── capture.ts         # Unified-capture orchestrator — single source of truth for browser_snapshot, browser_screenshot, and replaySnapshot
 │   │       ├── save.ts            # save_to_path schema + resolver (resolveSavePath, writeImage, getOutputsDir)
 │   │       ├── visual.ts          # Annotation visual constants (badge color, font, sizing) — travel inside annotate_image payload
+│   │       ├── containment.ts     # computeDrawStroke — containment-based parent-bbox suppression for annotated screenshots
 │   │       └── coerce.ts          # Schema-input coercion helpers (coerceToArray, coerceBoolean, coerceLiteralNumber)
 │   └── snapshot/
 │       └── prune.ts          # A11y tree pruner — scoring, cookie-collapse, sidebar penalty, data-collapse, full-mode floor
-├── earthling-extension/
+├── browser-extension/
 │   ├── manifest.json         # MV3 — CRX key pinned for stable ID, alarms permission for keepalive
 │   ├── background.js         # Service worker — WS client, chrome.* glue, settle observers, screenshot resize
 │   ├── inject/
@@ -367,6 +368,7 @@ browser-automation-mcp/
         ├── replay.test.mjs            # replaySnapshot — visual params replayed; save_to_path never replayed
         ├── save.test.mjs              # save_to_path resolver (outputs_dir precedence, traversal rejection, non-fatal errors)
         ├── snapshot-capture.test.mjs  # runUnifiedCapture — snapshot_capture + annotate_image two-hop topology
+        ├── containment.test.mjs       # computeDrawStroke — containment-based parent stroke suppression
         ├── timeout.test.mjs           # inferExtTimeout — per-command watchdog inference
         └── visual.test.mjs            # VISUAL_CONSTANTS shape — every key the extension's annotate handler reads
 ```
@@ -382,6 +384,7 @@ browser-automation-mcp/
 - **Data-collapse** for `listitem`/`row`/`treeitem` parents with ≥2 text-only children — they emit a `values: [...]` array instead of nested children, cutting context 40-60% on data-heavy pages.
 - **Full-mode floor** — `detail:"full"` at `limit < 1000` raises the effective limit to 1000 and surfaces `meta.limit_adjusted` in the response.
 - **A11y-hidden filtering** — subtrees with `aria-hidden="true"` or `inert` are pruned entirely.
+- **viewportOnly auto-fallback** — `viewportOnly` defaults to `false`, so the pruner ranks across the whole page. When the page exceeds `3 × effectiveLimit` candidates AND `viewportOnly:true` was not passed explicitly, the pruner auto-falls-back to viewport-only and surfaces `meta.viewport_fallback`. `meta.total_candidates` is ALWAYS surfaced so the agent knows how much was available.
 
 ## Settle protocol
 
@@ -435,7 +438,7 @@ Lease state lives only in the daemon's memory and is lost on respawn. The next t
 
 The MV3 service worker idle-dies after ~30s of inactivity. A `chrome.alarms` keepalive heartbeat fires every 24s to stay under that threshold — without it the first call after even brief idle would return `extension not connected` even though everything is healthy.
 
-If the SW wakes mid-call, the bridge transparently retries once after ~500 ms on `extension not connected` errors. If the retry also fails, the error propagates with `recovery` and `hint` fields carrying `"extension not connected — reload the Earthling Browser Bridge extension at chrome://extensions"`. The same hint covers user-initiated states (extension manually disabled at `chrome://extensions`).
+If the SW wakes mid-call, the bridge transparently retries once after ~500 ms on `extension not connected` errors. If the retry also fails, the error propagates with `recovery` and `hint` fields carrying `"extension not connected — reload the Browser Automation Bridge extension at chrome://extensions"`. The same hint covers user-initiated states (extension manually disabled at `chrome://extensions`).
 
 ## Response format
 
@@ -497,15 +500,37 @@ Action tools follow the same envelope: when an auto-snapshot returns an image (s
 
 `save_to_path` is shared by `browser_snapshot` and `browser_screenshot`. Semantics:
 
-- `false` (default) — return inline only, no disk write.
-- `true` — auto-name `<outputs_dir>/screenshot_<tabId>_<unixms>.<ext>` (extension follows `format`).
-- string — explicit path. Relative paths resolve under `outputs_dir`; absolute paths are allowed; any `..` segment is rejected with a non-fatal `saveError`.
+- `false` (default) — return inline only, no disk write. Inline format: JPEG.
+- `true` — auto-name `<outputs_dir>/screenshot_<tabId>_<unixms>.jpg` → JPEG.
+- string ending in `.png` → PNG.
+- string ending in `.jpg`/`.jpeg` → JPEG.
+- any other extension is rejected at schema-validation time with an actionable error.
+
+Relative string paths resolve under `outputs_dir`; absolute paths are allowed; any `..` segment is rejected with a non-fatal `saveError` (image still returns inline).
+
+**The file extension drives the image format** — there is no separate `format` parameter. This avoids the silent "`.jpg` extension with PNG bytes" mismatch.
 
 `outputs_dir` resolution order:
 
 1. `BROWSER_AUTOMATION_MCP_OUTPUTS_DIR` env var (highest priority).
 2. `<BROWSER_AUTOMATION_MCP_RUNTIME_DIR>/outputs/` when the runtime dir env var is set.
 3. `<cwd>/outputs/browser/` as the final fallback.
+
+**Deployment tip:** hosts that embed this MCP should set `BROWSER_AUTOMATION_MCP_OUTPUTS_DIR` in their `.mcp.json` `env` block so screenshots land in a host-managed folder rather than under the MCP source tree. Example:
+
+```json
+{
+  "mcpServers": {
+    "browser-automation": {
+      "command": "node",
+      "args": ["path/to/dist/index.js"],
+      "env": {
+        "BROWSER_AUTOMATION_MCP_OUTPUTS_DIR": "/path/to/host-project/outputs/browser"
+      }
+    }
+  }
+}
+```
 
 Save errors are non-fatal — the image still returns inline; the failure surfaces in the text payload as `saveError`. `save_to_path` is NEVER replayed on auto-snapshot, so a one-off save never accidentally fills the disk over a long session.
 
@@ -526,8 +551,8 @@ Save errors are non-fatal — the image still returns inline; the failure surfac
 {
   "error": "extension not connected",
   "kind": "extension_disconnected",
-  "recovery": "extension not connected — reload the Earthling Browser Bridge extension at chrome://extensions",
-  "hint": "extension not connected — reload the Earthling Browser Bridge extension at chrome://extensions"
+  "recovery": "extension not connected — reload the Browser Automation Bridge extension at chrome://extensions",
+  "hint": "extension not connected — reload the Browser Automation Bridge extension at chrome://extensions"
 }
 ```
 
@@ -542,14 +567,15 @@ The hint is a single universal string — the same message covers SW idle-death,
 | `MCP_HTTP_PORT`                       | (required for http)                                           | Port for HTTP transport.                                                                     |
 | `BROWSER_AUTOMATION_MCP_RUNTIME_DIR`  | OS state dir (see below)                                      | Override runtime-files location (`daemon.port`, `daemon.log`, `subscribe.token`).            |
 | `BROWSER_AUTOMATION_MCP_OUTPUTS_DIR`  | `<runtime_dir>/outputs/` then `<cwd>/outputs/browser/`        | Override where `save_to_path` writes screenshots. Takes priority over the runtime-dir / cwd fallbacks. |
-| `BROWSER_AUTOMATION_MCP_RELAY_PORT`   | `9223`                                                        | Override the daemon ↔ extension WebSocket port. **Also update `DAEMON_URL` in `earthling-extension/background.js` if you change this** — the unpacked extension cannot read process env vars. |
+| `BROWSER_AUTOMATION_MCP_RELAY_PORT`   | `9223`                                                        | Override the daemon ↔ extension WebSocket port. **Also update `DAEMON_URL` in `browser-extension/background.js` if you change this** — the unpacked extension cannot read process env vars. |
+| `BROWSER_EXTENSION_TAB_GROUP_LABEL`   | `Automation`                                                  | Brand prefix used in the Chrome tab-group title when an agent claims a tab (e.g. `"Earthling — Anjuman"`). Daemon reads at startup and stamps it onto every `IndicatorState`, so the same generic MCP can ship under host-specific branding without forking the extension. |
 | `MCP_HOST_DISPATCHER`                 | (injected by host)                                            | Path to the host's MCP dispatcher executable, used for daemon re-exec when the entry isn't on disk. |
 
 Default runtime dir per OS:
 
-- Windows: `%LOCALAPPDATA%\earthling\browser-automation-mcp\`
-- Linux: `$XDG_STATE_HOME/earthling/browser-automation-mcp/` (or `~/.local/state/earthling/browser-automation-mcp/`)
-- macOS: `~/Library/Application Support/earthling/browser-automation-mcp/`
+- Windows: `%LOCALAPPDATA%\browser-automation-mcp\`
+- Linux: `$XDG_STATE_HOME/browser-automation-mcp/` (or `~/.local/state/browser-automation-mcp/`)
+- macOS: `~/Library/Application Support/browser-automation-mcp/`
 
 `.runtime/` next to the bundle is a last-resort fallback for smoke tests.
 
@@ -560,8 +586,8 @@ npm test                   # node --test scripts/tests/*.test.mjs
 npm run dev                # esbuild watch mode (main bundle only)
 ```
 
-The test harness imports from `dist/test-exports.mjs`, so run `npm run build` once before `npm test`. Tests cover pruner heuristics, ref registry, envelope shape (including the mixed image+text content array), schema coercion, build fingerprint, annotation policy, daemon watchdog inference, the `browser_evaluate` primitive-wrap regression, the unified-capture two-hop topology (`snapshot_capture` + `annotate_image`), `save_to_path` resolution (outputs_dir precedence, traversal rejection, non-fatal save errors), `replaySnapshot` (visual params replayed; `save_to_path` never replayed), and the visual-constants contract — 69 cases total. All tests run without standing up the daemon or extension; they exercise pure helpers.
+The test harness imports from `dist/test-exports.mjs`, so run `npm run build` once before `npm test`. Tests cover pruner heuristics (including viewportOnly auto-fallback, total_candidates surfacing), ref registry, envelope shape (including the mixed image+text content array), schema coercion, build fingerprint, annotation policy, daemon watchdog inference, the `browser_evaluate` primitive-wrap regression, the unified-capture two-hop topology (`snapshot_capture` + `annotate_image`), `save_to_path` resolution (format-from-extension inference, unknown-extension rejection, outputs_dir precedence, traversal rejection, non-fatal save errors), `replaySnapshot` (visual params replayed; `save_to_path` never replayed), `computeDrawStroke` (containment-based parent-bbox suppression), and the visual-constants contract — 88 cases total. All tests run without standing up the daemon or extension; they exercise pure helpers.
 
 ## License
 
-MIT. Most of the codebase is from-scratch; the in-DOM accessibility walker (`earthling-extension/inject/helpers.js`) is conceptually based on `hangwin/mcp-chrome`'s `accessibility-tree-helper.js` (MIT).
+MIT. Most of the codebase is from-scratch; the in-DOM accessibility walker (`browser-extension/inject/helpers.js`) is conceptually based on `hangwin/mcp-chrome`'s `accessibility-tree-helper.js` (MIT).
