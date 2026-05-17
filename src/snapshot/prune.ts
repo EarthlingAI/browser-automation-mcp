@@ -28,12 +28,15 @@ export interface RawNode {
   dialogModal?: boolean;
   position?: string;
   /**
-   * `window.devicePixelRatio` at snapshot time. Set on the tree root only by
-   * `helpers.js::__mcpA11y`. Used by the bridge's annotation hop to
-   * scale CSS-pixel rects up to the physical-pixel coordinate space of the
-   * captured bitmap.
+   * Page CSS-pixel viewport (`window.innerWidth` × `innerHeight`) at snapshot
+   * time. Set on the tree root only by `helpers.js::__mcpA11y`. The pruner
+   * does not consume this — it's a passthrough: the extension's
+   * `doSnapshotCapture` reads `tree.cssViewport` and re-surfaces it at the
+   * `snapshot_capture` response's top level, where `runUnifiedCapture` picks
+   * it up and forwards it to the `annotate_image` hop. Declared here so the
+   * helpers.js assignment has a typed shape to mirror.
    */
-  dpr?: number;
+  cssViewport?: { w: number; h: number };
   children: RawNode[];
 }
 

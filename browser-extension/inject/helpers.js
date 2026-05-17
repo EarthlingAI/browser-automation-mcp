@@ -16,7 +16,7 @@
   // loaded — preserves the in-page nodeMap so sequential action tools still
   // resolve refs from the most recent snapshot. Bump the integer when changing
   // the in-page contract (new act kind, return-shape change).
-  const HELPERS_VERSION = 5;
+  const HELPERS_VERSION = 6;
   if (globalThis.__mcpHelpersVersion === HELPERS_VERSION) return;
   globalThis.__mcpHelpersVersion = HELPERS_VERSION;
   globalThis.__mcpHelpersLoaded = true;
@@ -254,10 +254,12 @@
     };
     root.role = "WebArea";
     root.name = document.title;
-    // Surface devicePixelRatio so the bridge's annotation hop can scale
-    // CSS-pixel rects up to the physical-pixel coordinates of the captured
-    // bitmap (CDP Page.captureScreenshot returns at device-pixel resolution).
-    root.dpr = window.devicePixelRatio || 1;
+    // Surface CSS viewport so the annotation hop can scale CSS-pixel rects to
+    // canvas-pixel coordinates via `imgW / cssViewport.w` (and the matching
+    // `imgH / cssViewport.h`) — independent of DPR and resize history. DPR
+    // bakes into both the captured bitmap and the CSS viewport identically,
+    // so it drops out of the scale formula whichever hop did the resize.
+    root.cssViewport = { w: window.innerWidth, h: window.innerHeight };
     return root;
   };
 

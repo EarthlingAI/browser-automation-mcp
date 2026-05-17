@@ -117,6 +117,8 @@ Pruned accessibility-tree snapshot of the leased tab. Returns nodes with stable 
 
 **Auto-snapshot carries the annotated image forward.** Once you call `browser_snapshot(screenshot:true)`, every subsequent action-tool auto-snapshot replays the visual params (`screenshot`, `quality`, `maxWidth`) — the agent sees one annotated picture per action, not just per explicit snapshot. `save_to_path` is NEVER replayed: saving is per-call opt-in, never a session mode.
 
+**Pixel-accurate badges.** The annotation hop derives canvas-pixel scale from the actual final bitmap dimensions vs. the page's CSS viewport (`scaleX = imgW / cssViewport.w`), so ref badges land on the right elements regardless of browser zoom or device pixel ratio — including the `maxWidth`-resized path.
+
 #### `browser_screenshot` (read-only)
 
 Background-tab screenshot via CDP `Page.captureScreenshot` — never raises the window. Returns the image as a native MCP image content block. Defaults to JPEG quality 70 (~30-50 KB encoded). Use for pixel-only captures (saving a chart, capturing a finished artifact, or saving to disk via `save_to_path`); when you also need ref badges and a tree, call `browser_snapshot(screenshot:true)` instead.
@@ -586,7 +588,7 @@ npm test                   # node --test scripts/tests/*.test.mjs
 npm run dev                # esbuild watch mode (main bundle only)
 ```
 
-The test harness imports from `dist/test-exports.mjs`, so run `npm run build` once before `npm test`. Tests cover pruner heuristics (including viewportOnly auto-fallback, total_candidates surfacing), ref registry, envelope shape (including the mixed image+text content array), schema coercion, build fingerprint, annotation policy, daemon watchdog inference, the `browser_evaluate` primitive-wrap regression, the unified-capture two-hop topology (`snapshot_capture` + `annotate_image`), `save_to_path` resolution (format-from-extension inference, unknown-extension rejection, outputs_dir precedence, traversal rejection, non-fatal save errors), `replaySnapshot` (visual params replayed; `save_to_path` never replayed), `computeDrawStroke` (containment-based parent-bbox suppression), and the visual-constants contract — 88 cases total. All tests run without standing up the daemon or extension; they exercise pure helpers.
+The test harness imports from `dist/test-exports.mjs`, so run `npm run build` once before `npm test`. Tests cover pruner heuristics (including viewportOnly auto-fallback, total_candidates surfacing), ref registry, envelope shape (including the mixed image+text content array), schema coercion, build fingerprint, annotation policy, daemon watchdog inference, the `browser_evaluate` primitive-wrap regression, the unified-capture two-hop topology (`snapshot_capture` + `annotate_image`), the annotation scale formula (`scaleX = imgW / cssViewport.w`, pixel-accurate across the DPR × maxWidth matrix), `save_to_path` resolution (format-from-extension inference, unknown-extension rejection, outputs_dir precedence, traversal rejection, non-fatal save errors), `replaySnapshot` (visual params replayed; `save_to_path` never replayed), `computeDrawStroke` (containment-based parent-bbox suppression), and the visual-constants contract — 90 cases total. All tests run without standing up the daemon or extension; they exercise pure helpers.
 
 ## License
 

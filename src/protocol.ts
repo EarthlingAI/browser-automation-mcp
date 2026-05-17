@@ -126,7 +126,10 @@ export type ExtCommand =
    * uses `{withTree:false, withScreenshot:true}` for a pixels-only payload.
    *
    * Response shape (extension → daemon):
-   *   { tree?: RawNode, screenshot?: { format, dataBase64, resizedTo? }, dpr: number }
+   *   { tree?: RawNode, screenshot?: { format, dataBase64, resizedTo? },
+   *     cssViewport?: { w: number; h: number } }
+   * `cssViewport` is surfaced only when `withTree:true` — the annotation hop
+   * is the only consumer and it never runs without a fresh tree.
    */
   | {
       kind: "snapshot_capture";
@@ -168,7 +171,14 @@ export type ExtCommand =
          */
         drawStroke: boolean;
       }>;
-      dpr: number;
+      /**
+       * Page CSS-pixel viewport at snapshot time (`window.innerWidth/Height`).
+       * The extension derives canvas-pixel scale as `imgW / cssViewport.w`
+       * (and `imgH / cssViewport.h`) — DPR drops out because it's baked into
+       * both the post-resize bitmap and the CSS viewport identically, so the
+       * formula is invariant to which hop did the resize.
+       */
+      cssViewport: { w: number; h: number };
       maxWidth?: number;
       constants: {
         BADGE_FILL: string;

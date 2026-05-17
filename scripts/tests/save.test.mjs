@@ -183,7 +183,7 @@ test("runUnifiedCapture: save_to_path:true writes the file and reports savedTo",
                 dataBase64: tinyPng,
                 resizedTo: undefined,
               },
-              dpr: 1,
+              cssViewport: { w: 1920, h: 1080 },
             };
           },
         },
@@ -234,7 +234,7 @@ test("runUnifiedCapture: explicit '.png' path → image format follows extension
                 dataBase64: tinyPng,
                 resizedTo: undefined,
               },
-              dpr: 1,
+              cssViewport: { w: 1920, h: 1080 },
             };
           },
         },
@@ -268,7 +268,7 @@ test("runUnifiedCapture: save_to_path with traversal segment surfaces saveError,
         return {
           tree: { role: "WebArea", name: "T", depth: 0, children: [] },
           screenshot: { format: "jpeg", dataBase64: "x", resizedTo: undefined },
-          dpr: 1,
+          cssViewport: { w: 1920, h: 1080 },
         };
       },
     },
@@ -298,7 +298,7 @@ test("runUnifiedCapture: unsupported save extension surfaces saveError, image st
         return {
           tree: { role: "WebArea", name: "T", depth: 0, children: [] },
           screenshot: { format: "jpeg", dataBase64: "x", resizedTo: undefined },
-          dpr: 1,
+          cssViewport: { w: 1920, h: 1080 },
         };
       },
     },

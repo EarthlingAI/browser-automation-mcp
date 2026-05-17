@@ -36,7 +36,7 @@ const TREE_WITH_REFS = {
   role: "WebArea",
   name: "Test",
   depth: 0,
-  dpr: 2,
+  cssViewport: { w: 1280, h: 720 },
   children: [
     {
       nodeId: "1",
@@ -61,7 +61,7 @@ test("replaySnapshot forwards all visual params and pins save_to_path:false", as
           dataBase64: "raw-shot",
           resizedTo: undefined,
         },
-        dpr: 2,
+        cssViewport: { w: 1280, h: 720 },
       },
       // annotate_image
       { format: "jpeg", dataBase64: "annotated-shot" },
@@ -96,12 +96,12 @@ test("replaySnapshot forwards all visual params and pins save_to_path:false", as
   assert.equal(hop1.command.viewportOnly, true);
   assert.equal(hop1.command.limit, 500);
 
-  // Hop 2 — annotate_image must include rects + DPR + the full constants object.
+  // Hop 2 — annotate_image must include rects + cssViewport + the full constants object.
   const hop2 = calls[1];
   assert.equal(hop2.command.kind, "annotate_image");
   assert.equal(hop2.command.imageBase64, "raw-shot");
   assert.equal(hop2.command.format, "jpeg");
-  assert.equal(hop2.command.dpr, 2);
+  assert.deepEqual(hop2.command.cssViewport, { w: 1280, h: 720 });
   assert.equal(hop2.command.maxWidth, 1280);
   assert.ok(Array.isArray(hop2.command.rects));
   assert.ok(hop2.command.rects.length > 0, "rects should be populated from session refs");
@@ -119,7 +119,7 @@ test("replaySnapshot never persists save_to_path — even after a save'd snapsho
   // "long session quietly fills outputs/" failure mode.
   const { ctx, calls, session } = makeCtx({
     daemonResponses: [
-      { tree: TREE_WITH_REFS, screenshot: undefined, dpr: 1 },
+      { tree: TREE_WITH_REFS, screenshot: undefined, cssViewport: { w: 1280, h: 720 } },
     ],
   });
   updateSnapshotParams(ctx.session, {
@@ -150,7 +150,7 @@ test("runUnifiedCapture skips annotation hop when there are no refs", async () =
       {
         tree: { role: "WebArea", name: "Empty", depth: 0, children: [] },
         screenshot: { format: "jpeg", dataBase64: "raw", resizedTo: undefined },
-        dpr: 1,
+        cssViewport: { w: 1280, h: 720 },
       },
     ],
     sessionInit: (s) => {
@@ -216,7 +216,6 @@ test("runUnifiedCapture: withTree:false skips tree pruning and annotation", asyn
     daemonResponses: [
       {
         screenshot: { format: "png", dataBase64: "px", resizedTo: undefined },
-        dpr: 1,
       },
     ],
     sessionInit: (s) => {

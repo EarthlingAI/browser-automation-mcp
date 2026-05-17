@@ -30,7 +30,7 @@ const TREE_ONE_BUTTON = {
   role: "WebArea",
   name: "T",
   depth: 0,
-  dpr: 1.5,
+  cssViewport: { w: 1024, h: 768 },
   children: [
     {
       nodeId: "1",
@@ -49,7 +49,7 @@ test("snapshot_capture command carries the unified-capture options verbatim", as
     {
       tree: TREE_ONE_BUTTON,
       screenshot: { format: "jpeg", dataBase64: "raw", resizedTo: undefined },
-      dpr: 1.5,
+      cssViewport: { w: 1024, h: 768 },
     },
     { format: "jpeg", dataBase64: "annotated" },
   ]);
@@ -77,12 +77,12 @@ test("snapshot_capture command carries the unified-capture options verbatim", as
   assert.equal(cap.maxWidth, 1600);
 });
 
-test("annotate_image command carries imageBase64, rects, dpr, and the full constants", async () => {
+test("annotate_image command carries imageBase64, rects, cssViewport, and the full constants", async () => {
   const { ctx, calls } = makeCtx([
     {
       tree: TREE_ONE_BUTTON,
       screenshot: { format: "jpeg", dataBase64: "raw-bytes", resizedTo: undefined },
-      dpr: 1.5,
+      cssViewport: { w: 1024, h: 768 },
     },
     { format: "jpeg", dataBase64: "annotated-bytes" },
   ]);
@@ -102,7 +102,7 @@ test("annotate_image command carries imageBase64, rects, dpr, and the full const
   assert.equal(ann.imageBase64, "raw-bytes");
   // Format flows through both hops — inferred from save_to_path:false → jpeg.
   assert.equal(ann.format, "jpeg");
-  assert.equal(ann.dpr, 1.5);
+  assert.deepEqual(ann.cssViewport, { w: 1024, h: 768 });
   assert.ok(Array.isArray(ann.rects));
   assert.ok(ann.rects.length >= 1, "should have at least the button ref");
   const firstRect = ann.rects[0];
@@ -122,7 +122,7 @@ test("annotate_image command carries imageBase64, rects, dpr, and the full const
 
 test("screenshot:false → only one hop (no annotate_image)", async () => {
   const { ctx, calls } = makeCtx([
-    { tree: TREE_ONE_BUTTON, screenshot: undefined, dpr: 1.5 },
+    { tree: TREE_ONE_BUTTON, screenshot: undefined, cssViewport: { w: 1024, h: 768 } },
   ]);
   ctx.session.lastLeasedTab = 1;
   const out = await runUnifiedCapture(ctx, 1, {
@@ -137,4 +137,125 @@ test("screenshot:false → only one hop (no annotate_image)", async () => {
   assert.equal(calls.length, 1);
   assert.equal(out.image, undefined);
   assert.ok(out.payload.tree);
+});
+
+// ─── scale formula regression test ─────────────────────────────────
+//
+// Mirrors the production scale formula in
+// `browser-extension/background.js::doAnnotateImage`:
+//
+//   if (c.maxWidth && bmp.width > c.maxWidth) {
+//     imgW = c.maxWidth;
+//     imgH = Math.round(bmp.height * c.maxWidth / bmp.width);
+//   }
+//   scaleX = imgW / cssViewport.w;
+//   scaleY = imgH / cssViewport.h;
+//
+// Pixel-coords for a rect at (cssX, cssY) land at
+// (Math.round(cssX * scaleX), Math.round(cssY * scaleY)). KEEP IN SYNC.
+// The production code is 5 lines and lives in a service worker that can't
+// easily import shared modules — so we duplicate intentionally and rely on
+// this matrix + the live-test gate to catch drift.
+function computeScale({ cssViewport, bmpW, bmpH, maxWidth }) {
+  let imgW = bmpW;
+  let imgH = bmpH;
+  if (maxWidth && bmpW > maxWidth) {
+    imgW = maxWidth;
+    imgH = Math.round(bmpH * (maxWidth / bmpW));
+  }
+  const cssW = cssViewport && cssViewport.w > 0 ? cssViewport.w : imgW;
+  const cssH = cssViewport && cssViewport.h > 0 ? cssViewport.h : imgH;
+  return { scaleX: imgW / cssW, scaleY: imgH / cssH, imgW, imgH };
+}
+
+test("scale formula: badge coords are pixel-accurate across DPR × maxWidth combinations", () => {
+  const cases = [
+    {
+      name: "(a) DPR=1, no resize",
+      cssViewport: { w: 1920, h: 1080 },
+      bmpW: 1920,
+      bmpH: 1080,
+      maxWidth: undefined,
+      expectedScaleX: 1,
+      expectedScaleY: 1,
+      probe: { cssX: 100, cssY: 200, expCanvasX: 100, expCanvasY: 200 },
+    },
+    {
+      name: "(b) DPR=2, no resize",
+      cssViewport: { w: 1920, h: 1080 },
+      bmpW: 3840,
+      bmpH: 2160,
+      maxWidth: undefined,
+      expectedScaleX: 2,
+      expectedScaleY: 2,
+      probe: { cssX: 100, cssY: 200, expCanvasX: 200, expCanvasY: 400 },
+    },
+    {
+      name: "(c) DPR=0.8, maxWidth=1280 (the bug case)",
+      cssViewport: { w: 2397, h: 1137 },
+      bmpW: 1918, // = 2397 * 0.8
+      bmpH: 909, // = 1137 * 0.8
+      maxWidth: 1280,
+      expectedScaleX: 1280 / 2397,
+      expectedScaleY: Math.round(909 * (1280 / 1918)) / 1137,
+      probe: {
+        cssX: 1352,
+        cssY: 12,
+        expCanvasX: Math.round(1352 * (1280 / 2397)),
+        expCanvasY: Math.round(12 * (Math.round(909 * (1280 / 1918)) / 1137)),
+      },
+    },
+    {
+      name: "(d) DPR=1, maxWidth=640",
+      cssViewport: { w: 1280, h: 960 },
+      bmpW: 1280,
+      bmpH: 960,
+      maxWidth: 640,
+      expectedScaleX: 0.5,
+      expectedScaleY: 0.5,
+      probe: { cssX: 1000, cssY: 800, expCanvasX: 500, expCanvasY: 400 },
+    },
+    {
+      name: "(e) DPR=2, maxWidth=1024",
+      cssViewport: { w: 1024, h: 768 },
+      bmpW: 2048,
+      bmpH: 1536,
+      maxWidth: 1024,
+      expectedScaleX: 1,
+      expectedScaleY: 1,
+      probe: { cssX: 256, cssY: 64, expCanvasX: 256, expCanvasY: 64 },
+    },
+  ];
+  for (const c of cases) {
+    const { scaleX, scaleY } = computeScale(c);
+    assert.ok(
+      Math.abs(scaleX - c.expectedScaleX) < 1e-6,
+      `${c.name} scaleX: expected ${c.expectedScaleX}, got ${scaleX}`,
+    );
+    assert.ok(
+      Math.abs(scaleY - c.expectedScaleY) < 1e-6,
+      `${c.name} scaleY: expected ${c.expectedScaleY}, got ${scaleY}`,
+    );
+    const canvasX = Math.round(c.probe.cssX * scaleX);
+    const canvasY = Math.round(c.probe.cssY * scaleY);
+    assert.ok(
+      Math.abs(canvasX - c.probe.expCanvasX) < 1.5,
+      `${c.name} canvasX: expected ${c.probe.expCanvasX}, got ${canvasX}`,
+    );
+    assert.ok(
+      Math.abs(canvasY - c.probe.expCanvasY) < 1.5,
+      `${c.name} canvasY: expected ${c.probe.expCanvasY}, got ${canvasY}`,
+    );
+  }
+});
+
+test("scale formula: empty cssViewport falls back to identity scale", () => {
+  const { scaleX, scaleY } = computeScale({
+    cssViewport: { w: 0, h: 0 },
+    bmpW: 1280,
+    bmpH: 720,
+    maxWidth: undefined,
+  });
+  assert.equal(scaleX, 1);
+  assert.equal(scaleY, 1);
 });

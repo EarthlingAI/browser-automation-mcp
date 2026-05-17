@@ -64,8 +64,8 @@ interface SnapshotCaptureResponse {
     resizedTo?: { width: number; height: number };
   };
   /** Set only when `withTree:true`; the annotation hop reads it. The
-   * `withTree:false` standalone path doesn't need DPR — no rect scaling. */
-  dpr?: number;
+   * `withTree:false` standalone path doesn't need it — no rect scaling. */
+  cssViewport?: { w: number; h: number };
 }
 
 interface AnnotateImageResponse {
@@ -166,7 +166,12 @@ export async function runUnifiedCapture(
         format: imageFormat,
         quality: opts.quality,
         rects,
-        dpr: captureResp.dpr ?? 1,
+        // {w:0, h:0} defensive fallback — the extension's scale formula
+        // short-circuits to identity when either dimension is 0, so the
+        // capture itself doesn't crash if helpers ever return a synthetic
+        // root (missing document.body). The fallback path logs a breadcrumb
+        // extension-side so the failure is visible.
+        cssViewport: captureResp.cssViewport ?? { w: 0, h: 0 },
         maxWidth: opts.maxWidth,
         constants: { ...VISUAL_CONSTANTS },
       })) as AnnotateImageResponse;

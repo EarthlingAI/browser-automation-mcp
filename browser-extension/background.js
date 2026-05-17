@@ -522,11 +522,12 @@ function waitForTabDomReady(tabId) {
  * attach is amortised — at most one attach/detach cycle per call.
  */
 async function doSnapshotCapture(tabId, opts) {
-  // DPR is only meaningful when there's a tree-derived rect list to scale
-  // against the captured bitmap. We surface it exclusively via the tree-root
-  // (`__mcpA11y` sets `root.dpr`) — the only caller that ever needs it
-  // is `annotate_image`, which never runs without a fresh tree on the same
-  // call. For `withTree:false` (standalone `browser_screenshot`), DPR is
+  // cssViewport (window.innerWidth/Height in CSS pixels) is only meaningful
+  // when there's a tree-derived rect list to scale against the captured
+  // bitmap. We surface it exclusively via the tree-root (`__mcpA11y` sets
+  // `root.cssViewport`) — the only caller that ever needs it is
+  // `annotate_image`, which never runs without a fresh tree on the same call.
+  // For `withTree:false` (standalone `browser_screenshot`), cssViewport is
   // omitted; piping a standalone shot into annotate would be a misuse the
   // bridge already disallows.
 
@@ -546,7 +547,10 @@ async function doSnapshotCapture(tabId, opts) {
       });
       const tree = exec?.result ?? { role: "WebArea", children: [], depth: 0 };
       result.tree = tree;
-      result.dpr = typeof tree.dpr === "number" ? tree.dpr : 1;
+      result.cssViewport =
+        tree && typeof tree === "object" && tree.cssViewport
+          ? tree.cssViewport
+          : { w: 0, h: 0 };
     }
     if (opts.withScreenshot) {
       result.screenshot = await captureScreenshot(tabId, opts);
@@ -689,9 +693,10 @@ async function resizeImageBase64(b64, format, quality, maxWidth) {
 
 /**
  * Stateless image-in / image-out overlay. Decodes the supplied base64, then
- * optionally resizes (FIRST — keeps badge font readable at low maxWidth),
- * scales the CSS-pixel rect list by `dpr * resizeRatio` to land in canvas
- * coordinates, draws bounding boxes + numeric ref badges, and re-encodes.
+ * optionally resizes (FIRST — keeps badge font readable at low maxWidth) and
+ * scales the CSS-pixel rect list to canvas coordinates via
+ * `imgW / cssViewport.w` (and `imgH / cssViewport.h`), draws bounding boxes
+ * + numeric ref badges, and re-encodes.
  *
  * Runs entirely in the privileged service-worker context (OffscreenCanvas),
  * so it never inherits the page's CSP and never injects scripts.
@@ -705,22 +710,37 @@ async function doAnnotateImage(c) {
   let bmp = await createImageBitmap(blob);
   let resizedTo = null;
 
-  // Start with CSS-pixel → physical-pixel scale (the captured bitmap is at
-  // device-pixel resolution since CDP doesn't downscale by default).
-  let scale = c.dpr || 1;
   let imgW = bmp.width;
   let imgH = bmp.height;
 
   // Resize FIRST, then annotate. Badge font is a constant 12px regardless of
-  // maxWidth so it stays readable at high downscale ratios. Adjust `scale`
-  // to compose the resize ratio with the DPR factor.
+  // maxWidth so it stays readable at high downscale ratios.
   if (c.maxWidth && bmp.width > c.maxWidth) {
     const resizeRatio = c.maxWidth / bmp.width;
     imgW = c.maxWidth;
     imgH = Math.round(bmp.height * resizeRatio);
-    scale = (c.dpr || 1) * resizeRatio;
     resizedTo = { width: imgW, height: imgH };
   }
+
+  // Scale derives directly from final canvas dimensions vs. CSS viewport.
+  // DPR drops out because it's baked into both quantities identically —
+  // whichever resize path ran above, scale is correct because it's derived
+  // from the actual final canvas dimensions, not from a prediction of them.
+  // Defensive: identity scale when cssViewport is missing — keeps the badge
+  // layer from crashing if the helpers ever return a synthetic root (no
+  // document.body) or the bridge sends an empty fallback. Logs once per call
+  // so the failure path leaves a breadcrumb instead of silently mis-scaling.
+  const haveCss =
+    c.cssViewport && c.cssViewport.w > 0 && c.cssViewport.h > 0;
+  if (!haveCss) {
+    console.error(
+      "[browser-bg] annotate_image: cssViewport missing or zero; falling back to identity scale (badges may land near origin). Check helpers.js injection.",
+    );
+  }
+  const cssW = haveCss ? c.cssViewport.w : imgW;
+  const cssH = haveCss ? c.cssViewport.h : imgH;
+  const scaleX = imgW / cssW;
+  const scaleY = imgH / cssH;
 
   const canvas = new OffscreenCanvas(imgW, imgH);
   const ctx = canvas.getContext("2d");
@@ -732,10 +752,10 @@ async function doAnnotateImage(c) {
 
   for (const { ref, rect, drawStroke } of c.rects) {
     // Scale CSS-pixel rect to canvas pixels and clip to canvas bounds.
-    let left = Math.round(rect.x * scale);
-    let top = Math.round(rect.y * scale);
-    let right = Math.round((rect.x + rect.w) * scale);
-    let bottom = Math.round((rect.y + rect.h) * scale);
+    let left = Math.round(rect.x * scaleX);
+    let top = Math.round(rect.y * scaleY);
+    let right = Math.round((rect.x + rect.w) * scaleX);
+    let bottom = Math.round((rect.y + rect.h) * scaleY);
     left = Math.max(0, Math.min(left, imgW));
     top = Math.max(0, Math.min(top, imgH));
     right = Math.max(0, Math.min(right, imgW));
