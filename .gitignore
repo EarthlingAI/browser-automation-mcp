@@ -46,5 +46,7 @@ registry.npmjs.com/
 
 # Install marker written by `engine setup-deps` (engine.cli.setup_deps.provision_mcps)
 .installed_for_engine_version
+# Inter-process unpark signal dropped by `engine setup-deps` after a successful (re)provision; consumed by the live MCP supervisor on its next monitor tick (engine.mcp_supervisor._await_unpark).
+.unpark_requested
 
 outputs/
