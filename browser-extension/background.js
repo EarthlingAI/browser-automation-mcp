@@ -5,8 +5,9 @@
  * commands against chrome.tabs / chrome.scripting / chrome.debugger.
  *
  * Strict invariants (mirrors the legacy fork's invariant #7):
- *   - Never activates tabs (chrome.tabs.update({active:true}) is forbidden).
- *   - Never raises the browser window.
+ *   - Never activates tabs or raises the window EXCEPT the explicit bringToFront
+ *     escape hatch (chrome.tabs.update({active:true}) + chrome.windows.update is
+ *     confined to bringToFront; forbidden everywhere else).
  *   - Screenshots use chrome.debugger Page.captureScreenshot — never captureVisibleTab.
  *
  * Auth: the daemon gates the WebSocket upgrade by checking the Origin header against
@@ -365,6 +366,10 @@ async function dispatchInner(req) {
       return runHelper(tabId, "press_key", c);
     case "evaluate":
       return runEvaluate(tabId, c.expression);
+    case "set_focus_emulation":
+      return setFocusEmulation(tabId, c.enabled);
+    case "bring_to_front":
+      return bringToFront(tabId);
     case "wait_for":
       // Route condition-mode through chrome.debugger Runtime.evaluate so the
       // predicate runs as the debugger (bypassing strict-CSP sites like Suno/
@@ -572,13 +577,13 @@ async function setCaptureAttribute(tabId, on) {
   // context; the attribute it sets is on documentElement (page-side DOM)
   // which both worlds share regardless.
   //
-  // No rAF-based paint wait — agent tabs are always background tabs (per
-  // invariant #1) and Chrome throttles requestAnimationFrame to ~0 fps in
-  // background tabs, so a double-rAF wait would hang for seconds (or
-  // forever on a fully-discarded tab). The CDP `Page.captureScreenshot`
-  // call below triggers its own paint pass internally, picking up the
-  // visibility:hidden style invalidation as part of that pass. Empirically
-  // sufficient for hiding the HUD; no synchronisation needed bridge-side.
+  // No rAF-based paint wait — agent tabs are backgrounded (focus-emulation can
+  // lift the throttle, but this path never assumes it) and Chrome throttles
+  // requestAnimationFrame to ~0 fps in background tabs, so a double-rAF wait
+  // would hang for seconds (or forever on a fully-discarded tab). The CDP
+  // `Page.captureScreenshot` call below triggers its own paint pass internally,
+  // picking up the visibility:hidden style invalidation as part of that pass.
+  // Empirically sufficient for hiding the HUD; no synchronisation needed bridge-side.
   try {
     await chrome.scripting.executeScript({
       target: { tabId, allFrames: false },
@@ -815,6 +820,21 @@ async function doAnnotateImage(c) {
 
 const attached = new Set();
 const detachTimers = new Map();
+// Tabs flagged for CDP focus-emulation (see setFocusEmulation / invariant #27).
+// Lives in SW state, NOT debugger state, so it survives the 5s detach that
+// follows every action — debuggerAttach re-asserts emulation for these tabs on
+// every fresh attach, keeping rAF live across the attach/detach churn.
+const focusEmulated = new Set();
+
+function sendDebuggerCommand(tabId, method, params) {
+  return new Promise((resolve, reject) => {
+    chrome.debugger.sendCommand({ tabId }, method, params ?? {}, (r) => {
+      if (chrome.runtime.lastError)
+        reject(new Error(chrome.runtime.lastError.message));
+      else resolve(r);
+    });
+  });
+}
 
 function debuggerAttach(tabId) {
   if (attached.has(tabId)) {
@@ -831,10 +851,44 @@ function debuggerAttach(tabId) {
         reject(new Error(chrome.runtime.lastError.message));
       else {
         attached.add(tabId);
-        resolve();
+        // Re-assert focus-emulation on this fresh attach if the tab is flagged.
+        // Focus-emulation is debugger-session-scoped, so the prior session's
+        // emulation was lost on detach; re-applying here (and resolving only
+        // after it completes) means the action that triggered this attach runs
+        // with rAF already live. A re-assert failure must not break the attach,
+        // so we always resolve.
+        if (focusEmulated.has(tabId)) {
+          assertFocusEmulation(tabId, true).then(
+            () => resolve(),
+            () => resolve(),
+          );
+        } else {
+          resolve();
+        }
       }
     });
   });
+}
+
+/** Apply CDP focus-emulation. Assumes the debugger is already attached. */
+async function assertFocusEmulation(tabId, enabled) {
+  await sendDebuggerCommand(tabId, "Emulation.setFocusEmulationEnabled", {
+    enabled,
+  });
+  // Focus-emulation flips the page to visible+focused, but an occluded tab is
+  // still not composited, so rAF only resumes to a ~10fps fallback. Moving the
+  // page to the "active" lifecycle state lifts rAF to full rate and wakes a
+  // long-backgrounded (frozen) tab — enough for canvas SPAs (Sheets/Figma) to
+  // render selection/scroll/menus faithfully. Only on enable; the disable path
+  // reverts this override by detaching the debugger (debuggerDetachNow), which
+  // clears it atomically — we never set "frozen" (CDP offers only
+  // "active"/"frozen", neither of which is the natural state, so prompt detach
+  // is the correct clean revert).
+  if (enabled) {
+    await sendDebuggerCommand(tabId, "Page.setWebLifecycleState", {
+      state: "active",
+    });
+  }
 }
 
 function debuggerDetachLater(tabId) {
@@ -849,6 +903,75 @@ function debuggerDetachLater(tabId) {
       detachTimers.delete(tabId);
     }, 5_000),
   );
+}
+
+/**
+ * Detach the debugger immediately, cancelling any pending deferred detach.
+ * Detaching is the only atomic way to clear ALL session-scoped CDP overrides
+ * (focus-emulation AND the Page.setWebLifecycleState{active} lifecycle override)
+ * in one step — used by the focus-emulation disable path so the tab cleanly
+ * resumes Chrome's natural background throttling/freezing.
+ *
+ * Does NOT clear the `focusEmulated` Set — that flag is the caller's concern.
+ * The disable path clears it BEFORE detaching so the re-assert-on-attach hook
+ * won't revive emulation; any future caller that detaches a still-flagged tab
+ * will see emulation re-asserted on the next attach (by design).
+ */
+function debuggerDetachNow(tabId) {
+  const t = detachTimers.get(tabId);
+  if (t) {
+    clearTimeout(t);
+    detachTimers.delete(tabId);
+  }
+  return new Promise((resolve) => {
+    chrome.debugger.detach({ tabId }, () => {
+      void chrome.runtime.lastError; // swallow — detach can race tab-close/external-detach
+      attached.delete(tabId);
+      resolve();
+    });
+  });
+}
+
+/**
+ * Toggle CDP focus-emulation on a tab so rAF runs in the occluded background
+ * tab without raising the window. The `focusEmulated` Set persists the intent
+ * across the attach/detach churn (debuggerAttach re-asserts on every fresh
+ * attach). No focus theft — the OS window is never raised.
+ */
+async function setFocusEmulation(tabId, enabled) {
+  if (tabId == null) throw new Error("set_focus_emulation requires a tabId");
+  // Clear the flag BEFORE attaching on disable so a concurrent fresh attach
+  // doesn't re-assert emulation we're about to turn off.
+  if (!enabled) focusEmulated.delete(tabId);
+  await debuggerAttach(tabId);
+  try {
+    await assertFocusEmulation(tabId, enabled);
+    if (enabled) focusEmulated.add(tabId);
+  } finally {
+    // Enable: keep the debugger warm with a deferred detach (the re-assert hook
+    // reattaches on the next action anyway). Disable: detach NOW — the
+    // Page.setWebLifecycleState{active} override from a prior enable is
+    // session-scoped and only lifts on detach, so a prompt detach is the clean
+    // revert that lets the tab resume natural background throttling/freezing.
+    if (enabled) debuggerDetachLater(tabId);
+    else await debuggerDetachNow(tabId);
+  }
+  return { focusEmulation: enabled };
+}
+
+/**
+ * The ONLY sanctioned focus-theft in the codebase (invariant #29): raises the
+ * real OS window and activates the tab. Captures the prior foreground first so
+ * the agent can restore it. Everything else stays background per invariants
+ * #1/#2 — prefer setFocusEmulation (no raise) for rAF/canvas rendering needs.
+ */
+async function bringToFront(tabId) {
+  if (tabId == null) throw new Error("bring_to_front requires a tabId");
+  const previousActiveTab = await getFocusedTab();
+  const tab = await chrome.tabs.get(tabId);
+  await chrome.windows.update(tab.windowId, { focused: true });
+  await chrome.tabs.update(tabId, { active: true });
+  return { broughtToFront: true, windowId: tab.windowId, previousActiveTab };
 }
 
 // ─── interaction helpers ────────────────────────────────────────────
@@ -1197,6 +1320,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   networkBuffers.delete(tabId);
   indicatorState.delete(tabId);
   indicatorInjected.delete(tabId);
+  focusEmulated.delete(tabId);
   send({ type: "tab_closed", tabId });
 });
 chrome.tabs.onAttached.addListener((tabId) => {

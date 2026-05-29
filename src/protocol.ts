@@ -256,6 +256,29 @@ export type ExtCommand =
       networkIdle?: boolean;
       pollIntervalMs?: number;
     }
+  /**
+   * Toggle CDP focus-emulation (`Emulation.setFocusEmulationEnabled` + lifecycle
+   * `active`) on the leased tab. This makes Chrome treat an occluded background tab
+   * as visible + focused — WITHOUT raising the OS window — which resumes
+   * `requestAnimationFrame`. It is a RENDERING/visibility aid: backgrounded canvas
+   * SPAs (Google Sheets, Figma, Miro) route selection highlight, menu positioning,
+   * and scroll through rAF, so without emulation they RENDER stale (and screenshots
+   * look stale) even though the page's JS model stays live — input via synthetic DOM
+   * events reaches the model regardless. Emulation is debugger-session-scoped (clears
+   * on detach); the service worker re-asserts it on every fresh attach for flagged
+   * tabs, and the disable path detaches promptly to revert all overrides. See
+   * invariants #27/#28.
+   */
+  | { kind: "set_focus_emulation"; enabled: boolean }
+  /**
+   * Raise the real OS browser window and activate the tab (`chrome.windows.update`
+   * + `chrome.tabs.update({active})`). This GENUINELY steals the user's focus — the
+   * sole sanctioned exception to the no-raise/no-activate invariants (#1/#2/#29).
+   * Only for focus-dependent cases focus-emulation can't satisfy (OS file pickers,
+   * clipboard-paste permission gates, drag-drop, native `:focus` UI). Returns the
+   * previously-active tab so the agent can restore it.
+   */
+  | { kind: "bring_to_front" }
   | { kind: "indicator_state"; state: IndicatorState };
 
 export interface IndicatorState {

@@ -11,7 +11,15 @@ export const BUILD_STAMP: string =
   typeof __BUILD_STAMP__ === "undefined" ? "dev" : __BUILD_STAMP__;
 
 export const SERVER_INSTRUCTIONS = `Cross-tab control of the user's real Chrome session via a passive MV3 extension.
-Tabs operate in the background — no focus theft, no window raise.
+Tabs operate in the background by default — no focus theft, no window raise.
+
+Rendering & focus: backgrounded canvas SPAs (Sheets/Figma/Miro) throttle rendering, so screenshots
+and on-screen selection/scroll/menus can look stale even though the page's JS model stays live.
+browser_set_active enables CDP focus-emulation so a backgrounded tab renders faithfully — still no
+window raise, no focus theft. It is a rendering/visibility aid, NOT a precondition for input:
+synthetic events and ordinary actions reach the page regardless. browser_bring_to_front is the sole
+escape hatch that genuinely raises the window and steals focus — reserve it for OS file pickers,
+clipboard-paste prompts, drag-drop, and native :focus-gated UI.
 
 Observe-act loop: browser_snapshot returns a pruned a11y tree with stable numeric refs.
 Use refs in browser_click / browser_type / etc. Action tools auto-snapshot after.

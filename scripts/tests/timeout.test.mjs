@@ -15,6 +15,13 @@ test("inferExtTimeout: non-wait_for commands get the 30s default", () => {
   );
   assert.equal(inferExtTimeout({ kind: "evaluate", expression: "1+1" }), 30_000);
   assert.equal(inferExtTimeout({ kind: "tabs_query" }), 30_000);
+  // Focus-emulation + window-raise are instantaneous CDP/chrome.* calls — the
+  // 30s safety net applies, no command-aware budget.
+  assert.equal(
+    inferExtTimeout({ kind: "set_focus_emulation", enabled: true }),
+    30_000,
+  );
+  assert.equal(inferExtTimeout({ kind: "bring_to_front" }), 30_000);
 });
 
 test("inferExtTimeout: wait_for with explicit timeout adds 5s buffer", () => {

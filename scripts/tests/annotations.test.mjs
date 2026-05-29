@@ -52,6 +52,18 @@ const EXPECTED = {
     idempotent: true,
     openWorld: true,
   },
+  browser_set_active: {
+    readOnly: false,
+    destructive: false,
+    idempotent: true,
+    openWorld: true,
+  },
+  browser_bring_to_front: {
+    readOnly: false,
+    destructive: false,
+    idempotent: true,
+    openWorld: true,
+  },
   // Observe
   browser_snapshot: {
     readOnly: true,

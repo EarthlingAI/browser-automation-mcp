@@ -1,6 +1,6 @@
 # browser-automation-mcp
 
-Cross-tab control of the user's real authenticated Chrome session via a passive MV3 extension. 20 tools across tabs, observation, and interaction — every action runs in the background, never raising the window or stealing focus.
+Cross-tab control of the user's real authenticated Chrome session via a passive MV3 extension. 22 tools across tabs, observation, and interaction — actions run in the background by default, never raising the window or stealing focus. The one exception is `browser_bring_to_front`, an explicit opt-in focus-steal for OS file pickers / clipboard / drag-drop; `browser_set_active` resumes faithful rendering of a backgrounded canvas tab without any window raise.
 
 ## Setup
 
@@ -93,6 +93,31 @@ Release the lease on a tab so another session can claim it. Omit `tabId` to rele
 | Parameter | Type | Default | Description                              |
 | --------- | ---- | ------- | ---------------------------------------- |
 | `tabId`   | int  | —       | Tab id to release. Omit to release all.  |
+
+### Activation & focus
+
+Two ways to deal with a backgrounded tab. `browser_set_active` is the default, transparent rendering aid (no window raise). `browser_bring_to_front` is the explicit, rarely-needed real focus-steal.
+
+#### `browser_set_active`
+
+Enable CDP focus-emulation on the leased tab so Chrome renders it as if visible+focused — **without raising the window or stealing focus**. Backgrounded canvas SPAs (Google Sheets, Figma, Miro) throttle `requestAnimationFrame` to ~0fps, so screenshots and on-screen selection/scroll/menu rendering can look stale even though the page's JS model stays live. This restores faithful rendering — useful before a screenshot or for visual verification. It is a **rendering/visibility aid, NOT required for input**: synthetic events and ordinary actions reach the page regardless. Unnecessary for ordinary DOM pages.
+
+| Parameter | Type    | Default     | Description                                                              |
+| --------- | ------- | ----------- | ------------------------------------------------------------------------ |
+| `enabled` | boolean | `true`      | `true` resumes faithful rendering; `false` turns focus-emulation back off. |
+| `tabId`   | int     | last leased | Tab id. Omit to use the current leased tab.                              |
+
+Returns `{ focusEmulation: boolean }`. Enabling keeps the debugger warm and re-asserts emulation on each subsequent action, so rendering stays live across an action sequence; disabling detaches the debugger promptly, dropping the tab straight back to Chrome's natural background throttling. Because emulation toggles the page's visibility/focus state (and the debugger detaches/re-attaches between actions), pages with visibility/focus-gated logic — analytics beacons, ad-refresh, autoplay-resume — may fire those handlers repeatedly while emulation is held.
+
+#### `browser_bring_to_front`
+
+Raise the browser window and activate this tab — **this STEALS the user's focus** (the only tool that does). Use ONLY for focus-dependent flows that focus-emulation can't satisfy: OS file pickers, clipboard-paste permission prompts, drag-and-drop, native `:focus`-gated UI. For canvas/rendering issues use `browser_set_active` instead. Requires a lease on the target tab.
+
+| Parameter | Type | Default     | Description                                  |
+| --------- | ---- | ----------- | -------------------------------------------- |
+| `tabId`   | int  | last leased | Tab id. Omit to use the current leased tab.  |
+
+Returns `{ broughtToFront, windowId, previousActiveTab }` — `previousActiveTab` (`null` if no foreground tab was found) lets you restore the user's prior tab afterward.
 
 ### Observation
 
@@ -293,6 +318,8 @@ Condition mode runs through `chrome.debugger Runtime.evaluate` to bypass strict-
 | `browser_close_tab`        | —            | ✓               | ✓              | ✓             |
 | `browser_switch_tab`       | —            | —               | ✓              | ✓             |
 | `browser_release_tab`      | —            | —               | ✓              | ✓             |
+| `browser_set_active`       | —            | —               | ✓              | ✓             |
+| `browser_bring_to_front`   | —            | —               | ✓              | ✓             |
 | `browser_snapshot`         | ✓            | —               | ✓              | ✓             |
 | `browser_screenshot`       | ✓            | —               | ✓              | ✓             |
 | `browser_console_messages` | ✓            | —               | ✓              | ✓             |
@@ -322,7 +349,7 @@ AI agent ──MCP/stdio──▶ bridge process ──TCP loopback──▶ dae
 Three processes for two reasons:
 
 1. **Multi-agent.** Each agent session spawns its own bridge MCP process. Bridges share one daemon, which shares one extension. Per-tab leases at the daemon layer keep concurrent agents from clobbering each other.
-2. **Background by default.** The MV3 extension uses `chrome.tabs.create({active:false})` and `chrome.debugger Page.captureScreenshot` — never `tabs.update({active:true})`, never `captureVisibleTab`. The user keeps focus.
+2. **Background by default.** The MV3 extension uses `chrome.tabs.create({active:false})` and `chrome.debugger Page.captureScreenshot` — never `captureVisibleTab`, and never activates a tab or raises the window EXCEPT the explicit `browser_bring_to_front` escape hatch (`chrome.windows.update({focused:true})` + `chrome.tabs.update({active:true})`). `browser_set_active` resumes faithful rendering via CDP focus-emulation with no window raise. The user keeps focus unless they invoke `browser_bring_to_front`.
 
 The daemon auto-spawns from the first bridge that finds the port unbound. Authentication uses Origin-header gating: the daemon checks every WebSocket upgrade against `chrome-extension://<id>` (extension ID pinned by the CRX `key` in `manifest.json`). Browsers set `Origin` from the executing context and JS cannot override it — web pages cannot impersonate the extension, no user-visible token paste required.
 
@@ -346,7 +373,7 @@ browser-automation-mcp/
 │   │   ├── registry.ts       # Tool registration + per-session ref registry + settle plumbing + envelope helpers
 │   │   ├── session.ts        # Per-bridge session state (lastSnapshotRefs, lastLeasedTab, isStale)
 │   │   └── tools/
-│   │       ├── tabs.ts            # 5 tab/lease tools
+│   │       ├── tabs.ts            # 7 tab tools (5 tab/lease + browser_set_active + browser_bring_to_front)
 │   │       ├── observe.ts         # 4 observation tools (browser_snapshot, browser_screenshot, console, network)
 │   │       ├── interact.ts        # 11 action tools (auto-snapshot + auto-settle wrapped)
 │   │       ├── capture.ts         # Unified-capture orchestrator — single source of truth for browser_snapshot, browser_screenshot, and replaySnapshot
