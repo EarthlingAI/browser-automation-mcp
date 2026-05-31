@@ -245,7 +245,7 @@
     pill.addEventListener("click", togglePanel);
     hud.appendChild(pill);
 
-    panel = el("div", "panel");
+    panel = el("div", "panel hidden");
     const header = document.createElement("header");
     const headerTitle = document.createElement("span");
     headerTitle.textContent = "Agent activity";
@@ -460,8 +460,6 @@
 
   function showHud() {
     hud.classList.remove("hidden");
-    panel.classList.remove("hidden");
-    renderLog();
   }
 
   function hideHud() {

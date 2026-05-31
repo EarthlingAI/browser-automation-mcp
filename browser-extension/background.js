@@ -833,10 +833,17 @@ async function doAnnotateImage(c) {
 
 const attached = new Set();
 const detachTimers = new Map();
+// Idle backstop: how long the debugger stays attached after the last debugger
+// action before auto-detaching. Long enough that active automation never trips
+// it (so the "started debugging" infobar stays steady across a lease instead of
+// flickering per action), short enough that an orphaned attachment — daemon
+// death, dropped `released` edge, force-revoke leftover — self-heals. The clean
+// path is detach-on-lease-release (see applyIndicatorState); this is the safety net.
+const DETACH_IDLE_MS = 180_000;
 // Tabs flagged for CDP focus-emulation (see setFocusEmulation / invariant #27).
-// Lives in SW state, NOT debugger state, so it survives the 5s detach that
-// follows every action — debuggerAttach re-asserts emulation for these tabs on
-// every fresh attach, keeping rAF live across the attach/detach churn.
+// Lives in SW state, NOT debugger state, so it survives a detach (the idle
+// backstop or a lease release) — debuggerAttach re-asserts emulation for these
+// tabs on every fresh attach, keeping rAF live across any attach/detach churn.
 const focusEmulated = new Set();
 // Tabs with an active viewport override (see setResize / browser_resize).
 // tabId → {width, height}. Same SW-state-not-debugger-state model as
@@ -942,7 +949,7 @@ function debuggerDetachLater(tabId) {
       });
       attached.delete(tabId);
       detachTimers.delete(tabId);
-    }, 5_000),
+    }, DETACH_IDLE_MS),
   );
 }
 
@@ -989,8 +996,9 @@ async function setFocusEmulation(tabId, enabled) {
     await assertFocusEmulation(tabId, enabled);
     if (enabled) focusEmulated.add(tabId);
   } finally {
-    // Enable: keep the debugger warm with a deferred detach (the re-assert hook
-    // reattaches on the next action anyway). Disable: detach NOW — the
+    // Enable: arm the idle backstop (debuggerDetachLater) instead of detaching —
+    // each subsequent debugger action resets it, so the debugger stays attached
+    // for the lease and the infobar holds steady. Disable: detach NOW — the
     // Page.setWebLifecycleState{active} override from a prior enable is
     // session-scoped and only lifts on detach, so a prompt detach is the clean
     // revert that lets the tab resume natural background throttling/freezing.
@@ -1019,10 +1027,11 @@ async function assertDeviceMetrics(tabId) {
  * no window raise, no focus theft (debugger-scoped, same model as focus-
  * emulation). STICKY per-tab: the dimensions are stored in `deviceMetrics` and
  * re-asserted on every fresh attach (debuggerAttach), so the override survives
- * the attach/detach churn of an action sequence. The deferred detach keeps the
- * debugger warm so subsequent tree-only snapshots still see the resized layout.
- * Clears on tab-close; persists across focus-emulation toggles (which detach the
- * debugger — re-asserted on the next attach).
+ * any attach/detach churn. The idle backstop (debuggerDetachLater) is reset by
+ * each subsequent debugger action, so the debugger stays attached for the lease
+ * and tree-only snapshots still see the resized layout. Clears on tab-close;
+ * persists across focus-emulation toggles (which detach the debugger —
+ * re-asserted on the next attach).
  */
 async function setResize(tabId, width, height) {
   if (tabId == null) throw new Error("resize requires a tabId");
@@ -1069,10 +1078,11 @@ async function setDialogHandler(tabId, params) {
     // covers every debugger-attached tab — invariant #35), so arming just needs
     // the attach itself.
   } finally {
-    // Lifetime-aware detach. one_shot: deferred 5s detach is fine — the typical
-    // pattern is `arm → click → dialog fires immediately`, well inside 5s, and
-    // the re-assert hook revives `Page.enable` on the next action's attach if
-    // the dialog comes later. STICKY: DO NOT defer-detach. Sticky-ACCEPT
+    // Lifetime-aware detach. one_shot: arming the idle backstop
+    // (debuggerDetachLater) is fine — the typical pattern is `arm → click →
+    // dialog fires immediately`, well inside the lease, and the re-assert hook
+    // revives `Page.enable` on the next action's attach if the dialog comes
+    // later. STICKY: DO NOT defer-detach. Sticky-ACCEPT
     // promises "auto-accept every dialog this tab fires until I clear" —
     // including dialogs fired by the page itself (timers, network responses,
     // beforeunload), not just dialogs triggered by an agent action. If the
@@ -1180,8 +1190,15 @@ async function runResolveRef(tabId, ref) {
 
 async function applyIndicatorState(tabId, state) {
   if (tabId == null) return { ok: false };
-  if (state.state === "released") indicatorState.delete(tabId);
-  else indicatorState.set(tabId, state);
+  if (state.state === "released") {
+    indicatorState.delete(tabId);
+    // Clean lease release ends the debugger hold immediately so the "started
+    // debugging" infobar clears at once (fire-and-forget — must not block the
+    // indicator/tab-group update; debuggerDetachNow is safe when not attached).
+    // A force-revoke handover emits leased→leased (never `released`), so the
+    // tab's debugger correctly stays attached across the handover.
+    void debuggerDetachNow(tabId);
+  } else indicatorState.set(tabId, state);
   await Promise.allSettled([
     pushIndicatorToPage(tabId, state),
     updateTabGroup(tabId, state),
@@ -1512,6 +1529,15 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   focusEmulated.delete(tabId);
   deviceMetrics.delete(tabId);
   dialogDispositions.delete(tabId);
+  // Chrome auto-detaches the debugger when the tab closes, so we don't call
+  // chrome.debugger.detach here — just clear our in-memory state (cancelling any
+  // pending idle-backstop timer) so a closed tab leaves no stale entry behind.
+  const detachTimer = detachTimers.get(tabId);
+  if (detachTimer) {
+    clearTimeout(detachTimer);
+    detachTimers.delete(tabId);
+  }
+  attached.delete(tabId);
   send({ type: "tab_closed", tabId });
 });
 chrome.tabs.onAttached.addListener((tabId) => {
