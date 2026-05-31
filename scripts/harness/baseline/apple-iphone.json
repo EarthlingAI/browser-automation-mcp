@@ -1,0 +1,2606 @@
+{
+  "fixture": "apple-iphone",
+  "url": "https://www.apple.com/iphone/",
+  "opts": {
+    "viewport": {
+      "w": 1536,
+      "h": 735
+    }
+  },
+  "meta": {
+    "total_candidates": 370
+  },
+  "jsonSize": 22462,
+  "inventory": [
+    {
+      "ref": "1",
+      "role": "WebArea",
+      "name": "iPhone - Apple",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2",
+      "role": "complementary",
+      "name": "Choose country or region",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "7",
+      "role": "button",
+      "name": "Australia",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "11",
+      "role": "button",
+      "name": "Continue",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "12",
+      "role": "button",
+      "name": "Close country or region selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "177",
+      "role": "banner",
+      "name": "iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "180",
+      "role": "heading",
+      "name": "iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "691",
+      "role": "contentinfo",
+      "name": "Apple Footer",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "727",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "978",
+      "role": "link",
+      "name": "Find an Apple Store",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "979",
+      "role": "link",
+      "name": "other retailer",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "981",
+      "role": "link",
+      "name": "1-800-MY-APPLE",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "997",
+      "role": "link",
+      "name": "United States. Choose your country or region",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "793",
+      "role": "link",
+      "name": "\n\t\t\t\t\t\t\t\t\t\t\t\tApple",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "719",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "722",
+      "role": "link",
+      "name": "Apple Card Customer Agreement",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "720",
+      "role": "link",
+      "name": "apple.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "721",
+      "role": "link",
+      "name": "here",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "703",
+      "role": "listitem",
+      "name": "Apple Intelligence is available in beta. Some features may not be available in all regions or languages. For feature and language availability and system requirements, see support.apple.com/121115.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "704",
+      "role": "link",
+      "name": "support.apple.com/121115",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "698",
+      "role": "listitem",
+      "name": "** RCS messaging on iPhone is available in specific markets and requires support from your carrier. Check with your carrier for further details.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "701",
+      "role": "listitem",
+      "name": "Compared with previous-generation iPhone.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "709",
+      "role": "listitem",
+      "name": "Clean Up is available in beta. For compatible devices and system requirements, see support.apple.com/121429.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "710",
+      "role": "link",
+      "name": "support.apple.com/121429",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "712",
+      "role": "listitem",
+      "name": "On a mass balance allocation.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "784",
+      "role": "listitem",
+      "name": "Accessories sold separately.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "787",
+      "role": "listitem",
+      "name": "Requires an iPhone and Apple Watch with second-generation Ultra Wideband chip. Ultra Wideband availability varies by region.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "789",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "790",
+      "role": "link",
+      "name": "View Apple Pay countries and regions",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "791",
+      "role": "link",
+      "name": "Feature Availability",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "715",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "717",
+      "role": "link",
+      "name": "Apple Card Customer Agreement",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "718",
+      "role": "link",
+      "name": "here",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "696",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "781",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "702",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "705",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "706",
+      "role": "link",
+      "name": "support.apple.com/121115",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "711",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "713",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "714",
+      "role": "link",
+      "name": "support.apple.com/kb/HT213885",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "707",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "708",
+      "role": "link",
+      "name": "support.apple.com/121115#visual-intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "782",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "783",
+      "role": "link",
+      "name": "apple.com/iphone/cellular",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "785",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "786",
+      "role": "link",
+      "name": "apple.com/uwb",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "842",
+      "role": "heading",
+      "name": "Account\n\t\t\t\t\t\n\t\t\t\t\t\tAccount",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "852",
+      "role": "heading",
+      "name": "Entertainment\n\t\t\t\t\t\n\t\t\t\t\t\tEntertainment",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "875",
+      "role": "heading",
+      "name": "Apple Store\n\t\t\t\t\t\n\t\t\t\t\t\tApple Store",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "904",
+      "role": "heading",
+      "name": "For Business\n\t\t\t\t\t\n\t\t\t\t\t\tFor Business",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "912",
+      "role": "heading",
+      "name": "For Education\n\t\t\t\t\t\n\t\t\t\t\t\tFor Education",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "922",
+      "role": "heading",
+      "name": "For Healthcare\n\t\t\t\t\t\n\t\t\t\t\t\tFor Healthcare",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "928",
+      "role": "heading",
+      "name": "For Government\n\t\t\t\t\t\n\t\t\t\t\t\tFor Government",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "935",
+      "role": "listitem",
+      "name": "Shop for State and Local Employees",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "936",
+      "role": "link",
+      "name": "Shop for State and Local Employees",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "803",
+      "role": "heading",
+      "name": "Shop and Learn\n\t\t\t\t\t\n\t\t\t\t\t\tShop and Learn",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "829",
+      "role": "heading",
+      "name": "Apple Wallet\n\t\t\t\t\t\n\t\t\t\t\t\tApple Wallet",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "941",
+      "role": "heading",
+      "name": "Apple Values\n\t\t\t\t\t\n\t\t\t\t\t\tApple Values",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "959",
+      "role": "heading",
+      "name": "About Apple\n\t\t\t\t\t\n\t\t\t\t\t\tAbout Apple",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "845",
+      "role": "listitem",
+      "name": "Manage Your Apple Account",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "846",
+      "role": "link",
+      "name": "Manage Your Apple Account",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "847",
+      "role": "listitem",
+      "name": "Apple Store Account",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "848",
+      "role": "link",
+      "name": "Apple Store Account",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "849",
+      "role": "listitem",
+      "name": "iCloud.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "850",
+      "role": "link",
+      "name": "iCloud.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "855",
+      "role": "listitem",
+      "name": "Apple One",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "856",
+      "role": "link",
+      "name": "Apple One",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "857",
+      "role": "listitem",
+      "name": "Apple TV",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "858",
+      "role": "link",
+      "name": "Apple TV",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "859",
+      "role": "listitem",
+      "name": "Apple Music",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "860",
+      "role": "link",
+      "name": "Apple Music",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "861",
+      "role": "listitem",
+      "name": "Apple Arcade",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "862",
+      "role": "link",
+      "name": "Apple Arcade",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "863",
+      "role": "listitem",
+      "name": "Apple Fitness+",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "864",
+      "role": "link",
+      "name": "Apple Fitness+",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "865",
+      "role": "listitem",
+      "name": "Apple News+",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "866",
+      "role": "link",
+      "name": "Apple News+",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "867",
+      "role": "listitem",
+      "name": "Apple Podcasts",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "868",
+      "role": "link",
+      "name": "Apple Podcasts",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "869",
+      "role": "listitem",
+      "name": "Apple Books",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "870",
+      "role": "link",
+      "name": "Apple Books",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "871",
+      "role": "listitem",
+      "name": "App Store",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "872",
+      "role": "link",
+      "name": "App Store",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "878",
+      "role": "listitem",
+      "name": "Find a Store",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "879",
+      "role": "link",
+      "name": "Find a Store",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "880",
+      "role": "listitem",
+      "name": "Genius Bar",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "881",
+      "role": "link",
+      "name": "Genius Bar",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "882",
+      "role": "listitem",
+      "name": "Today at Apple",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "883",
+      "role": "link",
+      "name": "Today at Apple",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "884",
+      "role": "listitem",
+      "name": "Group Reservations",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "885",
+      "role": "link",
+      "name": "Group Reservations",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "886",
+      "role": "listitem",
+      "name": "Apple Camp",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "887",
+      "role": "link",
+      "name": "Apple Camp",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "888",
+      "role": "listitem",
+      "name": "Apple Store App",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "889",
+      "role": "link",
+      "name": "Apple Store App",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "890",
+      "role": "listitem",
+      "name": "Certified Refurbished",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "891",
+      "role": "link",
+      "name": "Certified Refurbished",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "892",
+      "role": "listitem",
+      "name": "Apple Trade In",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "893",
+      "role": "link",
+      "name": "Apple Trade In",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "894",
+      "role": "listitem",
+      "name": "Financing",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "895",
+      "role": "link",
+      "name": "Financing",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "896",
+      "role": "listitem",
+      "name": "Carrier Deals at Apple",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "897",
+      "role": "link",
+      "name": "Carrier Deals at Apple",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "898",
+      "role": "listitem",
+      "name": "Order Status",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "899",
+      "role": "link",
+      "name": "Order Status",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "900",
+      "role": "listitem",
+      "name": "Shopping Help",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "901",
+      "role": "link",
+      "name": "Shopping Help",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "907",
+      "role": "listitem",
+      "name": "Apple and Business",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "908",
+      "role": "link",
+      "name": "Apple and Business",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "909",
+      "role": "listitem",
+      "name": "Shop for Business",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "910",
+      "role": "link",
+      "name": "Shop for Business",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "915",
+      "role": "listitem",
+      "name": "Apple and Education",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "916",
+      "role": "link",
+      "name": "Apple and Education",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "917",
+      "role": "listitem",
+      "name": "Shop for K-12",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "918",
+      "role": "link",
+      "name": "Shop for K-12",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "919",
+      "role": "listitem",
+      "name": "Shop for College",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "920",
+      "role": "link",
+      "name": "Shop for College",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "925",
+      "role": "listitem",
+      "name": "Apple and Healthcare",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "926",
+      "role": "link",
+      "name": "Apple and Healthcare",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "931",
+      "role": "listitem",
+      "name": "Apple and Government",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "932",
+      "role": "link",
+      "name": "Apple and Government",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "933",
+      "role": "listitem",
+      "name": "Shop for Veterans and Military",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "934",
+      "role": "link",
+      "name": "Shop for Veterans and Military",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "937",
+      "role": "listitem",
+      "name": "Shop for Federal Employees",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "938",
+      "role": "link",
+      "name": "Shop for Federal Employees",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "990",
+      "role": "listitem",
+      "name": "Sales and Refunds",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "991",
+      "role": "link",
+      "name": "Sales and Refunds",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "986",
+      "role": "listitem",
+      "name": "Privacy Policy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "987",
+      "role": "link",
+      "name": "Privacy Policy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "988",
+      "role": "listitem",
+      "name": "Terms of Use",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "989",
+      "role": "link",
+      "name": "Terms of Use",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "994",
+      "role": "listitem",
+      "name": "Site Map",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "995",
+      "role": "link",
+      "name": "Site Map",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "806",
+      "role": "listitem",
+      "name": "Store",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "807",
+      "role": "link",
+      "name": "Store",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "808",
+      "role": "listitem",
+      "name": "Mac",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "809",
+      "role": "link",
+      "name": "Mac",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "810",
+      "role": "listitem",
+      "name": "iPad",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "811",
+      "role": "link",
+      "name": "iPad",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "812",
+      "role": "listitem",
+      "name": "iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "813",
+      "role": "link",
+      "name": "iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "814",
+      "role": "listitem",
+      "name": "Watch",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "815",
+      "role": "link",
+      "name": "Watch",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "816",
+      "role": "listitem",
+      "name": "Vision",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "817",
+      "role": "link",
+      "name": "Vision",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "818",
+      "role": "listitem",
+      "name": "AirPods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "819",
+      "role": "link",
+      "name": "AirPods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "820",
+      "role": "listitem",
+      "name": "TV & Home",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "821",
+      "role": "link",
+      "name": "TV & Home",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "822",
+      "role": "listitem",
+      "name": "AirTag",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "823",
+      "role": "link",
+      "name": "AirTag",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "824",
+      "role": "listitem",
+      "name": "Accessories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "825",
+      "role": "link",
+      "name": "Accessories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "826",
+      "role": "listitem",
+      "name": "Gift Cards",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "827",
+      "role": "link",
+      "name": "Gift Cards",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "832",
+      "role": "listitem",
+      "name": "Wallet",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "833",
+      "role": "link",
+      "name": "Wallet",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "834",
+      "role": "listitem",
+      "name": "Apple Card",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "835",
+      "role": "link",
+      "name": "Apple Card",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "836",
+      "role": "listitem",
+      "name": "Apple Pay",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "837",
+      "role": "link",
+      "name": "Apple Pay",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "838",
+      "role": "listitem",
+      "name": "Apple Cash",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "839",
+      "role": "link",
+      "name": "Apple Cash",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "944",
+      "role": "listitem",
+      "name": "Accessibility",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "945",
+      "role": "link",
+      "name": "Accessibility",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "946",
+      "role": "listitem",
+      "name": "Education",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "947",
+      "role": "link",
+      "name": "Education",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "948",
+      "role": "listitem",
+      "name": "Environment",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "949",
+      "role": "link",
+      "name": "Environment",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "950",
+      "role": "listitem",
+      "name": "Inclusion and Diversity",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "951",
+      "role": "link",
+      "name": "Inclusion and Diversity",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "952",
+      "role": "listitem",
+      "name": "Privacy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "953",
+      "role": "link",
+      "name": "Privacy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "954",
+      "role": "listitem",
+      "name": "Racial Equity and Justice",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "955",
+      "role": "link",
+      "name": "Racial Equity and Justice",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "956",
+      "role": "listitem",
+      "name": "Supply Chain Innovation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "957",
+      "role": "link",
+      "name": "Supply Chain Innovation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "962",
+      "role": "listitem",
+      "name": "Newsroom",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "963",
+      "role": "link",
+      "name": "Newsroom",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "964",
+      "role": "listitem",
+      "name": "Apple Leadership",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "965",
+      "role": "link",
+      "name": "Apple Leadership",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "966",
+      "role": "listitem",
+      "name": "Career Opportunities",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "967",
+      "role": "link",
+      "name": "Career Opportunities",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "968",
+      "role": "listitem",
+      "name": "Investors",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "969",
+      "role": "link",
+      "name": "Investors",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "970",
+      "role": "listitem",
+      "name": "Ethics & Compliance",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "971",
+      "role": "link",
+      "name": "Ethics & Compliance",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "972",
+      "role": "listitem",
+      "name": "Events",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "973",
+      "role": "link",
+      "name": "Events",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "974",
+      "role": "listitem",
+      "name": "Contact Apple",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "975",
+      "role": "link",
+      "name": "Contact Apple",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "992",
+      "role": "listitem",
+      "name": "Legal",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "993",
+      "role": "link",
+      "name": "Legal",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "798",
+      "role": "listitem",
+      "name": "iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "693",
+      "role": "heading",
+      "name": "Apple Footer",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "233",
+      "role": "button",
+      "name": "next item",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "175",
+      "role": "link",
+      "name": "Shop iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "383",
+      "role": "banner",
+      "name": "Why Apple is the bestplace to buy iPhone.\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\tShop iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "384",
+      "role": "heading",
+      "name": "Why Apple is the bestplace to buy iPhone.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "387",
+      "role": "listitem",
+      "name": "Shop iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "388",
+      "role": "link",
+      "name": "Shop iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "238",
+      "role": "banner",
+      "name": "Explore the lineup.\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\tCompare all models",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "239",
+      "role": "heading",
+      "name": "Explore the lineup.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "242",
+      "role": "listitem",
+      "name": "Compare all models",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "243",
+      "role": "link",
+      "name": "Compare all models",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "368",
+      "role": "banner",
+      "name": "Take a closer look.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "369",
+      "role": "heading",
+      "name": "Take a closer look.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "597",
+      "role": "banner",
+      "name": "Privacy. That’s iPhone.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "598",
+      "role": "heading",
+      "name": "Privacy. That’s iPhone.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "612",
+      "role": "banner",
+      "name": "iPhone essentials.\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\tAll iPhone accessories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "613",
+      "role": "heading",
+      "name": "iPhone essentials.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "616",
+      "role": "listitem",
+      "name": "All iPhone accessories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "617",
+      "role": "link",
+      "name": "All iPhone accessories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "657",
+      "role": "banner",
+      "name": "Significant others.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "658",
+      "role": "heading",
+      "name": "Significant others.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "174",
+      "role": "link",
+      "name": "Footnote * symbol",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "202",
+      "role": "listitem",
+      "name": "iPhone 17e\n\t\t\t\t\t\t\t\t\t\t\t\tNew",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "203",
+      "role": "link",
+      "name": "iPhone 17e\n\t\t\t\t\t\t\t\t\t\t\t\tNew",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "208",
+      "role": "listitem",
+      "name": "iPhone 16",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "209",
+      "role": "link",
+      "name": "iPhone 16",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "213",
+      "role": "listitem",
+      "name": "Compare",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "214",
+      "role": "link",
+      "name": "Compare",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "218",
+      "role": "listitem",
+      "name": "Accessories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "219",
+      "role": "link",
+      "name": "Accessories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "375",
+      "role": "heading",
+      "name": "A Guided Tour of iPhone 17 Pro, iPhone Air, and iPhone 17",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "604",
+      "role": "heading",
+      "name": "Safari. A browser that’s actually private.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "187",
+      "role": "listitem",
+      "name": "iPhone 17 Pro",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "188",
+      "role": "link",
+      "name": "iPhone 17 Pro",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "192",
+      "role": "listitem",
+      "name": "iPhone Air",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "193",
+      "role": "link",
+      "name": "iPhone Air",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "197",
+      "role": "listitem",
+      "name": "iPhone 17",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "198",
+      "role": "link",
+      "name": "iPhone 17",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "223",
+      "role": "listitem",
+      "name": "Shop iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "224",
+      "role": "link",
+      "name": "Shop iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "228",
+      "role": "listitem",
+      "name": "iOS",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "229",
+      "role": "link",
+      "name": "iOS",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "378",
+      "role": "button",
+      "name": "Watch the film, iPhone series",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "607",
+      "role": "link",
+      "name": "Learn more, Privacy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "20",
+      "role": "listitem",
+      "name": "Apple",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "21",
+      "role": "link",
+      "name": "Apple",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "155",
+      "role": "listitem",
+      "name": "0+",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "157",
+      "role": "button",
+      "name": "Shopping Bag",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "150",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "151",
+      "role": "button",
+      "name": "Search apple.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "560",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "564",
+      "role": "heading",
+      "name": "Apple Store App",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "476",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "480",
+      "role": "heading",
+      "name": "Personal Setup",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "395",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "399",
+      "role": "heading",
+      "name": "Apple Trade In",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "406",
+      "role": "link",
+      "name": "Footnote * symbol",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "427",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "431",
+      "role": "heading",
+      "name": "Ways to Buy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "436",
+      "role": "link",
+      "name": "Footnote 11",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "504",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "508",
+      "role": "heading",
+      "name": "Delivery and Pickup",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "533",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "537",
+      "role": "heading",
+      "name": "Guided Shopping",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "638",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "643",
+      "role": "heading",
+      "name": "New\n\t\t\t\t\t\t\t\t\t\t\t\tAirTag",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "651",
+      "role": "link",
+      "name": "Buy, AirTag",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "649",
+      "role": "link",
+      "name": "Footnote 16",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "624",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "629",
+      "role": "heading",
+      "name": "iPhone accessories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "634",
+      "role": "link",
+      "name": "Shop iPhone accessories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "460",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "471",
+      "role": "link",
+      "name": "Learn more about carrier deals",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "464",
+      "role": "heading",
+      "name": "Carrier Deals at Apple",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "468",
+      "role": "link",
+      "name": "Footnote 12",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "271",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "272",
+      "role": "heading",
+      "name": "iPhone Air\n                      \t\t\t            \t\n\t\t\t\t\t\t\t\t\tiPhone Air",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "289",
+      "role": "link",
+      "name": "Learn more, iPhone Air",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "279",
+      "role": "listitem",
+      "name": "Sky Blue",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "281",
+      "role": "listitem",
+      "name": "Light Gold",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "283",
+      "role": "listitem",
+      "name": "Cloud White",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "285",
+      "role": "listitem",
+      "name": "Space Black",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "291",
+      "role": "link",
+      "name": "Buy, iPhone Air",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "276",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "294",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "295",
+      "role": "heading",
+      "name": "iPhone 17\n                      \t\t\t            \t\n\t\t\t\t\t\t\t\t\tiPhone 17",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "314",
+      "role": "link",
+      "name": "Learn more, iPhone 17",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "302",
+      "role": "listitem",
+      "name": "Lavender",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "304",
+      "role": "listitem",
+      "name": "Sage",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "306",
+      "role": "listitem",
+      "name": "Mist Blue",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "308",
+      "role": "listitem",
+      "name": "White",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "310",
+      "role": "listitem",
+      "name": "Black",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "316",
+      "role": "link",
+      "name": "Buy, iPhone 17",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "299",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "670",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "671",
+      "role": "heading",
+      "name": "iPhone and Apple Watch",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "672",
+      "role": "presentation",
+      "name": "iPhone and Apple Watch",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "679",
+      "role": "link",
+      "name": "Footnote 17",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "662",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "663",
+      "role": "heading",
+      "name": "iPhone and Mac",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "664",
+      "role": "presentation",
+      "name": "iPhone and Mac",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "680",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "681",
+      "role": "heading",
+      "name": "iPhone and AirPods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "682",
+      "role": "presentation",
+      "name": "iPhone and AirPods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "250",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "251",
+      "role": "heading",
+      "name": "iPhone 17 Pro\n                      \t\t\t            \t\n\t\t\t\t\t\t\t\t\tiPhone 17 Pro",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "266",
+      "role": "link",
+      "name": "Learn more, iPhone 17 Pro",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "258",
+      "role": "listitem",
+      "name": "Cosmic Orange",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "260",
+      "role": "listitem",
+      "name": "Deep Blue",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "262",
+      "role": "listitem",
+      "name": "Silver",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "268",
+      "role": "link",
+      "name": "Buy, iPhone 17 Pro",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "255",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "319",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "320",
+      "role": "heading",
+      "name": "New\n\t\t\t\t\t\t\t\t\t\n                      \t\t\t            \t\t\tiPhone 17e\n                      \t\t\t            \t\n\t\t\t\t\t\t\t\t\tiPhone 17e",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "336",
+      "role": "link",
+      "name": "Learn more, iPhone 17e",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "328",
+      "role": "listitem",
+      "name": "Soft Pink",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "330",
+      "role": "listitem",
+      "name": "White",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "332",
+      "role": "listitem",
+      "name": "Black",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "338",
+      "role": "link",
+      "name": "Buy, iPhone 17e",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "325",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "341",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "342",
+      "role": "heading",
+      "name": "iPhone 16\n                      \t\t\t            \t\n\t\t\t\t\t\t\t\t\tiPhone 16",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "361",
+      "role": "link",
+      "name": "Learn more, iPhone 16",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "349",
+      "role": "listitem",
+      "name": "Ultramarine",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "351",
+      "role": "listitem",
+      "name": "Teal",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "353",
+      "role": "listitem",
+      "name": "Pink",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "355",
+      "role": "listitem",
+      "name": "White",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "357",
+      "role": "listitem",
+      "name": "Black",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "363",
+      "role": "link",
+      "name": "Buy iPhone 16",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "346",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "26",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "119",
+      "role": "listitem",
+      "name": "Entertainment",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "120",
+      "role": "link",
+      "name": "Entertainment",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "108",
+      "role": "listitem",
+      "name": "TV & Home",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "109",
+      "role": "link",
+      "name": "TV and Home",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "97",
+      "role": "listitem",
+      "name": "AirPods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "98",
+      "role": "link",
+      "name": "AirPods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "64",
+      "role": "listitem",
+      "name": "iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "65",
+      "role": "link",
+      "name": "iPhone",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "75",
+      "role": "listitem",
+      "name": "Watch",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "76",
+      "role": "link",
+      "name": "Watch",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "86",
+      "role": "listitem",
+      "name": "Vision",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "87",
+      "role": "link",
+      "name": "Vision",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "130",
+      "role": "listitem",
+      "name": "Accessories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "131",
+      "role": "link",
+      "name": "Accessories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "141",
+      "role": "listitem",
+      "name": "Support",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "142",
+      "role": "link",
+      "name": "Support",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "31",
+      "role": "listitem",
+      "name": "Store",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "32",
+      "role": "link",
+      "name": "Store",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "53",
+      "role": "listitem",
+      "name": "iPad",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "54",
+      "role": "link",
+      "name": "iPad",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "42",
+      "role": "listitem",
+      "name": "Mac",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "43",
+      "role": "link",
+      "name": "Mac",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "71",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "72",
+      "role": "button",
+      "name": "iPhone menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "82",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "83",
+      "role": "button",
+      "name": "Watch menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "93",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "94",
+      "role": "button",
+      "name": "Vision menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "104",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "105",
+      "role": "button",
+      "name": "AirPods menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "115",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "116",
+      "role": "button",
+      "name": "TV and Home menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "126",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "127",
+      "role": "button",
+      "name": "Entertainment menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "38",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "39",
+      "role": "button",
+      "name": "Store menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "49",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "50",
+      "role": "button",
+      "name": "Mac menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "60",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "61",
+      "role": "button",
+      "name": "iPad menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "137",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "138",
+      "role": "button",
+      "name": "Accessories menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "148",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "149",
+      "role": "button",
+      "name": "Support menu",
+      "value": "",
+      "flags": ""
+    }
+  ]
+}

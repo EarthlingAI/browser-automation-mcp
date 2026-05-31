@@ -1,0 +1,3516 @@
+{
+  "fixture": "github-repo",
+  "url": "https://github.com/microsoft/playwright-mcp",
+  "opts": {
+    "viewport": {
+      "w": 1536,
+      "h": 735
+    }
+  },
+  "meta": {
+    "total_candidates": 1060
+  },
+  "jsonSize": 48010,
+  "inventory": [
+    {
+      "ref": "1",
+      "role": "WebArea",
+      "name": "microsoft/playwright-mcp: Playwright MCP server",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "276",
+      "role": "table",
+      "name": "Folders and files",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "285",
+      "role": "row",
+      "name": "Latest commitdependabot[bot]chore(deps-dev): bump qs from 6.15.1 to 6.15.2 (#1627)failureMay 28, 20263201718 · May 28, 2026History552 CommitsOpen commit details552 Commits",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "286",
+      "role": "cell",
+      "name": "Latest commitdependabot[bot]chore(deps-dev): bump qs from 6.15.1 to 6.15.2 (#1627)failureMay 28, 20263201718 · May 28, 2026History552 CommitsOpen commit details552 Commits",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "311",
+      "role": "link",
+      "name": "552 Commits",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "301",
+      "role": "button",
+      "name": "failure",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "298",
+      "role": "link",
+      "name": "chore(deps-dev): bump qs from 6.15.1 to 6.15.2 (",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "307",
+      "role": "link",
+      "name": "Commit 3201718",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "293",
+      "role": "image",
+      "name": "dependabot[bot]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "299",
+      "role": "link",
+      "name": "#1627",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "294",
+      "role": "link",
+      "name": "commits by dependabot[bot]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "318",
+      "role": "row",
+      "name": ".claude/skills.claude/skillsdocs: update release-notes skill with full release workflow (#1606)May 7, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "329",
+      "role": "cell",
+      "name": "docs: update release-notes skill with full release workflow (#1606)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "332",
+      "role": "link",
+      "name": "docs: update release-notes skill with full release workflow (#1606)\n\n## Summary\n- Document the full release flow: roll Playwright PR → mark-version PR\noff main → release notes draft.\n- Widen the upstream commit search to include `extension/` and\n`tests/mcp/` paths.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "333",
+      "role": "link",
+      "name": "#1606",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "319",
+      "role": "cell",
+      "name": ".claude/skills",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "326",
+      "role": "link",
+      "name": ".claude/skills, (Directory)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "335",
+      "role": "cell",
+      "name": "May 7, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "338",
+      "role": "row",
+      "name": ".devcontainer.devcontainerdevops: add devcontainer.json (#1473)Mar 19, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "347",
+      "role": "cell",
+      "name": "devops: add devcontainer.json (#1473)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "350",
+      "role": "link",
+      "name": "devops: add devcontainer.json (#1473)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "351",
+      "role": "link",
+      "name": "#1473",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "339",
+      "role": "cell",
+      "name": ".devcontainer",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "346",
+      "role": "link",
+      "name": ".devcontainer, (Directory)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "353",
+      "role": "cell",
+      "name": "Mar 19, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "356",
+      "role": "row",
+      "name": ".github/workflows.github/workflowschore(ci): bump actions to Node 24 versions (#1592)May 2, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "367",
+      "role": "cell",
+      "name": "chore(ci): bump actions to Node 24 versions (#1592)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "370",
+      "role": "link",
+      "name": "chore(ci): bump actions to Node 24 versions (#1592)\n\n## Summary\n- Bump JavaScript actions to majors that ship `using: node24`, so the\nruntime moves off Node 20.\n- Bump CI `node-version` from 20 to 22 (Node 20 reached end-of-life in\nApril 2026).\n- GitHub is forcing JavaScript actions to Node 24 by default on\n2026-06-02 and removing Node 20 from runners on 2026-09-16.\n\nAction bumps:\n- `actions/checkout@v4` → `@v5`\n- `actions/setup-node@v4` → `@v5`\n- `docker/setup-qemu-action@v3` → `@v4`\n- `docker/setup-buildx-action@v3` → `@v4`\n- `docker/build-push-action@v6` → `@v7`\n- `azure/login@v2` → `@v3`\n- `oras-project/setup-oras@v1` → `@v2`",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "371",
+      "role": "link",
+      "name": "#1592",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "357",
+      "role": "cell",
+      "name": ".github/workflows",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "364",
+      "role": "link",
+      "name": ".github/workflows, (Directory)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "373",
+      "role": "cell",
+      "name": "May 2, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "376",
+      "role": "row",
+      "name": "srcsrcchore: flatten repo to single-package layout (#1567)Apr 23, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "385",
+      "role": "cell",
+      "name": "chore: flatten repo to single-package layout (#1567)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "388",
+      "role": "link",
+      "name": "chore: flatten repo to single-package layout (#1567)\n\n## Summary\n- Drop the deprecated `playwright-cli-stub` workspace (it was squatting\nthe old `playwright-cli` npm name and had no CI publish step — unlikely\nto be re-published).\n- Move `packages/playwright-mcp/*` to the repo root, since\n`@playwright/mcp` is now the only published package.\n- Update `Dockerfile`, CI/publish workflows, `roll.js`,\n`update-readme.js` and `.claude/settings.local.json` to drop the\n`packages/playwright-mcp/` prefix and workspace plumbing.\n\nVerified locally: `npm install` + `npm run lint` produce no README diff,\n`npm pack --dry-run` yields the same 7-file tarball (`LICENSE`,\n`README.md`, `cli.js`, `config.d.ts`, `index.d.ts`, `index.js`,\n`package.json`), and `tests/cli.spec.ts` passes.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "389",
+      "role": "link",
+      "name": "#1567",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "377",
+      "role": "cell",
+      "name": "src",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "384",
+      "role": "link",
+      "name": "src, (Directory)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "391",
+      "role": "cell",
+      "name": "Apr 23, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "394",
+      "role": "row",
+      "name": "teststestschore: roll 1.60.0-alpha-1777566615000 (#1583)May 1, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "403",
+      "role": "cell",
+      "name": "chore: roll 1.60.0-alpha-1777566615000 (#1583)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "406",
+      "role": "link",
+      "name": "chore: roll 1.60.0-alpha-1777566615000 (#1583)\n\n## Summary\n- Roll Playwright to 1.60.0-alpha-1777566615000",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "407",
+      "role": "link",
+      "name": "#1583",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "395",
+      "role": "cell",
+      "name": "tests",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "402",
+      "role": "link",
+      "name": "tests, (Directory)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "409",
+      "role": "cell",
+      "name": "May 1, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "412",
+      "role": "row",
+      "name": ".gitignore.gitignorechore: monorepo (#1325)Jan 23, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "421",
+      "role": "cell",
+      "name": "chore: monorepo (#1325)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "424",
+      "role": "link",
+      "name": "chore: monorepo (#1325)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "425",
+      "role": "link",
+      "name": "#1325",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "413",
+      "role": "cell",
+      "name": ".gitignore",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "420",
+      "role": "link",
+      "name": ".gitignore, (File)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "427",
+      "role": "cell",
+      "name": "Jan 23, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "430",
+      "role": "row",
+      "name": ".npmignore.npmignorechore: flatten repo to single-package layout (#1567)Apr 23, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "439",
+      "role": "cell",
+      "name": "chore: flatten repo to single-package layout (#1567)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "442",
+      "role": "link",
+      "name": "chore: flatten repo to single-package layout (#1567)\n\n## Summary\n- Drop the deprecated `playwright-cli-stub` workspace (it was squatting\nthe old `playwright-cli` npm name and had no CI publish step — unlikely\nto be re-published).\n- Move `packages/playwright-mcp/*` to the repo root, since\n`@playwright/mcp` is now the only published package.\n- Update `Dockerfile`, CI/publish workflows, `roll.js`,\n`update-readme.js` and `.claude/settings.local.json` to drop the\n`packages/playwright-mcp/` prefix and workspace plumbing.\n\nVerified locally: `npm install` + `npm run lint` produce no README diff,\n`npm pack --dry-run` yields the same 7-file tarball (`LICENSE`,\n`README.md`, `cli.js`, `config.d.ts`, `index.d.ts`, `index.js`,\n`package.json`), and `tests/cli.spec.ts` passes.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "443",
+      "role": "link",
+      "name": "#1567",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "431",
+      "role": "cell",
+      "name": ".npmignore",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "438",
+      "role": "link",
+      "name": ".npmignore, (File)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "445",
+      "role": "cell",
+      "name": "Apr 23, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "448",
+      "role": "row",
+      "name": "CLAUDE.mdCLAUDE.mddocs: update release-notes skill with full release workflow (#1606)May 7, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "457",
+      "role": "cell",
+      "name": "docs: update release-notes skill with full release workflow (#1606)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "460",
+      "role": "link",
+      "name": "docs: update release-notes skill with full release workflow (#1606)\n\n## Summary\n- Document the full release flow: roll Playwright PR → mark-version PR\noff main → release notes draft.\n- Widen the upstream commit search to include `extension/` and\n`tests/mcp/` paths.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "461",
+      "role": "link",
+      "name": "#1606",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "449",
+      "role": "cell",
+      "name": "CLAUDE.md",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "456",
+      "role": "link",
+      "name": "CLAUDE.md, (File)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "463",
+      "role": "cell",
+      "name": "May 7, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "466",
+      "role": "row",
+      "name": "CONTRIBUTING.mdCONTRIBUTING.mddocs: revise contributing guidelines for clarityMay 1, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "475",
+      "role": "cell",
+      "name": "docs: revise contributing guidelines for clarity",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "478",
+      "role": "link",
+      "name": "docs: revise contributing guidelines for clarity",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "467",
+      "role": "cell",
+      "name": "CONTRIBUTING.md",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "474",
+      "role": "link",
+      "name": "CONTRIBUTING.md, (File)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "479",
+      "role": "cell",
+      "name": "May 1, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "482",
+      "role": "row",
+      "name": "DockerfileDockerfilechore: flatten repo to single-package layout (#1567)Apr 23, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "491",
+      "role": "cell",
+      "name": "chore: flatten repo to single-package layout (#1567)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "494",
+      "role": "link",
+      "name": "chore: flatten repo to single-package layout (#1567)\n\n## Summary\n- Drop the deprecated `playwright-cli-stub` workspace (it was squatting\nthe old `playwright-cli` npm name and had no CI publish step — unlikely\nto be re-published).\n- Move `packages/playwright-mcp/*` to the repo root, since\n`@playwright/mcp` is now the only published package.\n- Update `Dockerfile`, CI/publish workflows, `roll.js`,\n`update-readme.js` and `.claude/settings.local.json` to drop the\n`packages/playwright-mcp/` prefix and workspace plumbing.\n\nVerified locally: `npm install` + `npm run lint` produce no README diff,\n`npm pack --dry-run` yields the same 7-file tarball (`LICENSE`,\n`README.md`, `cli.js`, `config.d.ts`, `index.d.ts`, `index.js`,\n`package.json`), and `tests/cli.spec.ts` passes.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "495",
+      "role": "link",
+      "name": "#1567",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "483",
+      "role": "cell",
+      "name": "Dockerfile",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "490",
+      "role": "link",
+      "name": "Dockerfile, (File)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "497",
+      "role": "cell",
+      "name": "Apr 23, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "500",
+      "role": "row",
+      "name": "LICENSELICENSEchore: split mcp into mcp and cli (#1346)Jan 27, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "509",
+      "role": "cell",
+      "name": "chore: split mcp into mcp and cli (#1346)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "512",
+      "role": "link",
+      "name": "chore: split mcp into mcp and cli (#1346)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "513",
+      "role": "link",
+      "name": "#1346",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "501",
+      "role": "cell",
+      "name": "LICENSE",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "508",
+      "role": "link",
+      "name": "LICENSE, (File)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "515",
+      "role": "cell",
+      "name": "Jan 27, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "8",
+      "role": "banner",
+      "name": "Global Navigation Menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "29",
+      "role": "button",
+      "name": "Search or jump to…",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "125",
+      "role": "listitem",
+      "name": "Security and quality",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "126",
+      "role": "link",
+      "name": "Security and quality",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "53",
+      "role": "button",
+      "name": "Create new...",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "131",
+      "role": "listitem",
+      "name": "Insights",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "132",
+      "role": "link",
+      "name": "Insights",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "15",
+      "role": "link",
+      "name": "Homepage (g then d)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "72",
+      "role": "link",
+      "name": "You have no unread notifications(g then n)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "12",
+      "role": "button",
+      "name": "Open menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "76",
+      "role": "button",
+      "name": "Open user navigation menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "77",
+      "role": "image",
+      "name": "User avatar",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "62",
+      "role": "link",
+      "name": "All issues",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "66",
+      "role": "link",
+      "name": "All pull requests",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "69",
+      "role": "link",
+      "name": "All repositories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "43",
+      "role": "link",
+      "name": "Chat with Copilot",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "119",
+      "role": "listitem",
+      "name": "Models",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "120",
+      "role": "link",
+      "name": "Models",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "48",
+      "role": "button",
+      "name": "Open Copilot…",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "97",
+      "role": "listitem",
+      "name": "Pull requests3 (3)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "98",
+      "role": "link",
+      "name": "Pull requests3 (3)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "24",
+      "role": "listitem",
+      "name": "playwright-mcp",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "25",
+      "role": "link",
+      "name": "playwright-mcp",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "87",
+      "role": "listitem",
+      "name": "Issues5 (5)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "88",
+      "role": "link",
+      "name": "Issues5 (5)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "113",
+      "role": "listitem",
+      "name": "Actions",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "114",
+      "role": "link",
+      "name": "Actions",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "106",
+      "role": "listitem",
+      "name": "Agents",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "107",
+      "role": "link",
+      "name": "Agents",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "21",
+      "role": "listitem",
+      "name": "microsoft",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "22",
+      "role": "link",
+      "name": "microsoft",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "81",
+      "role": "listitem",
+      "name": "Code",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "82",
+      "role": "link",
+      "name": "Code",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "250",
+      "role": "combobox",
+      "name": "Go to file",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "190",
+      "role": "form",
+      "name": "Star\n              33.2k",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "191",
+      "role": "button",
+      "name": "Star this repository (33201)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "179",
+      "role": "link",
+      "name": "Fork\n          2.7k\n          Fork your own copy of microsoft/playwright-mcp",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "171",
+      "role": "button",
+      "name": "Watching a repository",
+      "value": "",
+      "flags": "disabled"
+    },
+    {
+      "ref": "3130",
+      "role": "link",
+      "name": "Releases\n      65",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "199",
+      "role": "button",
+      "name": "Add this repository to a list",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "184",
+      "role": "button",
+      "name": "See your forks of this repository",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "162",
+      "role": "image",
+      "name": "Owner avatar",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2903",
+      "role": "listitem",
+      "name": "Parameters:\n\nstartX (number): Start X coordinate\nstartY (number): Start Y coordinate\nendX (number): End X coordinate\nendY (number): End Y coordinate",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2905",
+      "role": "listitem",
+      "name": "startX (number): Start X coordinate",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2433",
+      "role": "listitem",
+      "name": "Parameters:\n\ntime (number, optional): The time to wait in seconds\ntext (string, optional): The text to wait for\ntextGone (string, optional): The text to wait for to disappear",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2435",
+      "role": "listitem",
+      "name": "time (number, optional): The time to wait in seconds",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2437",
+      "role": "listitem",
+      "name": "text (string, optional): The text to wait for",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2439",
+      "role": "listitem",
+      "name": "textGone (string, optional): The text to wait for to disappear",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2852",
+      "role": "listitem",
+      "name": "Parameters:\n\ntitle (string): Chapter title\ndescription (string, optional): Chapter description\nduration (number, optional): Duration in milliseconds to show the chapter card",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2854",
+      "role": "listitem",
+      "name": "title (string): Chapter title",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2856",
+      "role": "listitem",
+      "name": "description (string, optional): Chapter description",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2858",
+      "role": "listitem",
+      "name": "duration (number, optional): Duration in milliseconds to show the chapter card",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3010",
+      "role": "listitem",
+      "name": "Parameters:\n\nelement (string): Human-readable list description\ntarget (string): Exact target element reference that points to the list\nitems (array): Items to verify",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2233",
+      "role": "listitem",
+      "name": "Parameters:\n\naccept (boolean): Whether to accept the dialog.\npromptText (string, optional): The text of the prompt in case of a prompt dialog.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2235",
+      "role": "listitem",
+      "name": "accept (boolean): Whether to accept the dialog.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2237",
+      "role": "listitem",
+      "name": "promptText (string, optional): The text of the prompt in case of a prompt dialog.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2329",
+      "role": "listitem",
+      "name": "Parameters:\n\nwidth (number): Width of the browser window\nheight (number): Height of the browser window",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2331",
+      "role": "listitem",
+      "name": "width (number): Width of the browser window",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2333",
+      "role": "listitem",
+      "name": "height (number): Height of the browser window",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2578",
+      "role": "listitem",
+      "name": "Parameters:\n\ndomain (string, optional): Filter cookies by domain\npath (string, optional): Filter cookies by path",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2580",
+      "role": "listitem",
+      "name": "domain (string, optional): Filter cookies by domain",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2582",
+      "role": "listitem",
+      "name": "path (string, optional): Filter cookies by path",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2660",
+      "role": "listitem",
+      "name": "Parameters:\n\nkey (string): Key to set\nvalue (string): Value to set",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2662",
+      "role": "listitem",
+      "name": "key (string): Key to set",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2664",
+      "role": "listitem",
+      "name": "value (string): Value to set",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2716",
+      "role": "listitem",
+      "name": "Parameters:\n\nkey (string): Key to set\nvalue (string): Value to set",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2718",
+      "role": "listitem",
+      "name": "key (string): Key to set",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2720",
+      "role": "listitem",
+      "name": "value (string): Value to set",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2820",
+      "role": "listitem",
+      "name": "Parameters:\n\nfilename (string, optional): Filename to save the video.\nsize (object, optional): Video size",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2822",
+      "role": "listitem",
+      "name": "filename (string, optional): Filename to save the video.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2824",
+      "role": "listitem",
+      "name": "size (object, optional): Video size",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2921",
+      "role": "listitem",
+      "name": "Parameters:\n\nx (number): X coordinate\ny (number): Y coordinate",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2947",
+      "role": "listitem",
+      "name": "Parameters:\n\ndeltaX (number): X delta\ndeltaY (number): Y delta",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2742",
+      "role": "listitem",
+      "name": "Parameters:\n\nfilename (string, optional): File name to save the storage state to. Defaults to storage-state-{timestamp}.json if not specified.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2744",
+      "role": "listitem",
+      "name": "filename (string, optional): File name to save the storage state to. Defaults to storage-state-{timestamp}.json if not specified.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3026",
+      "role": "listitem",
+      "name": "Parameters:\n\ntext (string): TEXT to verify. Can be found in the snapshot like this: - role \"Accessible Name\": {TEXT} or like this: - text: {TEXT}",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3028",
+      "role": "listitem",
+      "name": "text (string): TEXT to verify. Can be found in the snapshot like this: - role \"Accessible Name\": {TEXT} or like this: - text: {TEXT}",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2209",
+      "role": "listitem",
+      "name": "Parameters:\n\npaths (array, optional): The absolute paths to the files to upload. Can be single file or multiple files. If omitted, file chooser is cancelled.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2211",
+      "role": "listitem",
+      "name": "paths (array, optional): The absolute paths to the files to upload. Can be single file or multiple files. If omitted, file chooser is cancelled.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2964",
+      "role": "listitem",
+      "name": "Parameters:\n\nfilename (string, optional): File name to save the pdf to. Defaults to page-{timestamp}.pdf if not specified. Prefer relative file names to stay within the output directory.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2966",
+      "role": "listitem",
+      "name": "filename (string, optional): File name to save the pdf to. Defaults to page-{timestamp}.pdf if not specified. Prefer relative file names to stay within the output directory.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2221",
+      "role": "listitem",
+      "name": "Parameters:\n\nfields (array): Fields to fill in",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2223",
+      "role": "listitem",
+      "name": "fields (array): Fields to fill in",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2261",
+      "role": "listitem",
+      "name": "Parameters:\n\nurl (string): The URL to navigate to",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2263",
+      "role": "listitem",
+      "name": "url (string): The URL to navigate to",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2281",
+      "role": "listitem",
+      "name": "Description: Returns full details (headers and body) of a single network request, or a single part if part is set. Use the number from browser_network_requests.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2315",
+      "role": "listitem",
+      "name": "Parameters:\n\nkey (string): Name of the key to press or a character to generate, such as ArrowLeft or a",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2317",
+      "role": "listitem",
+      "name": "key (string): Name of the key to press or a character to generate, such as ArrowLeft or a",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2486",
+      "role": "listitem",
+      "name": "Parameters:\n\nstate (string): Set to \"offline\" to simulate offline mode, \"online\" to restore network connectivity",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2488",
+      "role": "listitem",
+      "name": "state (string): Set to \"offline\" to simulate offline mode, \"online\" to restore network connectivity",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2530",
+      "role": "listitem",
+      "name": "Parameters:\n\npattern (string, optional): URL pattern to unroute (omit to remove all routes)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2532",
+      "role": "listitem",
+      "name": "pattern (string, optional): URL pattern to unroute (omit to remove all routes)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2554",
+      "role": "listitem",
+      "name": "Parameters:\n\nname (string): Cookie name to delete",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2556",
+      "role": "listitem",
+      "name": "name (string): Cookie name to delete",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2566",
+      "role": "listitem",
+      "name": "Parameters:\n\nname (string): Cookie name to get",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2568",
+      "role": "listitem",
+      "name": "name (string): Cookie name to get",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2627",
+      "role": "listitem",
+      "name": "Parameters:\n\nkey (string): Key to delete",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2629",
+      "role": "listitem",
+      "name": "key (string): Key to delete",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2639",
+      "role": "listitem",
+      "name": "Parameters:\n\nkey (string): Key to get",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2641",
+      "role": "listitem",
+      "name": "key (string): Key to get",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2683",
+      "role": "listitem",
+      "name": "Parameters:\n\nkey (string): Key to delete",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2685",
+      "role": "listitem",
+      "name": "key (string): Key to delete",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2695",
+      "role": "listitem",
+      "name": "Parameters:\n\nkey (string): Key to get",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2697",
+      "role": "listitem",
+      "name": "key (string): Key to get",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2730",
+      "role": "listitem",
+      "name": "Parameters:\n\nfilename (string): Path to the storage state file to restore from",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2732",
+      "role": "listitem",
+      "name": "filename (string): Path to the storage state file to restore from",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2891",
+      "role": "listitem",
+      "name": "Parameters:\n\nbutton (string, optional): Button to press, defaults to left",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2893",
+      "role": "listitem",
+      "name": "button (string, optional): Button to press, defaults to left",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2935",
+      "role": "listitem",
+      "name": "Parameters:\n\nbutton (string, optional): Button to press, defaults to left",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2170",
+      "role": "listitem",
+      "name": "Description: Drop files or MIME-typed data onto an element, as if dragged from outside the page. At least one of \"paths\" or \"data\" must be provided.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2298",
+      "role": "listitem",
+      "name": "Description: Returns a numbered list of network requests since loading the page. Use browser_network_request with the number to get full details.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2342",
+      "role": "listitem",
+      "name": "Description: Run a Playwright code snippet. Unsafe: executes arbitrary JavaScript in the Playwright server process and is RCE-equivalent.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2391",
+      "role": "listitem",
+      "name": "Description: Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2729",
+      "role": "listitem",
+      "name": "Description: Restore storage state (cookies, local storage) from a file. This clears existing cookies and local storage before restoring.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2796",
+      "role": "listitem",
+      "name": "Description: Resume script execution after it was paused. When called with step set to true, execution will pause again before the next action.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2851",
+      "role": "listitem",
+      "name": "Description: Add a chapter marker to the video recording. Shows a full-screen chapter card with blurred backdrop.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2110",
+      "role": "listitem",
+      "name": "element (string, optional): Human-readable element description used to obtain permission to interact with the element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2173",
+      "role": "listitem",
+      "name": "element (string, optional): Human-readable element description used to obtain permission to interact with the element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2179",
+      "role": "listitem",
+      "name": "data (object, optional): Data to drop, as a map of MIME type to string value (e.g. {\"text/plain\": \"hello\", \"text/uri-list\": \"https://example.com\"}).",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2192",
+      "role": "listitem",
+      "name": "element (string, optional): Human-readable element description used to obtain permission to interact with the element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2194",
+      "role": "listitem",
+      "name": "target (string, optional): Exact target element reference from the page snapshot, or a unique element selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2881",
+      "role": "listitem",
+      "name": "delay (number, optional): Time to wait between mouse down and mouse up in milliseconds, defaults to 0",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2392",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2400",
+      "role": "listitem",
+      "name": "filename (string, optional): File name to save the screenshot to. Defaults to page-{timestamp}.{png|jpeg} if not specified. Prefer relative file names to stay within the output directory.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2394",
+      "role": "listitem",
+      "name": "element (string, optional): Human-readable element description used to obtain permission to interact with the element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2396",
+      "role": "listitem",
+      "name": "target (string, optional): Exact target element reference from the page snapshot, or a unique element selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2403",
+      "role": "listitem",
+      "name": "fullPage (boolean, optional): When true, takes a screenshot of the full scrollable page, instead of the currently visible viewport. Cannot be used with element screenshots.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2398",
+      "role": "listitem",
+      "name": "type (string): Image format for the screenshot. Default is png.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2592",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2594",
+      "role": "listitem",
+      "name": "name (string): Cookie name",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2596",
+      "role": "listitem",
+      "name": "value (string): Cookie value",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2598",
+      "role": "listitem",
+      "name": "domain (string, optional): Cookie domain",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2600",
+      "role": "listitem",
+      "name": "path (string, optional): Cookie path",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2413",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2415",
+      "role": "listitem",
+      "name": "element (string, optional): Human-readable element description used to obtain permission to interact with the element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2423",
+      "role": "listitem",
+      "name": "slowly (boolean, optional): Whether to type one character at a time. Useful for triggering key handlers in the page. By default entire text is filled in at once.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2417",
+      "role": "listitem",
+      "name": "target (string): Exact target element reference from the page snapshot, or a unique element selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2419",
+      "role": "listitem",
+      "name": "text (string): Text to type into the element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2421",
+      "role": "listitem",
+      "name": "submit (boolean, optional): Whether to submit entered text (press Enter after)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2153",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2155",
+      "role": "listitem",
+      "name": "startElement (string, optional): Human-readable source element description used to obtain the permission to interact with the element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2157",
+      "role": "listitem",
+      "name": "startTarget (string): Exact target element reference from the page snapshot, or a unique element selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2159",
+      "role": "listitem",
+      "name": "endElement (string, optional): Human-readable target element description used to obtain the permission to interact with the element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2161",
+      "role": "listitem",
+      "name": "endTarget (string): Exact target element reference from the page snapshot, or a unique element selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2106",
+      "role": "listitem",
+      "name": "Title: Click",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2107",
+      "role": "listitem",
+      "name": "Description: Perform click on a web page",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2120",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2126",
+      "role": "listitem",
+      "name": "Title: Close browser",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2127",
+      "role": "listitem",
+      "name": "Description: Close the page",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2128",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2129",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2135",
+      "role": "listitem",
+      "name": "Title: Get console messages",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2136",
+      "role": "listitem",
+      "name": "Description: Returns all console messages",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2145",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2151",
+      "role": "listitem",
+      "name": "Title: Drag mouse",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2152",
+      "role": "listitem",
+      "name": "Description: Perform drag and drop between two elements",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2163",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2169",
+      "role": "listitem",
+      "name": "Title: Drop files or data onto an element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2182",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2188",
+      "role": "listitem",
+      "name": "Title: Evaluate JavaScript",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2189",
+      "role": "listitem",
+      "name": "Description: Evaluate JavaScript expression on page or element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2201",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2207",
+      "role": "listitem",
+      "name": "Title: Upload files",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2208",
+      "role": "listitem",
+      "name": "Description: Upload one or multiple files",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2213",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2219",
+      "role": "listitem",
+      "name": "Title: Fill form",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2220",
+      "role": "listitem",
+      "name": "Description: Fill multiple form fields",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2225",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2231",
+      "role": "listitem",
+      "name": "Title: Handle a dialog",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2232",
+      "role": "listitem",
+      "name": "Description: Handle a dialog",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2239",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2245",
+      "role": "listitem",
+      "name": "Title: Hover mouse",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2246",
+      "role": "listitem",
+      "name": "Description: Hover over element on page",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2253",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2259",
+      "role": "listitem",
+      "name": "Title: Navigate to a URL",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2260",
+      "role": "listitem",
+      "name": "Description: Navigate to a URL",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2265",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2271",
+      "role": "listitem",
+      "name": "Title: Go back",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2272",
+      "role": "listitem",
+      "name": "Description: Go back to the previous page in the history",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2273",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2274",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2280",
+      "role": "listitem",
+      "name": "Title: Show network request details",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2291",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2297",
+      "role": "listitem",
+      "name": "Title: List network requests",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2307",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2313",
+      "role": "listitem",
+      "name": "Title: Press a key",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2314",
+      "role": "listitem",
+      "name": "Description: Press a key on the keyboard",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2321",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2327",
+      "role": "listitem",
+      "name": "Title: Resize browser window",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2328",
+      "role": "listitem",
+      "name": "Description: Resize the browser window",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2335",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2341",
+      "role": "listitem",
+      "name": "Title: Run Playwright code (unsafe)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2350",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2356",
+      "role": "listitem",
+      "name": "Title: Select option",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2357",
+      "role": "listitem",
+      "name": "Description: Select an option in a dropdown",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2366",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2372",
+      "role": "listitem",
+      "name": "Title: Page snapshot",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2373",
+      "role": "listitem",
+      "name": "Description: Capture accessibility snapshot of the current page, this is better than screenshot",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2384",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2390",
+      "role": "listitem",
+      "name": "Title: Take a screenshot",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2405",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2411",
+      "role": "listitem",
+      "name": "Title: Type text",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2412",
+      "role": "listitem",
+      "name": "Description: Type text into editable element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2425",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2431",
+      "role": "listitem",
+      "name": "Title: Wait for",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2432",
+      "role": "listitem",
+      "name": "Description: Wait for text to appear or disappear or a specified time to pass",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2441",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2450",
+      "role": "listitem",
+      "name": "Title: Manage tabs",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2451",
+      "role": "listitem",
+      "name": "Description: List, create, close, or select a browser tab.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2460",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2472",
+      "role": "listitem",
+      "name": "Title: Get config",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2473",
+      "role": "listitem",
+      "name": "Description: Get the final resolved config after merging CLI options, environment variables and config file.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2474",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2475",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2484",
+      "role": "listitem",
+      "name": "Title: Set network state",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2485",
+      "role": "listitem",
+      "name": "Description: Sets the browser network state to online or offline. When offline, all network requests will fail.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2490",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2496",
+      "role": "listitem",
+      "name": "Title: Mock network requests",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2497",
+      "role": "listitem",
+      "name": "Description: Set up a route to mock network requests matching a URL pattern",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2513",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2519",
+      "role": "listitem",
+      "name": "Title: List network routes",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2520",
+      "role": "listitem",
+      "name": "Description: List all active network routes",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2521",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2522",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2528",
+      "role": "listitem",
+      "name": "Title: Remove network routes",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2529",
+      "role": "listitem",
+      "name": "Description: Remove network routes matching a pattern (or all routes if no pattern specified)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2534",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2543",
+      "role": "listitem",
+      "name": "Title: Clear cookies",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2544",
+      "role": "listitem",
+      "name": "Description: Clear all cookies",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2545",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2546",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2552",
+      "role": "listitem",
+      "name": "Title: Delete cookie",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2553",
+      "role": "listitem",
+      "name": "Description: Delete a specific cookie",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2558",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2564",
+      "role": "listitem",
+      "name": "Title: Get cookie",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2565",
+      "role": "listitem",
+      "name": "Description: Get a specific cookie by name",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2570",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2576",
+      "role": "listitem",
+      "name": "Title: List cookies",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2577",
+      "role": "listitem",
+      "name": "Description: List all cookies (optionally filtered by domain/path)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2584",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2590",
+      "role": "listitem",
+      "name": "Title: Set cookie",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2591",
+      "role": "listitem",
+      "name": "Description: Set a cookie with optional flags (domain, path, expires, httpOnly, secure, sameSite)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2610",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2616",
+      "role": "listitem",
+      "name": "Title: Clear localStorage",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2617",
+      "role": "listitem",
+      "name": "Description: Clear all localStorage",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2618",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2619",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2625",
+      "role": "listitem",
+      "name": "Title: Delete localStorage item",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2626",
+      "role": "listitem",
+      "name": "Description: Delete a localStorage item",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2631",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2637",
+      "role": "listitem",
+      "name": "Title: Get localStorage item",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2638",
+      "role": "listitem",
+      "name": "Description: Get a localStorage item by key",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2643",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2649",
+      "role": "listitem",
+      "name": "Title: List localStorage",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2650",
+      "role": "listitem",
+      "name": "Description: List all localStorage key-value pairs",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2651",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2652",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2658",
+      "role": "listitem",
+      "name": "Title: Set localStorage item",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2659",
+      "role": "listitem",
+      "name": "Description: Set a localStorage item",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2666",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2672",
+      "role": "listitem",
+      "name": "Title: Clear sessionStorage",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2673",
+      "role": "listitem",
+      "name": "Description: Clear all sessionStorage",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2674",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2675",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2681",
+      "role": "listitem",
+      "name": "Title: Delete sessionStorage item",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2682",
+      "role": "listitem",
+      "name": "Description: Delete a sessionStorage item",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2687",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2693",
+      "role": "listitem",
+      "name": "Title: Get sessionStorage item",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2694",
+      "role": "listitem",
+      "name": "Description: Get a sessionStorage item by key",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2699",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2705",
+      "role": "listitem",
+      "name": "Title: List sessionStorage",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2706",
+      "role": "listitem",
+      "name": "Description: List all sessionStorage key-value pairs",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2707",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2708",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2714",
+      "role": "listitem",
+      "name": "Title: Set sessionStorage item",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2715",
+      "role": "listitem",
+      "name": "Description: Set a sessionStorage item",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2722",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2728",
+      "role": "listitem",
+      "name": "Title: Restore storage state",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2734",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2740",
+      "role": "listitem",
+      "name": "Title: Save storage state",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2741",
+      "role": "listitem",
+      "name": "Description: Save storage state (cookies, local storage) to a file for later reuse",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2747",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2756",
+      "role": "listitem",
+      "name": "Title: Annotate the current page",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2758",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2759",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2765",
+      "role": "listitem",
+      "name": "Title: Hide element highlight",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2766",
+      "role": "listitem",
+      "name": "Description: Remove a highlight overlay previously added for the element.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2773",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2779",
+      "role": "listitem",
+      "name": "Title: Highlight element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2780",
+      "role": "listitem",
+      "name": "Description: Show a persistent highlight overlay around the element on the page.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2789",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2795",
+      "role": "listitem",
+      "name": "Title: Resume paused script execution",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2803",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2809",
+      "role": "listitem",
+      "name": "Title: Start tracing",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2810",
+      "role": "listitem",
+      "name": "Description: Start trace recording",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2811",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2812",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2818",
+      "role": "listitem",
+      "name": "Title: Start video",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2819",
+      "role": "listitem",
+      "name": "Description: Start video recording",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2826",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2832",
+      "role": "listitem",
+      "name": "Title: Stop tracing",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2833",
+      "role": "listitem",
+      "name": "Description: Stop trace recording",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2834",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2835",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2841",
+      "role": "listitem",
+      "name": "Title: Stop video",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2842",
+      "role": "listitem",
+      "name": "Description: Stop video recording",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2843",
+      "role": "listitem",
+      "name": "Parameters: None",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2844",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2850",
+      "role": "listitem",
+      "name": "Title: Video chapter",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2860",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2869",
+      "role": "listitem",
+      "name": "Title: Click",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2870",
+      "role": "listitem",
+      "name": "Description: Click mouse button at a given position",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2883",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2889",
+      "role": "listitem",
+      "name": "Title: Press mouse down",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2890",
+      "role": "listitem",
+      "name": "Description: Press mouse down",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2895",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2901",
+      "role": "listitem",
+      "name": "Title: Drag mouse",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2902",
+      "role": "listitem",
+      "name": "Description: Drag left mouse button to a given position",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2913",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2919",
+      "role": "listitem",
+      "name": "Title: Move mouse",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2920",
+      "role": "listitem",
+      "name": "Description: Move mouse to a given position",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2927",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2933",
+      "role": "listitem",
+      "name": "Title: Press mouse up",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2934",
+      "role": "listitem",
+      "name": "Description: Press mouse up",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2939",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2945",
+      "role": "listitem",
+      "name": "Title: Scroll mouse wheel",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2946",
+      "role": "listitem",
+      "name": "Description: Scroll mouse wheel",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2953",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2962",
+      "role": "listitem",
+      "name": "Title: Save as PDF",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2963",
+      "role": "listitem",
+      "name": "Description: Save page as PDF",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2969",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2978",
+      "role": "listitem",
+      "name": "Title: Create locator for element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2979",
+      "role": "listitem",
+      "name": "Description: Generate locator for the given element to use in tests",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2986",
+      "role": "listitem",
+      "name": "Read-only: true",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2992",
+      "role": "listitem",
+      "name": "Title: Verify element visible",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2993",
+      "role": "listitem",
+      "name": "Description: Verify element is visible on the page",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3002",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3008",
+      "role": "listitem",
+      "name": "Title: Verify list visible",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3009",
+      "role": "listitem",
+      "name": "Description: Verify list is visible on the page",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3018",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3024",
+      "role": "listitem",
+      "name": "Title: Verify text visible",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3025",
+      "role": "listitem",
+      "name": "Description: Verify text is visible on the page. Prefer browser_verify_element_visible if possible.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3032",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3038",
+      "role": "listitem",
+      "name": "Title: Verify value",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3039",
+      "role": "listitem",
+      "name": "Description: Verify element value",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3050",
+      "role": "listitem",
+      "name": "Read-only: false",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2498",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2500",
+      "role": "listitem",
+      "name": "pattern (string): URL pattern to match (e.g., \"/api/users\", \"/*.{png,jpg}\")",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2503",
+      "role": "listitem",
+      "name": "status (number, optional): HTTP status code to return (default: 200)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2505",
+      "role": "listitem",
+      "name": "body (string, optional): Response body (text or JSON string)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2507",
+      "role": "listitem",
+      "name": "contentType (string, optional): Content-Type header (e.g., \"application/json\", \"text/html\")",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2509",
+      "role": "listitem",
+      "name": "headers (array, optional): Headers to add in \"Name: Value\" format",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2511",
+      "role": "listitem",
+      "name": "removeHeaders (string, optional): Comma-separated list of header names to remove from request",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2112",
+      "role": "listitem",
+      "name": "target (string): Exact target element reference from the page snapshot, or a unique element selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2114",
+      "role": "listitem",
+      "name": "doubleClick (boolean, optional): Whether to perform a double click instead of a single click",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2116",
+      "role": "listitem",
+      "name": "button (string, optional): Button to click, defaults to left",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2118",
+      "role": "listitem",
+      "name": "modifiers (array, optional): Modifier keys to press",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2175",
+      "role": "listitem",
+      "name": "target (string): Exact target element reference from the page snapshot, or a unique element selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2177",
+      "role": "listitem",
+      "name": "paths (array, optional): Absolute paths to files to drop onto the element.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2196",
+      "role": "listitem",
+      "name": "function (string): () => { /* code / } or (element) => { / code */ } when element is provided",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2199",
+      "role": "listitem",
+      "name": "filename (string, optional): Filename to save the result to. If not provided, result is returned as text.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2873",
+      "role": "listitem",
+      "name": "x (number): X coordinate",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2875",
+      "role": "listitem",
+      "name": "y (number): Y coordinate",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2877",
+      "role": "listitem",
+      "name": "button (string, optional): Button to click, defaults to left",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2879",
+      "role": "listitem",
+      "name": "clickCount (number, optional): Number of clicks, defaults to 1",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2137",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2139",
+      "role": "listitem",
+      "name": "level (string): Level of the console messages to return. Each level includes the messages of more severe levels. Defaults to \"info\".",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2141",
+      "role": "listitem",
+      "name": "all (boolean, optional): Return all console messages since the beginning of the session, not just since the last navigation. Defaults to false.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2143",
+      "role": "listitem",
+      "name": "filename (string, optional): Filename to save the console messages to. If not provided, messages are returned as text.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2247",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2249",
+      "role": "listitem",
+      "name": "element (string, optional): Human-readable element description used to obtain permission to interact with the element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2251",
+      "role": "listitem",
+      "name": "target (string): Exact target element reference from the page snapshot, or a unique element selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2283",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2285",
+      "role": "listitem",
+      "name": "index (integer): 1-based index of the request, as printed by browser_network_requests.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2287",
+      "role": "listitem",
+      "name": "part (string, optional): Return only this part of the request. Omit to return full details.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2289",
+      "role": "listitem",
+      "name": "filename (string, optional): Filename to save the result to. If not provided, output is returned as text.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2299",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2301",
+      "role": "listitem",
+      "name": "static (boolean): Whether to include successful static resources like images, fonts, scripts, etc. Defaults to false.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2305",
+      "role": "listitem",
+      "name": "filename (string, optional): Filename to save the network requests to. If not provided, requests are returned as text.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2303",
+      "role": "listitem",
+      "name": "filter (string, optional): Only return requests whose URL matches this regexp (e.g. \"/api/.*user\").",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2343",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2348",
+      "role": "listitem",
+      "name": "filename (string, optional): Load code from the specified file. If both code and filename are provided, code will be ignored.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2345",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2358",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2360",
+      "role": "listitem",
+      "name": "element (string, optional): Human-readable element description used to obtain permission to interact with the element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2362",
+      "role": "listitem",
+      "name": "target (string): Exact target element reference from the page snapshot, or a unique element selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2364",
+      "role": "listitem",
+      "name": "values (array): Array of values to select in the dropdown. This can be a single value or multiple values.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2374",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2376",
+      "role": "listitem",
+      "name": "target (string, optional): Exact target element reference from the page snapshot, or a unique element selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2382",
+      "role": "listitem",
+      "name": "boxes (boolean, optional): Include each element's bounding box as [box=x,y,width,height] in the snapshot. Coordinates are viewport-relative, in CSS pixels (Element.getBoundingClientRect)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2378",
+      "role": "listitem",
+      "name": "filename (string, optional): Save snapshot to markdown file instead of returning it in the response.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2380",
+      "role": "listitem",
+      "name": "depth (number, optional): Limit the depth of the snapshot tree",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2452",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2454",
+      "role": "listitem",
+      "name": "action (string): Operation to perform",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2456",
+      "role": "listitem",
+      "name": "index (number, optional): Tab index, used for close/select. If omitted for close, current tab is closed.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2458",
+      "role": "listitem",
+      "name": "url (string, optional): URL to navigate to in the new tab, used for new.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2757",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2767",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2769",
+      "role": "listitem",
+      "name": "element (string, optional): Human-readable element description used when adding the highlight; must match the value passed to browser_highlight.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2771",
+      "role": "listitem",
+      "name": "target (string, optional): Exact target element reference from the page snapshot, or a unique element selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2781",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2783",
+      "role": "listitem",
+      "name": "element (string, optional): Human-readable element description used to obtain permission to interact with the element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2787",
+      "role": "listitem",
+      "name": "style (string, optional): Additional inline CSS applied to the highlight overlay, e.g. \"outline: 2px dashed red\".",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2785",
+      "role": "listitem",
+      "name": "target (string): Exact target element reference from the page snapshot, or a unique element selector",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2797",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2799",
+      "role": "listitem",
+      "name": "step (boolean, optional): When true, execution will pause again before the next action, allowing step-by-step debugging.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2801",
+      "role": "listitem",
+      "name": "location (string, optional): Pause execution at a specific :, e.g. \"example.spec.ts:42\".",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2980",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2982",
+      "role": "listitem",
+      "name": "element (string, optional): Human-readable element description used to obtain permission to interact with the element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2994",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2996",
+      "role": "listitem",
+      "name": "role (string): ROLE of the element. Can be found in the snapshot like this: - {ROLE} \"Accessible Name\":",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2999",
+      "role": "listitem",
+      "name": "accessibleName (string): ACCESSIBLE_NAME of the element. Can be found in the snapshot like this: - role \"{ACCESSIBLE_NAME}\"",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3040",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    }
+  ]
+}

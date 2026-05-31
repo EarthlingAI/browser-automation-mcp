@@ -216,7 +216,7 @@ test("detail:'full' at low limit floors to 1000 and surfaces limit_adjusted", ()
 
 test("viewportOnly default false: nodes below the fold are included", () => {
   // 30 buttons, half above the fold, half below. With the new default the
-  // pruner should rank across the whole page (capped at limit:500).
+  // pruner should rank across the whole page (capped at the default limit:1500).
   const children = Array.from({ length: 30 }, (_, i) =>
     node({
       nodeId: `b-${i}`,
@@ -403,4 +403,123 @@ test("sidebar list with off-axis position is penalised vs central content", () =
   // off-axis sidebar items.
   const out = prune(root, { limit: 5, viewportOnly: false });
   assert.ok(findByRef(out, "h"), "central heading missing from snapshot");
+});
+
+// ── Round 7: pruning philosophy flip ────────────────────────────────────────
+// Standard mode now includes the whole SEMANTIC tree (named landmarks too),
+// the score only ORDERS within budget (never silently excludes), and any cap
+// or auto-scope fires a loud, recoverable meta.notice.
+
+test("named container/landmark is kept (widening) but unnamed structure is not", () => {
+  // A named landmark wrapping an interactive item, plus an unnamed generic
+  // wrapper. Standard mode keeps the named landmark (structure) while the
+  // unnamed wrapper stays out — its kept child re-parents up to the root.
+  const named = node({
+    nodeId: "region",
+    role: "region",
+    name: "Comments",
+    depth: 1,
+    children: [node({ nodeId: "c1", role: "button", name: "Reply", depth: 2 })],
+  });
+  const unnamed = node({
+    nodeId: "wrap",
+    role: "generic",
+    depth: 1,
+    children: [node({ nodeId: "c2", role: "button", name: "Share", depth: 2 })],
+  });
+  const root = node({
+    nodeId: "r",
+    role: "WebArea",
+    name: "Page",
+    children: [named, unnamed],
+  });
+  const out = prune(root, { viewportOnly: false });
+  // Named landmark kept, with its interactive child nested under it.
+  const region = findByRef(out, "region");
+  assert.ok(region, "named region landmark dropped (widening regression)");
+  assert.ok(
+    (region.children ?? []).some((c) => c.ref === "c1"),
+    "region's interactive child not nested under it",
+  );
+  // Unnamed generic wrapper NOT kept — but its child still surfaces.
+  assert.equal(findByRef(out, "wrap"), null, "unnamed generic wrapper leaked into standard mode");
+  assert.ok(findByRef(out, "c2"), "interactive child of unnamed wrapper lost");
+});
+
+test("within budget, every candidate is kept — the score never drops a node", () => {
+  // 40 named buttons of wildly varying salience, all in viewport, well under
+  // the default limit. The score orders but must not exclude within budget.
+  const children = Array.from({ length: 40 }, (_, i) =>
+    node({
+      nodeId: `b-${i}`,
+      role: "button",
+      name: `Btn ${i}`,
+      depth: 2,
+      rect: { x: 10, y: 10 + i * 15, w: 10 + (i % 5) * 200, h: 18 },
+    }),
+  );
+  const root = node({ nodeId: "r", role: "WebArea", name: "Page", children });
+  const out = prune(root); // default limit 1500 → all within budget
+  for (let i = 0; i < 40; i++)
+    assert.ok(findByRef(out, `b-${i}`), `b-${i} dropped within budget`);
+  // Nothing capped → no recovery notice.
+  assert.equal(out.meta?.notice, undefined, "notice set when nothing was capped");
+});
+
+test("within budget, the scorer orders siblings by salience (high score first)", () => {
+  // A tiny low-salience button is FIRST in DOM; a large high-salience button
+  // is LAST. Both are kept (within budget); the salient one sorts ahead.
+  const small = node({
+    nodeId: "small",
+    role: "button",
+    name: "Small",
+    depth: 1,
+    rect: { x: 100, y: 100, w: 50, h: 20 },
+  });
+  const big = node({
+    nodeId: "big",
+    role: "button",
+    name: "Big",
+    depth: 1,
+    rect: { x: 200, y: 200, w: 800, h: 600 },
+  });
+  const root = node({
+    nodeId: "r",
+    role: "WebArea",
+    name: "Page",
+    children: [small, big],
+  });
+  const out = prune(root);
+  assert.ok(findByRef(out, "small") && findByRef(out, "big"), "a sibling was dropped within budget");
+  const order = (out.children ?? []).map((c) => c.ref);
+  assert.ok(
+    order.indexOf("big") < order.indexOf("small"),
+    `scorer did not order by salience: [${order.join(",")}]`,
+  );
+});
+
+test("over-budget cap emits a loud, recoverable meta.notice (nothing silent)", () => {
+  // 18 in-viewport buttons, explicit tight limit:10. 19 candidates < 30 (3×)
+  // so the viewport auto-fallback does NOT engage — this is a pure limit cap.
+  // The score-ranked tail past the limit is deferred AND the agent is told.
+  const children = Array.from({ length: 18 }, (_, i) =>
+    node({
+      nodeId: `b-${i}`,
+      role: "button",
+      name: `Btn ${i}`,
+      depth: 2,
+      inViewport: true,
+      rect: { x: 100, y: 100 + i * 20, w: 100, h: 18 },
+    }),
+  );
+  const root = node({ nodeId: "r", role: "WebArea", name: "Page", children });
+  const out = prune(root, { limit: 10 });
+  // 18 buttons + the named WebArea root = 19 candidates; capped to 10.
+  assert.equal(out.meta?.total_candidates, 19);
+  assert.equal(flatten(out).filter((n) => n.ref !== undefined).length, 10);
+  // Pure limit cap, not a viewport fallback.
+  assert.equal(out.meta?.viewport_fallback, undefined, "should be a pure limit cap, not a fallback");
+  assert.ok(out.meta?.notice, "no recovery notice on an over-budget cap");
+  assert.match(out.meta.notice, /limit/i);
+  assert.match(out.meta.notice, /9 lower-ranked/);
 });

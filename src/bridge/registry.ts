@@ -118,8 +118,8 @@ export function registerTool<S extends ZodRawShape>(
       try {
         const result = await def.handler(args, ctx);
         // CaptureResult shape `{ payload, image? }` — unified-capture tools
-        // (browser_snapshot, browser_screenshot) return this so the wrapper
-        // can emit a mixed image+text MCP envelope.
+        // (browser_snapshot) return this so the wrapper can emit a mixed
+        // image+text MCP envelope.
         if (isCaptureResult(result)) {
           return toolResult(result.payload, def.name, result.image);
         }
@@ -175,11 +175,12 @@ export function registerActionTool<S extends ZodRawShape>(
         // Defensive: a handler that never calls execOnLeasedTab leaves settle
         // pending. Clear so the next call doesn't inherit stale state.
         ctx.pendingSettle = undefined;
-        // Action fired — invalidate the session's ref registry. If we then
-        // auto-snapshot, populateRefs flips it back to fresh. If not, the next
-        // action gets the "stale" branch in resolveRef. Skip the flip for
-        // read-only action tools (currently just browser_wait_for) — a pure
-        // wait shouldn't make previously-valid refs look stale.
+        // Action fired — mark refs stale. Refs aren't invalidated wholesale
+        // (they're non-evicting); this just forces the next action's ref
+        // through a liveness probe (refNeedsVerification) so a since-removed
+        // element errors cleanly. Auto-snapshot flips it back to fresh. Skip
+        // for read-only action tools (currently just browser_wait_for) — a pure
+        // wait changes nothing.
         if (!def.readOnly) ctx.session.isStale = true;
         // Build the response envelope. Spreading `{...result}` on a primitive
         // (the bug behind Issue #2: `browser_evaluate("location.href")` came
@@ -241,6 +242,10 @@ export async function replaySnapshot(ctx: ToolContext): Promise<unknown> {
       maxWidth: params.maxWidth,
       save_to_path: false,
       withTree: true,
+      // CP5: the auto-snapshot path returns a diff against the prior tree of
+      // this tab when one exists (else a full serialization). Explicit
+      // browser_snapshot never sets this, so it always returns the full tree.
+      allowDiff: true,
     });
   } catch (err: any) {
     // Preserve structured error fields so the recovery hint (and any lease
@@ -275,6 +280,12 @@ export function populateRefs(
   raw: RawNode | undefined,
   tabId: TabId,
 ): void {
+  // A snapshot on a different tab starts a fresh ref namespace — page-side ref
+  // ids are per-tab, so the previous tab's cumulative registry would collide.
+  // (The latest-snapshot map is wholesale-replaced regardless.)
+  if (session.lastSnapshotTabId !== tabId) {
+    session.refRegistry = new Map();
+  }
   session.lastSnapshotRefs = new Map();
   session.lastSnapshotTabId = tabId;
   session.isStale = false;
@@ -284,17 +295,22 @@ export function populateRefs(
   walkPruned(pruned, (node) => {
     // Skip the synthetic-root sentinel ("0" is only emitted when the pruner
     // had to wrap multiple top-level roots). Real refs come from helpers.js
-    // which pre-increments `nodeCounter` so node IDs start at "1" and never
-    // collide with the sentinel.
+    // which pre-increments the persistent counter so node IDs start at "1" and
+    // never collide with the sentinel.
     if (!node.ref || node.ref === "0") return;
     const rawMatch = rawByNodeId.get(node.ref);
-    session.lastSnapshotRefs.set(node.ref, {
+    const meta: RefMeta = {
       role: node.role,
       name: node.name,
       rect: rawMatch?.rect,
       tabId,
       snapshotAt: now,
-    });
+    };
+    session.lastSnapshotRefs.set(node.ref, meta);
+    // Merge into the cumulative registry — refs that fell out of this snapshot
+    // keep their last-known meta so non-evicting resolution + nearby-refs
+    // listings still find them.
+    session.refRegistry.set(node.ref, meta);
   });
 }
 
@@ -312,22 +328,48 @@ function walkPruned(
 }
 
 /**
- * Validate a ref against the session's most recent snapshot. Returns the
- * RefMeta on success; throws an Error with an actionable message otherwise.
- * Mirrors windows-native-mcp's DesktopState.resolve_target UX.
+ * Validate a ref against the session's ref state. Returns the RefMeta when the
+ * ref is known (either in the latest snapshot or carried forward in the
+ * cumulative registry — refs are non-evicting). Throws an actionable error for
+ * a ref that was never minted. A KNOWN ref may still point at a removed
+ * element; `refNeedsVerification` decides whether the caller must confirm
+ * liveness via a `resolve_ref` probe before acting. Mirrors windows-native-mcp's
+ * DesktopState.resolve_target UX.
  */
 export function resolveRef(session: BridgeSession, ref: string): RefMeta {
-  const meta = session.lastSnapshotRefs.get(ref);
-  if (meta) return meta;
-  if (session.isStale || session.lastSnapshotRefs.size === 0) {
+  // Fast path: the ref is in the most recent snapshot.
+  const current = session.lastSnapshotRefs.get(ref);
+  if (current) return current;
+  // Non-evicting: a ref from an earlier snapshot of this tab still resolves
+  // while its element survives. The caller verifies liveness before acting.
+  const known = session.refRegistry.get(ref);
+  if (known) return known;
+  // Genuine miss. Distinguish "nothing snapshotted yet" from a typo.
+  if (session.refRegistry.size === 0) {
     throw new Error(
-      `ref ${ref} not found — snapshot is stale (action since last snapshot, or no snapshot taken yet). Call browser_snapshot to refresh element refs.`,
+      `ref ${ref} not found — no snapshot taken yet. Call browser_snapshot first to get element refs.`,
     );
   }
-  // Fresh-state miss: list nearby refs by numeric proximity so the agent can
-  // recognise a typo (e.g. "12" → "21") or a snapshot off-by-one.
+  throw nearbyRefsError(session, ref);
+}
+
+/**
+ * Build an actionable "ref not found" error listing nearby refs (by numeric
+ * proximity) from the cumulative registry, so the agent can spot a typo
+ * (e.g. "12" → "21") or recover after the element genuinely vanished.
+ */
+export function nearbyRefsError(
+  session: BridgeSession,
+  ref: string,
+  opts?: { gone?: boolean },
+): Error {
   const wanted = Number(ref);
-  const all = Array.from(session.lastSnapshotRefs.entries());
+  // Never suggest the failed ref itself as a nearby alternative — in the `gone`
+  // case it's still carried in the registry, so without this it would be listed
+  // as "available" right after we said it no longer exists.
+  const all = Array.from(session.refRegistry.entries()).filter(
+    ([r]) => r !== ref,
+  );
   const nearby = isFinite(wanted)
     ? all
         .map(([r, m]) => ({
@@ -342,9 +384,26 @@ export function resolveRef(session: BridgeSession, ref: string): RefMeta {
   const summary = nearby
     .map((e) => `${e.ref} (${e.meta.role}${e.meta.name ? ` '${e.meta.name}'` : ""})`)
     .join(", ");
-  throw new Error(
-    `ref ${ref} not found. Available refs nearby: ${summary}. Re-run browser_snapshot if the page changed.`,
+  const lead = opts?.gone
+    ? `ref ${ref} no longer exists — its element was removed from the page.`
+    : `ref ${ref} not found.`;
+  return new Error(
+    `${lead} Available refs nearby: ${summary}. Re-run browser_snapshot if the page changed.`,
   );
+}
+
+/**
+ * Whether a KNOWN ref must be confirmed live (via a `resolve_ref` probe) before
+ * an action fires. A ref in the latest snapshot with no mutating action since
+ * (`isStale=false`) is trusted directly; anything else — a ref carried forward
+ * from an earlier snapshot, or any ref after an action — is re-verified so a
+ * since-removed element errors instead of firing a silent no-op.
+ */
+export function refNeedsVerification(
+  session: BridgeSession,
+  ref: string,
+): boolean {
+  return !(session.lastSnapshotRefs.has(ref) && !session.isStale);
 }
 
 /** Native MCP image content block — emitted alongside the text payload by the
@@ -414,6 +473,8 @@ const SETTLEABLE_KINDS = new Set([
   "scroll",
   "upload",
   "press_key",
+  "drag",
+  "drop",
   "navigate",
   "navigate_back",
   "tabs_create",
@@ -429,13 +490,15 @@ export async function execOnLeasedTab(
     throw new Error(
       "no leased tab; call browser_switch_tab or browser_open_tab first",
     );
-  // Validate any ref this command carries against the session's snapshot
-  // before paying the round-trip cost. Throws an actionable error on miss.
+  // Validate any ref this command carries before paying the action round-trip.
+  // Throws an actionable error for an unknown ref (never minted / typo).
   const refField = (command as { ref?: string }).ref;
   if (typeof refField === "string" && refField.length > 0) {
-    resolveRef(ctx.session, refField);
-    // Targeting a different tab than the one we last snapshotted is an
-    // obvious staleness signal — fail fast with a clear message.
+    // Cross-tab guard FIRST: page-side ref ids are per-tab, and a tab change
+    // resets the registry — so a ref-bearing action targeting a tab other than
+    // the last snapshot can't be validated against this tab's refs. Throw the
+    // clearest message here, before the generic resolveRef lookup would mask
+    // it with a nearby-refs error against the wrong tab's refs.
     if (
       ctx.session.lastSnapshotTabId !== undefined &&
       ctx.session.lastSnapshotTabId !== target
@@ -443,6 +506,20 @@ export async function execOnLeasedTab(
       throw new Error(
         `ref ${refField} was captured on tab ${ctx.session.lastSnapshotTabId} but this action targets tab ${target}. Call browser_snapshot on tab ${target} first.`,
       );
+    }
+    resolveRef(ctx.session, refField);
+    // Non-evicting refs are page-authoritative on liveness. A ref that isn't
+    // freshly-current (carried forward from an earlier snapshot, or any ref
+    // after an action) gets a cheap read-only `resolve_ref` probe so a
+    // since-removed element errors here instead of firing a silent no-op. The
+    // probe bypasses settle and never mutates; the action exec below still
+    // carries the pending settle policy.
+    if (refNeedsVerification(ctx.session, refField)) {
+      const live = await ctx.daemon.exec(target, {
+        kind: "resolve_ref",
+        ref: refField,
+      });
+      if (!live) throw nearbyRefsError(ctx.session, refField, { gone: true });
     }
   }
   // Inject the wrapper's settle policy into the first daemon hop, then clear

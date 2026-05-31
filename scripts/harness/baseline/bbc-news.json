@@ -1,0 +1,1913 @@
+{
+  "fixture": "bbc-news",
+  "url": "https://www.bbc.com/news",
+  "opts": {
+    "viewport": {
+      "w": 1536,
+      "h": 791
+    }
+  },
+  "meta": {
+    "total_candidates": 271
+  },
+  "jsonSize": 24217,
+  "inventory": [
+    {
+      "ref": "1",
+      "role": "WebArea",
+      "name": "BBC News - Breaking news, video and the latest top stories from the U.S. and around the world",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "10",
+      "role": "banner",
+      "name": "Watch LiveBritish Broadcasting CorporationRegisterSign In",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "31",
+      "role": "link",
+      "name": "British Broadcasting Corporation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "32",
+      "role": "img",
+      "name": "British Broadcasting Corporation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "37",
+      "role": "link",
+      "name": "Register",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "38",
+      "role": "button",
+      "name": "Register",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "41",
+      "role": "link",
+      "name": "Sign In",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "42",
+      "role": "button",
+      "name": "Sign In",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "21",
+      "role": "link",
+      "name": "Watch Live",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "13",
+      "role": "button",
+      "name": "Open menu",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "3",
+      "role": "alertdialog",
+      "name": "Online Quality Survey",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "136",
+      "role": "heading",
+      "name": "News",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "137",
+      "role": "img",
+      "name": "News",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "169",
+      "role": "link",
+      "name": "Nato condemns Russian 'recklessness' after drone hits Romanian residential blockRomania will hold an emergency meeting following the incident, in which two people were injured. 2 hrs agoEurope",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "174",
+      "role": "image",
+      "name": "Four men in police vests, as well as a man in a white hazmat suit, a helmet and a face mask, are seen stood next to a building which has a hole in its side following the drone hit",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "178",
+      "role": "heading",
+      "name": "Nato condemns Russian 'recklessness' after drone hits Romanian residential block",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "187",
+      "role": "link",
+      "name": "Mother-in-law of Indian bride whose death set off media frenzy arrestedTwisha Sharma's death on 12 May has sparked rival claims of murder and suicide and dominated headlines.9 hrs agoAsia",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "192",
+      "role": "heading",
+      "name": "Mother-in-law of Indian bride whose death set off media frenzy arrested",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "60",
+      "role": "listitem",
+      "name": "Technology",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "62",
+      "role": "link",
+      "name": "Technology",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "57",
+      "role": "listitem",
+      "name": "Business",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "59",
+      "role": "link",
+      "name": "Business",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "108",
+      "role": "listitem",
+      "name": "Latin America",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "110",
+      "role": "link",
+      "name": "Latin America",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "117",
+      "role": "listitem",
+      "name": "BBC InDepth",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "119",
+      "role": "link",
+      "name": "BBC InDepth",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "66",
+      "role": "listitem",
+      "name": "Culture",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "68",
+      "role": "link",
+      "name": "Culture",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "111",
+      "role": "listitem",
+      "name": "Middle East",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "113",
+      "role": "link",
+      "name": "Middle East",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "63",
+      "role": "listitem",
+      "name": "Health",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "65",
+      "role": "link",
+      "name": "Health",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "114",
+      "role": "listitem",
+      "name": "In Pictures",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "116",
+      "role": "link",
+      "name": "In Pictures",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "72",
+      "role": "listitem",
+      "name": "Travel",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "74",
+      "role": "link",
+      "name": "Travel",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "78",
+      "role": "listitem",
+      "name": "Audio",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "80",
+      "role": "link",
+      "name": "Audio",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "54",
+      "role": "listitem",
+      "name": "Sport",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "56",
+      "role": "link",
+      "name": "Sport",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "75",
+      "role": "listitem",
+      "name": "Earth",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "77",
+      "role": "link",
+      "name": "Earth",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "102",
+      "role": "listitem",
+      "name": "Australia",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "104",
+      "role": "link",
+      "name": "Australia",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "69",
+      "role": "listitem",
+      "name": "Arts",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "71",
+      "role": "link",
+      "name": "Arts",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "105",
+      "role": "listitem",
+      "name": "Europe",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "107",
+      "role": "link",
+      "name": "Europe",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "96",
+      "role": "listitem",
+      "name": "Africa",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "98",
+      "role": "link",
+      "name": "Africa",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "99",
+      "role": "listitem",
+      "name": "Asia",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "101",
+      "role": "link",
+      "name": "Asia",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "333",
+      "role": "heading",
+      "name": "More to explore",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "90",
+      "role": "listitem",
+      "name": "US & Canada",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "92",
+      "role": "link",
+      "name": "US & Canada",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "479",
+      "role": "heading",
+      "name": "Most watched",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "120",
+      "role": "listitem",
+      "name": "BBC Verify",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "122",
+      "role": "link",
+      "name": "BBC Verify",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "545",
+      "role": "heading",
+      "name": "Also in news",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "48",
+      "role": "listitem",
+      "name": "Home",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "50",
+      "role": "link",
+      "name": "Home",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "81",
+      "role": "listitem",
+      "name": "Video",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "83",
+      "role": "link",
+      "name": "Video",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "51",
+      "role": "listitem",
+      "name": "News",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "53",
+      "role": "link",
+      "name": "News",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "685",
+      "role": "heading",
+      "name": "Most read",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "84",
+      "role": "listitem",
+      "name": "Live",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "86",
+      "role": "link",
+      "name": "Live",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "971",
+      "role": "button",
+      "name": "BBC in other languages",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "776",
+      "role": "heading",
+      "name": "Sport",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "93",
+      "role": "listitem",
+      "name": "UK",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "95",
+      "role": "link",
+      "name": "UK",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "661",
+      "role": "link",
+      "name": "Boy George receives lifetime achievement honour at LGBT AwardsThe Karma Chameleon singer was surprised with the award by French fashion designer Jean Paul Gaultier.17 hrs agoCulture",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "666",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "667",
+      "role": "image",
+      "name": "Boy George is wearing a pinstripe jacket and a black bucket-style hat with tassles. He has facial hair, colourful eye make-up gems around his eyes. Behind him is a black wall with the logo 'British LGBT Awards' on it. He is making a peace sign with two fingers.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "671",
+      "role": "heading",
+      "name": "Boy George receives lifetime achievement honour at LGBT Awards",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "642",
+      "role": "link",
+      "name": "UK SAS troops accused of war crimes not referred to police over morale fears, inquiry hearsThis meant military police did not learn for years of allegations of extra-judicial killings.16 hrs agoWorld",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "647",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "648",
+      "role": "image",
+      "name": "The SAS worked alongside Afghan special forces units on night raids during the height of the conflict",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "652",
+      "role": "heading",
+      "name": "UK SAS troops accused of war crimes not referred to police over morale fears, inquiry hears",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "436",
+      "role": "link",
+      "name": "'Choreographers are the new DJs': The art of the viral dance routineVideos of fans copying the moves to hits from artists like Zara Larsson and PinkPantheress are going viral.4 hrs agoNewsbeat",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "441",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "442",
+      "role": "image",
+      "name": "A composite image of two women, PinkPantheress on the left - wearing a dress with patterns of blue and dark red, and Zara Larsson on the right - with a light blue outfit. The background is pink and lime green swirls.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "446",
+      "role": "heading",
+      "name": "'Choreographers are the new DJs': The art of the viral dance routine",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "875",
+      "role": "link",
+      "name": "Real Madrid named football's most valuable clubReal Madrid are named as the most valuable club in world football, with Barcelona overtaking Manchester United to go second.17 mins agoEuropean Football",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "880",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "881",
+      "role": "image",
+      "name": "Real Madrid celebrate a goal",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "885",
+      "role": "heading",
+      "name": "Real Madrid named football's most valuable club",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "271",
+      "role": "link",
+      "name": "Eight students arrested in Kenya after suspected deadly school arson attackSixteen pupils died in the fire that ripped through a dormitory while they were asleep.4 hrs agoAfrica",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "276",
+      "role": "image",
+      "name": "A distressed woman in an orange top and black jacket looks to the side holding a handkerchief to her face.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "280",
+      "role": "heading",
+      "name": "Eight students arrested in Kenya after suspected deadly school arson attack",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "368",
+      "role": "link",
+      "name": "What does Blue Origin rocket mishap mean for Nasa's Moon mission?Science correspondent Pallab Ghosh explains why the explosion is a setback for space exploration.3 hrs agoScience & Environment",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "373",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "374",
+      "role": "image",
+      "name": "On the left, a rocket explosion. On the right, Pallab Bhosh wearing a dark blue jumper.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "382",
+      "role": "heading",
+      "name": "What does Blue Origin rocket mishap mean for Nasa's Moon mission?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "576",
+      "role": "link",
+      "name": "Kenya court halts opening of US Ebola quarantine facility in the countryA 50-bed isolation unit in Kenya for US citizens was due to open on Friday, a US official said. 53 mins agoAfrica",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "581",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "582",
+      "role": "image",
+      "name": "A close-up of a medical staff holding a thermometer",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "586",
+      "role": "heading",
+      "name": "Kenya court halts opening of US Ebola quarantine facility in the country",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "807",
+      "role": "link",
+      "name": "LIVEFrench Open: Djokovic leads Fonseca by set and a break - listen & followNovak Djokovic continues his quest for a record 25th Grand Slam against Joao Fonseca at the French Open - follow live.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "812",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "813",
+      "role": "image",
+      "name": "Novak Djokovic",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "822",
+      "role": "heading",
+      "name": "French Open: Djokovic leads Fonseca by set and a break - listen & follow",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "417",
+      "role": "link",
+      "name": "Survival before safety for Delhi's poor as temperatures hit 45CAs temperatures peak, Delhi’s informal workers continue working despite growing health risks.15 hrs agoAsia",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "422",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "423",
+      "role": "image",
+      "name": "A woman washes her face with water to cool off during a hot summer day near the India Gate in New Delhi",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "427",
+      "role": "heading",
+      "name": "Survival before safety for Delhi's poor as temperatures hit 45C",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "623",
+      "role": "link",
+      "name": "Humanoid robots 'the future' of car making, says BMWBMW is introducing humanoid robots to a car plant in Europe, building on similar projects in the US.16 hrs agoTechnology",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "628",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "629",
+      "role": "image",
+      "name": "The Aeon robot at work in the factory. It has a white torso with black shoulders. Its black plastic face has a vertical line of blue light.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "633",
+      "role": "heading",
+      "name": "Humanoid robots 'the future' of car making, says BMW",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "312",
+      "role": "link",
+      "name": "UK to use AI facial recognition to check age of asylum seekers from next year",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "316",
+      "role": "heading",
+      "name": "UK to use AI facial recognition to check age of asylum seekers from next year",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "305",
+      "role": "link",
+      "name": "Netanyahu says he has directed IDF to increase control of Gaza to 70%",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "309",
+      "role": "heading",
+      "name": "Netanyahu says he has directed IDF to increase control of Gaza to 70%",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "729",
+      "role": "link",
+      "name": "6Nato condemns Russian 'recklessness' after drone hits Romanian residential block",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "734",
+      "role": "heading",
+      "name": "Nato condemns Russian 'recklessness' after drone hits Romanian residential block",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "745",
+      "role": "link",
+      "name": "8Former US attorney general Pam Bondi testifies in congressional Epstein probe",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "750",
+      "role": "heading",
+      "name": "Former US attorney general Pam Bondi testifies in congressional Epstein probe",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "978",
+      "role": "button",
+      "name": "Follow BBC on x",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "981",
+      "role": "button",
+      "name": "Follow BBC on facebook",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "984",
+      "role": "button",
+      "name": "Follow BBC on instagram",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "987",
+      "role": "button",
+      "name": "Follow BBC on tiktok",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "990",
+      "role": "button",
+      "name": "Follow BBC on linkedin",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "993",
+      "role": "button",
+      "name": "Follow BBC on youtube",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "235",
+      "role": "link",
+      "name": "Exploding rocket casts doubts over Nasa's Moon plansExplosion of Blue Origin rocket is a setback for the company and for Nasa's Moon plans.5 hrs agoScience & Environment",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "240",
+      "role": "image",
+      "name": "Large explosion engulfs a Blue Origin New Glenn rocket, with flames, debris trails, and thick smoke lighting up the sky.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "244",
+      "role": "heading",
+      "name": "Exploding rocket casts doubts over Nasa's Moon plans",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "505",
+      "role": "link",
+      "name": "3Moment Blue Origin rocket explodes during test in Florida",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "513",
+      "role": "heading",
+      "name": "Moment Blue Origin rocket explodes during test in Florida",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "516",
+      "role": "link",
+      "name": "4Watch: Moment 14-year-old wins US national spelling bee",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "524",
+      "role": "heading",
+      "name": "Watch: Moment 14-year-old wins US national spelling bee",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "721",
+      "role": "link",
+      "name": "5Exploding rocket casts doubts over Nasa's Moon plans",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "726",
+      "role": "heading",
+      "name": "Exploding rocket casts doubts over Nasa's Moon plans",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "737",
+      "role": "link",
+      "name": "7Mother-in-law of Indian bride whose death set off media frenzy arrested",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "742",
+      "role": "heading",
+      "name": "Mother-in-law of Indian bride whose death set off media frenzy arrested",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "894",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "899",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "900",
+      "role": "image",
+      "name": "Split image: David Raya holding the Premier League and David Raya playing for Southport",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "904",
+      "role": "heading",
+      "name": "From non-league to Champions League final - Raya's fairytale rise",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "455",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "460",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "461",
+      "role": "image",
+      "name": "Activists behind glass in the high security prison courtroom. Standing in front of microphones hand cuffed.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "465",
+      "role": "heading",
+      "name": "Trial of 'Ulm 5' activists: How Germany is dealing with its Palestine Action case",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "609",
+      "role": "link",
+      "name": "Epstein survivors lack faith in UK police investigating Andrew, says lawyerA lawyer representing survivors says his clients lack confidence in the treatment they would receive in the UK.16 hrs agoUK",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "614",
+      "role": "heading",
+      "name": "Epstein survivors lack faith in UK police investigating Andrew, says lawyer",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "595",
+      "role": "link",
+      "name": "Child among three dead in London tower block fallA man, a woman and a child were pronounced dead at the scene in Elephant and Castle.7 mins agoLondon",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "600",
+      "role": "heading",
+      "name": "Child among three dead in London tower block fall",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "828",
+      "role": "link",
+      "name": "Messi to represent Argentina at sixth World CupLionel Messi will play in a sixth World Cup as he captains holders Argentina at the 2026 tournament.16 hrs agoWorld Cup",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "833",
+      "role": "heading",
+      "name": "Messi to represent Argentina at sixth World Cup",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "842",
+      "role": "link",
+      "name": "Konate set to leave Liverpool on free transferFrance defender Ibrahima Konate is set to leave Liverpool for free when his contract expires in June.6 hrs agoLiverpool",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "847",
+      "role": "heading",
+      "name": "Konate set to leave Liverpool on free transfer",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "253",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "258",
+      "role": "image",
+      "name": "CMAT performs on Radio 1's Big Weekend stage against a pink backdrop with yellow stars. She wears a light blue floral two-piece outfit with a blue striped cape and has shoulder length red hair. She wears silver hoops and sunglasses and holds up her hands to the crowd",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "262",
+      "role": "heading",
+      "name": "CMAT shares 'deep sadness' over body-shaming abuse after Radio 1 Big Weekend set",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "8",
+      "role": "link",
+      "name": "Skip to content",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "291",
+      "role": "link",
+      "name": "Survival before safety for Delhi's poor as temperatures hit 45C",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "295",
+      "role": "heading",
+      "name": "Survival before safety for Delhi's poor as temperatures hit 45C",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "298",
+      "role": "link",
+      "name": "Italy restores lucky testicles on bull mosaic worn down by tourists",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "302",
+      "role": "heading",
+      "name": "Italy restores lucky testicles on bull mosaic worn down by tourists",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "319",
+      "role": "link",
+      "name": "Portugal breaks hottest May day record as Europe swelters in heatwave",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "323",
+      "role": "heading",
+      "name": "Portugal breaks hottest May day record as Europe swelters in heatwave",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "494",
+      "role": "link",
+      "name": "2What does Blue Origin rocket mishap mean for Nasa's Moon mission?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "502",
+      "role": "heading",
+      "name": "What does Blue Origin rocket mishap mean for Nasa's Moon mission?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "689",
+      "role": "link",
+      "name": "1Canadian 'poison seller' pleads guilty to aiding suicides by selling toxic chemical online",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "694",
+      "role": "heading",
+      "name": "Canadian 'poison seller' pleads guilty to aiding suicides by selling toxic chemical online",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "753",
+      "role": "link",
+      "name": "9CMAT shares 'deep sadness' over body-shaming abuse after Radio 1 Big Weekend set",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "758",
+      "role": "heading",
+      "name": "CMAT shares 'deep sadness' over body-shaming abuse after Radio 1 Big Weekend set",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1037",
+      "role": "link",
+      "name": "Read about our approach to external linking.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "483",
+      "role": "link",
+      "name": "1Watch rescue after rollercoaster stalls 100ft in the air",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "491",
+      "role": "heading",
+      "name": "Watch rescue after rollercoaster stalls 100ft in the air",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "527",
+      "role": "link",
+      "name": "5MAFS UK insiders tell of 'unhealthy' focus on sex",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "535",
+      "role": "heading",
+      "name": "MAFS UK insiders tell of 'unhealthy' focus on sex",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "697",
+      "role": "link",
+      "name": "2US and Iran 'very close' to deal but 'not there yet', Vance says",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "702",
+      "role": "heading",
+      "name": "US and Iran 'very close' to deal but 'not there yet', Vance says",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "705",
+      "role": "link",
+      "name": "3Oil prices fall after report of breakthrough in US-Iran talks",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "710",
+      "role": "heading",
+      "name": "Oil prices fall after report of breakthrough in US-Iran talks",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "761",
+      "role": "link",
+      "name": "10Survival before safety for Delhi's poor as temperatures hit 45C",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "766",
+      "role": "heading",
+      "name": "Survival before safety for Delhi's poor as temperatures hit 45C",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "856",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "861",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "862",
+      "role": "image",
+      "name": "Rafael Nadal winces in pain.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "866",
+      "role": "heading",
+      "name": "I spent most of career in pain because of degenerative condition - Nadal",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1023",
+      "role": "listitem",
+      "name": "Do not share or sell my info",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1025",
+      "role": "link",
+      "name": "Do not share or sell my info",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "217",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "222",
+      "role": "image",
+      "name": "JD Vance speaking to reporters",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "226",
+      "role": "heading",
+      "name": "US and Iran 'very close' to deal but 'not there yet', Vance says",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "713",
+      "role": "link",
+      "name": "4The rise of the fruit that tastes like custard",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "718",
+      "role": "heading",
+      "name": "The rise of the fruit that tastes like custard",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1014",
+      "role": "listitem",
+      "name": "Accessibility Help",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1016",
+      "role": "link",
+      "name": "Accessibility Help",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "391",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "396",
+      "role": "heading",
+      "name": "Are 'heat spikes' becoming more common?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1020",
+      "role": "listitem",
+      "name": "Advertise with us",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1022",
+      "role": "link",
+      "name": "Advertise with us",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1017",
+      "role": "listitem",
+      "name": "Contact the BBC",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1019",
+      "role": "link",
+      "name": "Contact the BBC",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "201",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "206",
+      "role": "heading",
+      "name": "Former US attorney general Pam Bondi testifies in congressional Epstein probe",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "403",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "408",
+      "role": "heading",
+      "name": "California teen wins US spelling bee - but could you compete? Take our quiz",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "963",
+      "role": "listitem",
+      "name": "BBC Shop",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "965",
+      "role": "link",
+      "name": "BBC Shop",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "960",
+      "role": "listitem",
+      "name": "Weather",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "962",
+      "role": "link",
+      "name": "Weather",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "939",
+      "role": "listitem",
+      "name": "Culture",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "941",
+      "role": "link",
+      "name": "Culture",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "915",
+      "role": "link",
+      "name": "British Broadcasting Corporation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "916",
+      "role": "img",
+      "name": "British Broadcasting Corporation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1011",
+      "role": "listitem",
+      "name": "Cookies",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1013",
+      "role": "link",
+      "name": "Cookies",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "945",
+      "role": "listitem",
+      "name": "Travel",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "947",
+      "role": "link",
+      "name": "Travel",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "951",
+      "role": "listitem",
+      "name": "Audio",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "953",
+      "role": "link",
+      "name": "Audio",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "954",
+      "role": "listitem",
+      "name": "Video",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "956",
+      "role": "link",
+      "name": "Video",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "948",
+      "role": "listitem",
+      "name": "Earth",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "950",
+      "role": "link",
+      "name": "Earth",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1026",
+      "role": "listitem",
+      "name": "BBC.com Help & FAQs",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1028",
+      "role": "link",
+      "name": "BBC.com Help & FAQs",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "942",
+      "role": "listitem",
+      "name": "Arts",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "944",
+      "role": "link",
+      "name": "Arts",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "353",
+      "role": "link",
+      "name": "How did this novel about food win a Booker Prize this year?Taiwan Travelogue is the first novel translated from Mandarin Chinese to win the prestigious award.16 hrs agoAsia",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "357",
+      "role": "heading",
+      "name": "How did this novel about food win a Booker Prize this year?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "561",
+      "role": "link",
+      "name": "'Controversial' North Korean invasion setting for next Call of Duty gameDeveloper Infinity Ward said the game will be \"grounded in the military authenticity\" the series is known for.1 hr agoAsia",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "565",
+      "role": "heading",
+      "name": "'Controversial' North Korean invasion setting for next Call of Duty game",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "792",
+      "role": "link",
+      "name": "Every VAR error: How Arsenal escaped red cards and penaltiesArsenal and Chelsea were the biggest beneficiaries of video assistant referee and on-field errors this season.2 hrs agoPremier League",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "796",
+      "role": "heading",
+      "name": "Every VAR error: How Arsenal escaped red cards and penalties",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1032",
+      "role": "listitem",
+      "name": "Set Preferred Source",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1034",
+      "role": "link",
+      "name": "Set Preferred Source",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "957",
+      "role": "listitem",
+      "name": "Live",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "959",
+      "role": "link",
+      "name": "Live",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1002",
+      "role": "listitem",
+      "name": "Subscription Terms",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1004",
+      "role": "link",
+      "name": "Subscription Terms",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1005",
+      "role": "listitem",
+      "name": "About the BBC",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1007",
+      "role": "link",
+      "name": "About the BBC",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1029",
+      "role": "listitem",
+      "name": "Content Index",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1031",
+      "role": "link",
+      "name": "Content Index",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "933",
+      "role": "listitem",
+      "name": "Technology",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "935",
+      "role": "link",
+      "name": "Technology",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1008",
+      "role": "listitem",
+      "name": "Privacy Policy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1010",
+      "role": "link",
+      "name": "Privacy Policy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "999",
+      "role": "listitem",
+      "name": "Terms of Use",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1001",
+      "role": "link",
+      "name": "Terms of Use",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "930",
+      "role": "listitem",
+      "name": "Business",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "932",
+      "role": "link",
+      "name": "Business",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "966",
+      "role": "listitem",
+      "name": "BritBox",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "968",
+      "role": "link",
+      "name": "BritBox",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "936",
+      "role": "listitem",
+      "name": "Health",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "938",
+      "role": "link",
+      "name": "Health",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "921",
+      "role": "listitem",
+      "name": "Home",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "923",
+      "role": "link",
+      "name": "Home",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "927",
+      "role": "listitem",
+      "name": "Sport",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "929",
+      "role": "link",
+      "name": "Sport",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "924",
+      "role": "listitem",
+      "name": "News",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "926",
+      "role": "link",
+      "name": "News",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "148",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "150",
+      "role": "image",
+      "name": "Close up of Kenneth Law, who is staring at the camera and is wearing glasses.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "154",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "158",
+      "role": "heading",
+      "name": "Canadian 'poison seller' pleads guilty to aiding suicides by selling toxic chemical online",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "342",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "344",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "345",
+      "role": "image",
+      "name": "Yang Shuang-zi standing in a food court",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "554",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "556",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "557",
+      "role": "image",
+      "name": "An in-game screenshot showing a male Korean soldier holding a gun with a building on fire behind him.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "785",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "787",
+      "role": "image",
+      "name": "image unavailable",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "788",
+      "role": "image",
+      "name": "William Saliba challenges Thierno Barry for the ball",
+      "value": "",
+      "flags": ""
+    }
+  ]
+}

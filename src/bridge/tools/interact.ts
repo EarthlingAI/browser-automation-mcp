@@ -2,7 +2,12 @@ import { readFileSync, statSync } from "node:fs";
 import { basename, extname } from "node:path";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerActionTool, ToolContext, execOnLeasedTab } from "../registry";
+import {
+  registerActionTool,
+  ToolContext,
+  execOnLeasedTab,
+  resolveRef,
+} from "../registry";
 import { coerceToArray, coerceLiteralNumber, coerceBoolean } from "./coerce";
 
 const UPLOAD_MAX_FILES = 10;
@@ -174,6 +179,83 @@ export function registerInteractTools(
   });
 
   registerActionTool(server, ctx, {
+    name: "browser_fill_form",
+    title: "Fill multiple form fields",
+    description:
+      'Fill several form fields in one batch. Each field is {ref, value, kind?}: kind defaults to "type" (set a textbox value), "select_option" picks a <select> option by value or visible label, "click" toggles a checkbox/radio (value ignored). Fields apply in order; faster than one browser_type/browser_select_option per field. Fills run back-to-back with no inter-field settle — the single auto-snapshot after the batch covers the final repaint.',
+    annotations: ACTION_WRITE,
+    schema: {
+      fields: z
+        .preprocess(
+          coerceToArray,
+          z
+            .array(
+              z.object({
+                ref: z
+                  .string()
+                  .describe("Element ref from browser_snapshot."),
+                value: z
+                  .string()
+                  .optional()
+                  .describe(
+                    'Text for kind:"type", or option value/label for kind:"select_option". Omit for kind:"click".',
+                  ),
+                kind: z
+                  .enum(["type", "select_option", "click"])
+                  .default("type")
+                  .describe(
+                    'How to fill the field: "type" (textbox), "select_option" (<select>), or "click" (checkbox/radio).',
+                  ),
+              }),
+            )
+            .min(1),
+        )
+        .describe("Fields to fill, applied in order."),
+      tabId: z.coerce.number().int().optional(),
+    },
+    handler: async ({ fields, tabId }) => {
+      // Batch fill: clear the wrapper's pending settle so no field stalls
+      // waiting for a DOM delta (a plain value-set fires none). The single
+      // auto-snapshot after the batch covers the final repaint.
+      ctx.pendingSettle = undefined;
+      const results: Array<{ ref: string; kind: string; result: unknown }> = [];
+      for (const f of fields) {
+        const kind = f.kind ?? "type";
+        let result: unknown;
+        if (kind === "click") {
+          result = await execOnLeasedTab(ctx, tabId, {
+            kind: "click",
+            ref: f.ref,
+          });
+        } else if (kind === "select_option") {
+          if (f.value === undefined)
+            throw new Error(
+              `browser_fill_form: field ref ${f.ref} (kind "select_option") requires a value`,
+            );
+          result = await execOnLeasedTab(ctx, tabId, {
+            kind: "select_option",
+            ref: f.ref,
+            value: f.value,
+          });
+        } else {
+          if (f.value === undefined)
+            throw new Error(
+              `browser_fill_form: field ref ${f.ref} (kind "type") requires a value`,
+            );
+          result = await execOnLeasedTab(ctx, tabId, {
+            kind: "type",
+            ref: f.ref,
+            text: f.value,
+            append: false,
+          });
+        }
+        results.push({ ref: f.ref, kind, result });
+      }
+      return { filled: results.length, fields: results };
+    },
+  });
+
+  registerActionTool(server, ctx, {
     name: "browser_hover",
     title: "Hover over an element",
     description:
@@ -225,6 +307,73 @@ export function registerInteractTools(
         ref,
         files: payloads,
       });
+    },
+  });
+
+  registerActionTool(server, ctx, {
+    name: "browser_drag",
+    title: "Drag one element onto another",
+    description:
+      'Drag the source element (`ref`) onto a target element (`targetRef`). mechanism="auto" (default) inspects the source\'s draggable flag: "native" fires the HTML5 drag-and-drop event sequence (dragstart→dragover→drop with a shared DataTransfer) for draggable="true" sources (file managers, HTML5-DnD demos, SortableJS default); "pointer" fires a mouse/pointer press→move→release sequence for pointer-based libraries (react-beautiful-dnd, SortableJS forceFallback, most kanban boards). Pass mechanism explicitly to override the heuristic if the auto pick does not move the element. All synthetic and page-side — no window raise, no focus theft.',
+    annotations: ACTION_WRITE,
+    schema: {
+      ref: z
+        .string()
+        .describe("Source element ref to drag (from browser_snapshot)."),
+      targetRef: z
+        .string()
+        .describe("Target element ref to drop onto (from browser_snapshot)."),
+      mechanism: z
+        .enum(["auto", "native", "pointer"])
+        .default("auto")
+        .describe(
+          'Event family: "auto" (pick by the source\'s draggable flag), "native" (HTML5 DnD events), or "pointer" (mouse/pointer sequence).',
+        ),
+      tabId: z.coerce.number().int().optional(),
+    },
+    handler: async ({ ref, targetRef, mechanism, tabId }) => {
+      // The source `ref` is validated + liveness-probed by execOnLeasedTab.
+      // Validate the target up-front too so a TYPO'd target gives a nearby-refs
+      // error rather than a page-side "not found" buried in the result. (A
+      // target removed since the snapshot still passes this registry check —
+      // it's non-evicting — and surfaces page-side; only the source is
+      // liveness-probed.) Skip when the action targets a different tab than the
+      // last snapshot: the target can't be validated against this tab's
+      // registry, and execOnLeasedTab's source-ref cross-tab guard owns the
+      // canonical error in that case.
+      const target = tabId ?? ctx.session.lastLeasedTab;
+      const crossTab =
+        ctx.session.lastSnapshotTabId !== undefined &&
+        target !== undefined &&
+        ctx.session.lastSnapshotTabId !== target;
+      if (!crossTab) resolveRef(ctx.session, targetRef);
+      return execOnLeasedTab(ctx, tabId, {
+        kind: "drag",
+        ref,
+        targetRef,
+        mechanism: mechanism ?? "auto",
+      });
+    },
+  });
+
+  registerActionTool(server, ctx, {
+    name: "browser_drop",
+    title: "Drop files onto an element",
+    description:
+      "Drop local files onto a drop-zone element by `ref` — synthesizes the HTML5 dragenter→dragover→drop sequence carrying the files in a DataTransfer, exactly as a desktop file-drop would. Use for 'drag files here' upload zones that expose no <input type=file> for browser_upload to target.",
+    annotations: ACTION_WRITE,
+    schema: {
+      ref: z
+        .string()
+        .describe("Drop-target element ref (from browser_snapshot)."),
+      files: z
+        .preprocess(coerceToArray, z.array(z.string()).min(1))
+        .describe("Absolute paths to local files to drop."),
+      tabId: z.coerce.number().int().optional(),
+    },
+    handler: async ({ ref, files, tabId }) => {
+      const payloads = readUploadPayloads(files);
+      return execOnLeasedTab(ctx, tabId, { kind: "drop", ref, files: payloads });
     },
   });
 

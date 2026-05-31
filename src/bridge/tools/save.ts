@@ -1,8 +1,8 @@
 /**
  * Single source of truth for `save_to_path` resolution and file write.
  *
- * Shared by `browser_snapshot` and `browser_screenshot`. As of Round 7 this
- * module is ALSO the canonical "infer image format" point — the agent-facing
+ * Used by `browser_snapshot`. As of Round 7 this module is ALSO the canonical
+ * "infer image format" point — the agent-facing
  * `format` param is gone, and the chosen format is a function of:
  *
  *   - `save_to_path:false`/`undefined` → JPEG (inline default).
@@ -111,8 +111,7 @@ export function writeImage(
 }
 
 /**
- * Schema for `save_to_path` — shared by `browser_snapshot` and
- * `browser_screenshot`. Two-stage validation:
+ * Schema for `save_to_path` — used by `browser_snapshot`. Two-stage validation:
  *
  *   1. Preprocess-then-union order matters: the agent SDK stringifies
  *      `true`/`false` to `"true"`/`"false"`, and a plain

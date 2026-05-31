@@ -42,6 +42,8 @@ const ACTION_KINDS = new Set([
   "scroll",
   "upload",
   "press_key",
+  "drag",
+  "drop",
 ]);
 
 try {
@@ -159,6 +161,8 @@ const SETTLE_KINDS = new Set([
   "scroll",
   "upload",
   "press_key",
+  "drag",
+  "drop",
 ]);
 
 async function runWithSettle(req, exec) {
@@ -362,12 +366,22 @@ async function dispatchInner(req) {
       return runHelper(tabId, "scroll", c);
     case "upload":
       return runHelper(tabId, "upload", c);
+    case "drag":
+      return runHelper(tabId, "drag", c);
+    case "drop":
+      return runHelper(tabId, "drop", c);
     case "press_key":
       return runHelper(tabId, "press_key", c);
     case "evaluate":
       return runEvaluate(tabId, c.expression);
+    case "resolve_ref":
+      return runResolveRef(tabId, c.ref);
     case "set_focus_emulation":
       return setFocusEmulation(tabId, c.enabled);
+    case "resize":
+      return setResize(tabId, c.width, c.height);
+    case "handle_dialog":
+      return setDialogHandler(tabId, c);
     case "bring_to_front":
       return bringToFront(tabId);
     case "wait_for":
@@ -532,9 +546,8 @@ async function doSnapshotCapture(tabId, opts) {
   // bitmap. We surface it exclusively via the tree-root (`__mcpA11y` sets
   // `root.cssViewport`) — the only caller that ever needs it is
   // `annotate_image`, which never runs without a fresh tree on the same call.
-  // For `withTree:false` (standalone `browser_screenshot`), cssViewport is
-  // omitted; piping a standalone shot into annotate would be a misuse the
-  // bridge already disallows.
+  // For a tree-less capture (`withTree:false`), cssViewport is omitted; piping
+  // a tree-less shot into annotate would be a misuse the bridge already disallows.
 
   // Round 7: hide the extension's HUD (pill + agent-activity panel + viewport
   // glow) during the capture hop. CSS rules in inject/indicator.js use
@@ -825,6 +838,24 @@ const detachTimers = new Map();
 // follows every action — debuggerAttach re-asserts emulation for these tabs on
 // every fresh attach, keeping rAF live across the attach/detach churn.
 const focusEmulated = new Set();
+// Tabs with an active viewport override (see setResize / browser_resize).
+// tabId → {width, height}. Same SW-state-not-debugger-state model as
+// focusEmulated: Emulation.setDeviceMetricsOverride is session-scoped (clears on
+// detach), so debuggerAttach re-asserts it on every fresh attach for tabs in
+// this map. Cleared on tab-close.
+const deviceMetrics = new Map();
+// Tabs with an armed native-dialog auto-responder (see setDialogHandler /
+// browser_handle_dialog). tabId → {disposition, promptText?, lifetime}. Same
+// SW-state-not-debugger-state model as focusEmulated/deviceMetrics: the Map
+// survives the attach/detach churn. Cleared on tab-close, on explicit
+// `clear:true`, and (for `lifetime:"one_shot"`) after the next dialog fires.
+// Invariant #35: Page.* is enabled UNCONDITIONALLY on every debugger-attached
+// tab (debuggerAttach asserts Page.enable on every fresh attach), so the
+// global `Page.javascriptDialogOpening` listener catches every native dialog;
+// an entry in this Map decides the disposition (accept vs dismiss +
+// promptText), and the listener safe-defaults to DISMISS when no entry is
+// armed — no tool can block on a native confirm/prompt/alert/beforeunload.
+const dialogDispositions = new Map();
 
 function sendDebuggerCommand(tabId, method, params) {
   return new Promise((resolve, reject) => {
@@ -851,20 +882,30 @@ function debuggerAttach(tabId) {
         reject(new Error(chrome.runtime.lastError.message));
       else {
         attached.add(tabId);
-        // Re-assert focus-emulation on this fresh attach if the tab is flagged.
-        // Focus-emulation is debugger-session-scoped, so the prior session's
-        // emulation was lost on detach; re-applying here (and resolving only
-        // after it completes) means the action that triggered this attach runs
-        // with rAF already live. A re-assert failure must not break the attach,
-        // so we always resolve.
-        if (focusEmulated.has(tabId)) {
-          assertFocusEmulation(tabId, true).then(
-            () => resolve(),
-            () => resolve(),
-          );
-        } else {
-          resolve();
-        }
+        // Re-assert any session-scoped CDP overrides this tab is flagged for on
+        // this fresh attach — focus-emulation (invariant #27) and/or the viewport
+        // override (browser_resize). Both are debugger-session-scoped, so the
+        // prior session's overrides were lost on detach; re-applying here (and
+        // resolving only after they complete) means the action that triggered
+        // this attach runs with rAF live AND the viewport already resized. A
+        // re-assert failure must not break the attach, so we always resolve.
+        //
+        // Safe-default Page.enable: subscribed unconditionally on every fresh
+        // attach so the global `Page.javascriptDialogOpening` listener fires
+        // for ANY native dialog — armed disposition wins when set, otherwise
+        // auto-DISMISS by default. Guarantees no tool can block on a native
+        // confirm/prompt/alert/beforeunload even when the debugger is attached
+        // for an unrelated reason (focus-emulation, viewport override,
+        // screenshot, evaluate). See invariant #35.
+        const reasserts = [
+          sendDebuggerCommand(tabId, "Page.enable").catch(() => {}),
+        ];
+        if (focusEmulated.has(tabId)) reasserts.push(assertFocusEmulation(tabId, true));
+        if (deviceMetrics.has(tabId)) reasserts.push(assertDeviceMetrics(tabId));
+        Promise.all(reasserts).then(
+          () => resolve(),
+          () => resolve(),
+        );
       }
     });
   });
@@ -959,6 +1000,140 @@ async function setFocusEmulation(tabId, enabled) {
   return { focusEmulation: enabled };
 }
 
+/** Apply the tracked viewport override. Assumes the debugger is already attached. */
+async function assertDeviceMetrics(tabId) {
+  const m = deviceMetrics.get(tabId);
+  if (!m) return;
+  await sendDebuggerCommand(tabId, "Emulation.setDeviceMetricsOverride", {
+    width: m.width,
+    height: m.height,
+    // 0 = use the host's natural device-scale-factor (don't override DPR — this
+    // is a pure viewport resize, not a device emulation).
+    deviceScaleFactor: 0,
+    mobile: false,
+  });
+}
+
+/**
+ * Resize the leased tab's viewport via CDP Emulation.setDeviceMetricsOverride —
+ * no window raise, no focus theft (debugger-scoped, same model as focus-
+ * emulation). STICKY per-tab: the dimensions are stored in `deviceMetrics` and
+ * re-asserted on every fresh attach (debuggerAttach), so the override survives
+ * the attach/detach churn of an action sequence. The deferred detach keeps the
+ * debugger warm so subsequent tree-only snapshots still see the resized layout.
+ * Clears on tab-close; persists across focus-emulation toggles (which detach the
+ * debugger — re-asserted on the next attach).
+ */
+async function setResize(tabId, width, height) {
+  if (tabId == null) throw new Error("resize requires a tabId");
+  deviceMetrics.set(tabId, { width, height });
+  await debuggerAttach(tabId);
+  try {
+    await assertDeviceMetrics(tabId);
+  } finally {
+    debuggerDetachLater(tabId);
+  }
+  return { resized: { width, height } };
+}
+
+/**
+ * Pre-arm or clear the auto-response for the leased tab's next native JS
+ * dialog. On arming, stores the disposition in SW state; the global
+ * `chrome.debugger.onEvent` listener (registered at module load) intercepts
+ * `Page.javascriptDialogOpening` and consults this Map to pick accept vs
+ * dismiss + promptText. `Page.enable` is asserted unconditionally on every
+ * fresh debugger attach (debuggerAttach), so a dialog never falls through:
+ * an armed disposition wins, otherwise the listener's safe-default DISMISS
+ * fires so the page can't block the next agent tool call.
+ *
+ * Clearing just removes the entry — the listener auto-dismisses subsequent
+ * dialogs by default, no Page.disable hop needed.
+ */
+async function setDialogHandler(tabId, params) {
+  if (tabId == null) throw new Error("handle_dialog requires a tabId");
+  if (params.clear) {
+    dialogDispositions.delete(tabId);
+    return { dialogHandler: null };
+  }
+  // Arm. lifetime defaults to one_shot — the common case is "I'm about to
+  // click a button that triggers a confirm; auto-accept just the next one".
+  const lifetime = params.lifetime ?? "one_shot";
+  dialogDispositions.set(tabId, {
+    disposition: params.disposition,
+    promptText: params.promptText,
+    lifetime,
+  });
+  await debuggerAttach(tabId);
+  try {
+    // Page.enable is now applied by debuggerAttach unconditionally (safe-default
+    // covers every debugger-attached tab — invariant #35), so arming just needs
+    // the attach itself.
+  } finally {
+    // Lifetime-aware detach. one_shot: deferred 5s detach is fine — the typical
+    // pattern is `arm → click → dialog fires immediately`, well inside 5s, and
+    // the re-assert hook revives `Page.enable` on the next action's attach if
+    // the dialog comes later. STICKY: DO NOT defer-detach. Sticky-ACCEPT
+    // promises "auto-accept every dialog this tab fires until I clear" —
+    // including dialogs fired by the page itself (timers, network responses,
+    // beforeunload), not just dialogs triggered by an agent action. If the
+    // debugger detaches while sticky is armed, page-driven dialogs fall
+    // through to the safe-default auto-dismiss — wrong answer for an explicit
+    // sticky-accept. Keeping the debugger attached for the duration of sticky
+    // preserves the user's stated disposition. Cost: the "started debugging
+    // this browser" infobar stays visible the whole time — matches
+    // `browser_activate_tab(level:"render")`'s posture.
+    if (lifetime === "one_shot") debuggerDetachLater(tabId);
+  }
+  return {
+    dialogHandler: {
+      disposition: params.disposition,
+      ...(params.promptText !== undefined ? { promptText: params.promptText } : {}),
+      lifetime,
+    },
+  };
+}
+
+// Global Page.* event listener — fires for ALL debugger sessions on ALL tabs.
+// Page.enable is now issued unconditionally on every fresh debugger attach
+// (debuggerAttach), so this listener catches Page.javascriptDialogOpening for
+// ANY native dialog the tab fires while the debugger is attached for any
+// reason (handle_dialog arming, focus-emulation, viewport override, screenshot,
+// evaluate, wait_for). Behaviour:
+//   - Armed disposition wins: per the entry in `dialogDispositions`
+//     (accept/dismiss + optional promptText). `lifetime:"one_shot"` removes the
+//     entry after firing once.
+//   - No arm → safe-default DISMISS (`accept:false`) so the page never blocks.
+//     Without this, Chrome does NOT apply background-tab auto-dismiss while the
+//     debugger is attached and Page.* is enabled, and the dialog would wait
+//     indefinitely for a CDP answer — wedging the next agent tool call
+//     (invariant #35).
+chrome.debugger.onEvent.addListener((source, method, params) => {
+  if (method !== "Page.javascriptDialogOpening") return;
+  const tabId = source.tabId;
+  if (tabId == null) return;
+  const arm = dialogDispositions.get(tabId);
+  // Safe-default: when no disposition is armed, DISMISS so the page never
+  // blocks on a native dialog.
+  const accept = arm ? arm.disposition === "accept" : false;
+  // promptText only meaningful when accepting a `prompt` dialog. Pass it only
+  // on accept so a dismiss never carries text the page might still inspect.
+  const handleParams = arm && accept && arm.promptText !== undefined
+    ? { accept, promptText: arm.promptText }
+    : { accept };
+  if (arm && arm.lifetime === "one_shot") {
+    // Remove BEFORE issuing handle so a back-to-back dialog from the same tab
+    // doesn't get auto-answered by a stale disposition.
+    dialogDispositions.delete(tabId);
+  }
+  void sendDebuggerCommand(tabId, "Page.handleJavaScriptDialog", handleParams)
+    .catch((e) =>
+      console.error(
+        "[browser-bg] Page.handleJavaScriptDialog failed:",
+        e?.message ?? e,
+      ),
+    );
+});
+
 /**
  * The ONLY sanctioned focus-theft in the codebase (invariant #29): raises the
  * real OS window and activates the tab. Captures the prior foreground first so
@@ -985,6 +1160,20 @@ async function runHelper(tabId, kind, opts) {
     args: [kind, opts],
   });
   return result?.result;
+}
+
+// Read-only liveness probe — resolves a single ref against the page-side ref
+// map, returning element metadata while it's attached or null once gone. Not
+// an ACTION_KIND (no settle, no indicator); the bridge calls it to confirm an
+// out-of-snapshot ref is still live before firing an action against it.
+async function runResolveRef(tabId, ref) {
+  await ensureHelpers(tabId);
+  const [result] = await chrome.scripting.executeScript({
+    target: { tabId, allFrames: false },
+    func: (r) => globalThis.__mcpResolveRef(r),
+    args: [ref],
+  });
+  return result?.result ?? null;
 }
 
 // ─── indicator (in-page + tab-group) ────────────────────────────────
@@ -1321,6 +1510,8 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   indicatorState.delete(tabId);
   indicatorInjected.delete(tabId);
   focusEmulated.delete(tabId);
+  deviceMetrics.delete(tabId);
+  dialogDispositions.delete(tabId);
   send({ type: "tab_closed", tabId });
 });
 chrome.tabs.onAttached.addListener((tabId) => {

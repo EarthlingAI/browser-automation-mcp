@@ -1,1 +1,55 @@
+# Line-ending normalization.
+# The working tree may end up CRLF (e.g. when an editor rewrites a file on
+# Windows), but the index always stores the EOL form declared here, so diffs
+# stay clean and merges don't collide over whole-file EOL flips.
+
+# Default: detect text vs binary; store LF in the index for anything textual.
+* text=auto eol=lf
+
+# Source — force LF
+*.ts     text eol=lf
+*.tsx    text eol=lf
+*.js     text eol=lf
+*.jsx    text eol=lf
+*.mjs    text eol=lf
+*.cjs    text eol=lf
+*.json   text eol=lf
+*.jsonc  text eol=lf
+*.yaml   text eol=lf
+*.yml    text eol=lf
+*.md     text eol=lf
+*.mdx    text eol=lf
+*.css    text eol=lf
+*.html   text eol=lf
+*.svg    text eol=lf
+*.sh     text eol=lf
+*.txt    text eol=lf
+.gitignore   text eol=lf
+.gitattributes text eol=lf
+
+# Windows-only scripts — must stay CRLF or cmd.exe / PowerShell mis-parse them
+*.bat    text eol=crlf
+*.cmd    text eol=crlf
+*.ps1    text eol=crlf
+
+# Binaries — never touch
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.webp   binary
+*.bmp    binary
+*.zip    binary
+*.gz     binary
+*.exe    binary
+*.dll    binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+
+# Don't diff lockfiles line-by-line — they're machine-generated
+package-lock.json -diff
+
+# ONNX model weights tracked via Git LFS
 *.onnx filter=lfs diff=lfs merge=lfs -text

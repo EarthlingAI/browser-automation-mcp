@@ -80,6 +80,24 @@ export interface PruneMeta {
     threshold: number;
     total_candidates: number;
   };
+  /**
+   * Agent-actionable recovery hint, set whenever the pruner capped, fell back,
+   * or otherwise returned less than the full tree — the one channel the agent
+   * reads to know what it didn't see and how to get it. Surfaced inline as the
+   * first line of the serialized outline (see snapshot/serialize.ts) so it can't
+   * be missed. CP4's loud-cap work writes richer notices through this same field.
+   */
+  notice?: string;
+  /**
+   * Snapshot mode — "full" (the whole pruned tree) or "diff" (only what changed
+   * since the previous snapshot of this tab). Set by runUnifiedCapture (the diff
+   * layer in CP5), NOT by prune() — prune always produces a full tree; the
+   * capture orchestrator decides whether to serialize it whole or as a delta.
+   * Explicit browser_snapshot is always "full"; an action's auto-snapshot is
+   * "diff" when a comparable prior tree exists and the delta is smaller than the
+   * full outline, else "full".
+   */
+  mode?: "diff" | "full";
 }
 
 const INTERACTIVE_ROLES = new Set([
@@ -159,7 +177,7 @@ export function prune(
   root: RawNode,
   opts: PruneOptions = {},
 ): PrunedNode & { meta?: PruneMeta } {
-  const requestedLimit = opts.limit ?? 500;
+  const requestedLimit = opts.limit ?? 1500;
   // Default flip (Round 7): viewportOnly is now false by default so the
   // pruner ranks across the WHOLE page instead of forcing the agent to
   // scroll-and-snapshot before discovering a useful element. For pages that
@@ -240,12 +258,22 @@ export function prune(
       continue;
     }
 
+    // Keep-heuristic (Round 7 — pruning philosophy flip). Standard mode now
+    // includes the whole SEMANTIC tree, not just bare interactives: anything
+    // interactive/navigational/data-bearing, plus ANY named node — including
+    // named landmarks/containers (region/main/navigation/list/group with an
+    // aria-label) that earlier rounds dropped via the `!CONTAINER_ROLES`
+    // exclusion. Keeping named containers restores page structure (the agent
+    // sees `region "Comments"` wrapping its items instead of the items
+    // re-parented up to the root). Unnamed structural nodes (generic divs,
+    // unlabeled wrappers) stay out of standard mode — they add depth without
+    // signal; `detail:"full"` is the escape hatch for the truly-complete tree.
     const keep =
       detail === "full" ||
       INTERACTIVE_ROLES.has(node.role) ||
       NAV_ROLES.has(node.role) ||
       DATA_ROLES.has(node.role) ||
-      (node.name && node.name.trim() && !CONTAINER_ROLES.has(node.role));
+      Boolean(node.name && node.name.trim());
     // Viewport-filter is now applied AFTER collection (see "viewport gate"
     // below) so `total_candidates` reflects the full page even when we
     // ultimately restrict the output to the viewport. This also unlocks the
@@ -335,10 +363,14 @@ export function prune(
       b.score - a.score ||
       candidates[a.idx]!.bfsOrder - candidates[b.idx]!.bfsOrder,
   );
-  let selected = scored
-    .filter((s) => isPickable(s.idx))
-    .slice(0, effectiveLimit)
-    .map((s) => s.idx);
+  // Round 7: the score now decides ORDER (and, only when in-scope candidates
+  // overflow `effectiveLimit`, which tail to defer) — never a within-budget
+  // exclusion. `pickable` is the in-scope set after the viewport gate; the
+  // slice caps it at the limit and `pickableCount` lets the meta.notice tell
+  // the agent exactly how many ranked nodes were deferred and how to reach them.
+  const pickable = scored.filter((s) => isPickable(s.idx));
+  const pickableCount = pickable.length;
+  let selected = pickable.slice(0, effectiveLimit).map((s) => s.idx);
 
   // Pass 2.5: reserve slots — nav (existing) + form fields (new for Issue #6)
   if (candidates.length > effectiveLimit) {
@@ -467,6 +499,27 @@ export function prune(
       total_candidates,
     };
   }
+  // Recovery-hint seam (Round 7 — loud caps). Whenever the pruner returned
+  // less than the full tree — auto-fallback, an over-limit deferral, or the
+  // full-mode floor — say so on this channel: what was hidden and the exact
+  // levers to recover it. The serializer inlines this as the outline's first
+  // line (`NOTE: …`) so a cap can never be silent.
+  const keptCount = selected.length;
+  const notices: string[] = [];
+  if (autoFallback) {
+    notices.push(
+      `This page is large — ${total_candidates} candidate nodes, over the ${fallbackThreshold}-node auto-scope threshold — so the snapshot is scoped to the in-viewport subset. To reach the rest: scroll and re-snapshot, raise 'limit' (now ${requestedLimit}), or scope to a region/element.`,
+    );
+  }
+  if (pickableCount > effectiveLimit) {
+    notices.push(
+      `Showing the ${keptCount} highest-ranked node(s)${applyViewportFilter ? " in scope" : ""} of ${pickableCount}; ${pickableCount - keptCount} lower-ranked node(s) are not in this snapshot — raise 'limit' (now ${requestedLimit}) or scope to a region/element to include them.`,
+    );
+  }
+  if (limitAdjusted !== undefined) {
+    notices.push(`Node limit raised to ${limitAdjusted} for detail:"full".`);
+  }
+  if (notices.length) meta.notice = notices.join(" ");
   out.meta = meta;
   return out;
 }

@@ -1,0 +1,2970 @@
+{
+  "fixture": "hn",
+  "url": "https://news.ycombinator.com/",
+  "opts": {
+    "viewport": {
+      "w": 1536,
+      "h": 735
+    }
+  },
+  "meta": {
+    "total_candidates": 422
+  },
+  "jsonSize": 27776,
+  "inventory": [
+    {
+      "ref": "1",
+      "role": "WebArea",
+      "name": "Hacker News",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "28",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "32",
+      "role": "row",
+      "name": "1.I Am Retiring from Tech to Live Offline (openpath.quest)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "39",
+      "role": "cell",
+      "name": "I Am Retiring from Tech to Live Offline (openpath.quest)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "41",
+      "role": "link",
+      "name": "I Am Retiring from Tech to Live Offline",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "43",
+      "role": "link",
+      "name": "openpath.quest",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "33",
+      "role": "cell",
+      "name": "1.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "37",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "56",
+      "role": "row",
+      "name": "2.Please Use AI (shawnsmucker.substack.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "63",
+      "role": "cell",
+      "name": "Please Use AI (shawnsmucker.substack.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "67",
+      "role": "link",
+      "name": "shawnsmucker.substack.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "65",
+      "role": "link",
+      "name": "Please Use AI",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "57",
+      "role": "cell",
+      "name": "2.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "61",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "80",
+      "role": "row",
+      "name": "3.It Will Never Be the Year of the Linux Desktop (unix.foo)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "87",
+      "role": "cell",
+      "name": "It Will Never Be the Year of the Linux Desktop (unix.foo)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "89",
+      "role": "link",
+      "name": "It Will Never Be the Year of the Linux Desktop",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "91",
+      "role": "link",
+      "name": "unix.foo",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "81",
+      "role": "cell",
+      "name": "3.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "85",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "104",
+      "role": "row",
+      "name": "4.Tulip mania: when a single flower was worth more than a house (2025) (dutchreview.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "111",
+      "role": "cell",
+      "name": "Tulip mania: when a single flower was worth more than a house (2025) (dutchreview.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "113",
+      "role": "link",
+      "name": "Tulip mania: when a single flower was worth more than a house (2025)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "115",
+      "role": "link",
+      "name": "dutchreview.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "105",
+      "role": "cell",
+      "name": "4.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "109",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "128",
+      "role": "row",
+      "name": "5.Expertise in the Age of AI (moderndescartes.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "135",
+      "role": "cell",
+      "name": "Expertise in the Age of AI (moderndescartes.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "137",
+      "role": "link",
+      "name": "Expertise in the Age of AI",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "139",
+      "role": "link",
+      "name": "moderndescartes.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "129",
+      "role": "cell",
+      "name": "5.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "133",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "152",
+      "role": "row",
+      "name": "6.Bricks and Minifigs Stole a Man's $200k Lego Collection (mybricklog.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "159",
+      "role": "cell",
+      "name": "Bricks and Minifigs Stole a Man's $200k Lego Collection (mybricklog.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "161",
+      "role": "link",
+      "name": "Bricks and Minifigs Stole a Man's $200k Lego Collection",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "163",
+      "role": "link",
+      "name": "mybricklog.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "153",
+      "role": "cell",
+      "name": "6.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "157",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "176",
+      "role": "row",
+      "name": "7.The UK Government's Low Value Purchase System Is a Waste of Time (shkspr.mobi)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "183",
+      "role": "cell",
+      "name": "The UK Government's Low Value Purchase System Is a Waste of Time (shkspr.mobi)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "185",
+      "role": "link",
+      "name": "The UK Government's Low Value Purchase System Is a Waste of Time",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "187",
+      "role": "link",
+      "name": "shkspr.mobi",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "177",
+      "role": "cell",
+      "name": "7.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "181",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "200",
+      "role": "row",
+      "name": "8.Local Git Remotes (cblgh.org)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "207",
+      "role": "cell",
+      "name": "Local Git Remotes (cblgh.org)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "209",
+      "role": "link",
+      "name": "Local Git Remotes",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "211",
+      "role": "link",
+      "name": "cblgh.org",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "201",
+      "role": "cell",
+      "name": "8.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "205",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "224",
+      "role": "row",
+      "name": "9.High Density Living, 2000 Years Ago: Inside the Roman Apartment Building (commonedge.org)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "231",
+      "role": "cell",
+      "name": "High Density Living, 2000 Years Ago: Inside the Roman Apartment Building (commonedge.org)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "233",
+      "role": "link",
+      "name": "High Density Living, 2000 Years Ago: Inside the Roman Apartment Building",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "235",
+      "role": "link",
+      "name": "commonedge.org",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "225",
+      "role": "cell",
+      "name": "9.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "229",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "248",
+      "role": "row",
+      "name": "10.Bijou64: A variable-length integer encoding (inkandswitch.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "255",
+      "role": "cell",
+      "name": "Bijou64: A variable-length integer encoding (inkandswitch.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "257",
+      "role": "link",
+      "name": "Bijou64: A variable-length integer encoding",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "259",
+      "role": "link",
+      "name": "inkandswitch.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "249",
+      "role": "cell",
+      "name": "10.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "253",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "272",
+      "role": "row",
+      "name": "11.Poll: How often do you check \"newest\"?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "279",
+      "role": "cell",
+      "name": "Poll: How often do you check \"newest\"?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "281",
+      "role": "link",
+      "name": "Poll: How often do you check \"newest\"?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "273",
+      "role": "cell",
+      "name": "11.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "277",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "293",
+      "role": "row",
+      "name": "12.Headway Therapy Patients Forced to Scan Their Faces to Keep Getting Care (404media.co)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "300",
+      "role": "cell",
+      "name": "Headway Therapy Patients Forced to Scan Their Faces to Keep Getting Care (404media.co)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "302",
+      "role": "link",
+      "name": "Headway Therapy Patients Forced to Scan Their Faces to Keep Getting Care",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "304",
+      "role": "link",
+      "name": "404media.co",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "294",
+      "role": "cell",
+      "name": "12.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "298",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "335",
+      "role": "row",
+      "name": "14.Claude Code – Everything You Can Configure That the Docs Don't Tell You (buildingbetter.tech)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "342",
+      "role": "cell",
+      "name": "Claude Code – Everything You Can Configure That the Docs Don't Tell You (buildingbetter.tech)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "344",
+      "role": "link",
+      "name": "Claude Code – Everything You Can Configure That the Docs Don't Tell You",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "346",
+      "role": "link",
+      "name": "buildingbetter.tech",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "336",
+      "role": "cell",
+      "name": "14.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "340",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "359",
+      "role": "row",
+      "name": "15.Real-time LLM Inference on Standard GPUs: 3k tokens/s per request (kog.ai)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "366",
+      "role": "cell",
+      "name": "Real-time LLM Inference on Standard GPUs: 3k tokens/s per request (kog.ai)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "368",
+      "role": "link",
+      "name": "Real-time LLM Inference on Standard GPUs: 3k tokens/s per request",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "370",
+      "role": "link",
+      "name": "kog.ai",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "360",
+      "role": "cell",
+      "name": "15.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "364",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "383",
+      "role": "row",
+      "name": "16.Orchestrating AI code review at scale (cloudflare.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "390",
+      "role": "cell",
+      "name": "Orchestrating AI code review at scale (cloudflare.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "392",
+      "role": "link",
+      "name": "Orchestrating AI code review at scale",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "394",
+      "role": "link",
+      "name": "cloudflare.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "384",
+      "role": "cell",
+      "name": "16.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "388",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "407",
+      "role": "row",
+      "name": "17.Blue Origin rocket explodes on launchpad in a setback (reuters.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "414",
+      "role": "cell",
+      "name": "Blue Origin rocket explodes on launchpad in a setback (reuters.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "416",
+      "role": "link",
+      "name": "Blue Origin rocket explodes on launchpad in a setback",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "418",
+      "role": "link",
+      "name": "reuters.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "408",
+      "role": "cell",
+      "name": "17.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "412",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "431",
+      "role": "row",
+      "name": "18.I made a million dollar product from my dorm room (2025) (winans.io)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "438",
+      "role": "cell",
+      "name": "I made a million dollar product from my dorm room (2025) (winans.io)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "440",
+      "role": "link",
+      "name": "I made a million dollar product from my dorm room (2025)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "442",
+      "role": "link",
+      "name": "winans.io",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "432",
+      "role": "cell",
+      "name": "18.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "436",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "455",
+      "role": "row",
+      "name": "19.Even (very) noisy LLM evaluators are useful for improving AI agents (tensorzero.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "462",
+      "role": "cell",
+      "name": "Even (very) noisy LLM evaluators are useful for improving AI agents (tensorzero.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "464",
+      "role": "link",
+      "name": "Even (very) noisy LLM evaluators are useful for improving AI agents",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "466",
+      "role": "link",
+      "name": "tensorzero.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "456",
+      "role": "cell",
+      "name": "19.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "460",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "479",
+      "role": "row",
+      "name": "20.Claude Opus 4.8 (anthropic.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "486",
+      "role": "cell",
+      "name": "Claude Opus 4.8 (anthropic.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "488",
+      "role": "link",
+      "name": "Claude Opus 4.8",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "490",
+      "role": "link",
+      "name": "anthropic.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "480",
+      "role": "cell",
+      "name": "20.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "484",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "317",
+      "role": "row",
+      "name": "13.Cedana (YC S23) Is Hiring (ycombinator.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "322",
+      "role": "cell",
+      "name": "Cedana (YC S23) Is Hiring (ycombinator.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "324",
+      "role": "link",
+      "name": "Cedana (YC S23) Is Hiring",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "326",
+      "role": "link",
+      "name": "ycombinator.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "318",
+      "role": "cell",
+      "name": "13.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "45",
+      "role": "row",
+      "name": "116 points by PinkG 37 minutes ago  | hide | 48 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "47",
+      "role": "cell",
+      "name": "116 points by PinkG 37 minutes ago  | hide | 48 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "52",
+      "role": "link",
+      "name": "37 minutes ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "54",
+      "role": "link",
+      "name": "48 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "50",
+      "role": "link",
+      "name": "PinkG",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "53",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "69",
+      "role": "row",
+      "name": "464 points by garycomtois 1 hour ago  | hide | 173 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "71",
+      "role": "cell",
+      "name": "464 points by garycomtois 1 hour ago  | hide | 173 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "78",
+      "role": "link",
+      "name": "173 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "74",
+      "role": "link",
+      "name": "garycomtois",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "76",
+      "role": "link",
+      "name": "1 hour ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "77",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "93",
+      "role": "row",
+      "name": "24 points by cylo 19 minutes ago  | hide | 7 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "95",
+      "role": "cell",
+      "name": "24 points by cylo 19 minutes ago  | hide | 7 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "100",
+      "role": "link",
+      "name": "19 minutes ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "102",
+      "role": "link",
+      "name": "7 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "101",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "98",
+      "role": "link",
+      "name": "cylo",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "117",
+      "role": "row",
+      "name": "81 points by dotcoma 3 hours ago  | hide | 72 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "119",
+      "role": "cell",
+      "name": "81 points by dotcoma 3 hours ago  | hide | 72 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "126",
+      "role": "link",
+      "name": "72 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "124",
+      "role": "link",
+      "name": "3 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "122",
+      "role": "link",
+      "name": "dotcoma",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "125",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "141",
+      "role": "row",
+      "name": "20 points by brilee 1 hour ago  | hide | 6 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "143",
+      "role": "cell",
+      "name": "20 points by brilee 1 hour ago  | hide | 6 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "150",
+      "role": "link",
+      "name": "6 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "148",
+      "role": "link",
+      "name": "1 hour ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "146",
+      "role": "link",
+      "name": "brilee",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "149",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "165",
+      "role": "row",
+      "name": "1186 points by philips 19 hours ago  | hide | 521 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "167",
+      "role": "cell",
+      "name": "1186 points by philips 19 hours ago  | hide | 521 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "174",
+      "role": "link",
+      "name": "521 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "172",
+      "role": "link",
+      "name": "19 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "170",
+      "role": "link",
+      "name": "philips",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "173",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "189",
+      "role": "row",
+      "name": "92 points by ColinWright 3 hours ago  | hide | 50 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "191",
+      "role": "cell",
+      "name": "92 points by ColinWright 3 hours ago  | hide | 50 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "198",
+      "role": "link",
+      "name": "50 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "196",
+      "role": "link",
+      "name": "3 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "194",
+      "role": "link",
+      "name": "ColinWright",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "197",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "213",
+      "role": "row",
+      "name": "43 points by surprisetalk 2 hours ago  | hide | 34 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "215",
+      "role": "cell",
+      "name": "43 points by surprisetalk 2 hours ago  | hide | 34 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "222",
+      "role": "link",
+      "name": "34 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "220",
+      "role": "link",
+      "name": "2 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "218",
+      "role": "link",
+      "name": "surprisetalk",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "221",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "237",
+      "role": "row",
+      "name": "38 points by surprisetalk 2 hours ago  | hide | 9 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "239",
+      "role": "cell",
+      "name": "38 points by surprisetalk 2 hours ago  | hide | 9 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "246",
+      "role": "link",
+      "name": "9 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "244",
+      "role": "link",
+      "name": "2 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "242",
+      "role": "link",
+      "name": "surprisetalk",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "245",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "261",
+      "role": "row",
+      "name": "4 points by justinweiss 14 minutes ago  | hide | discuss",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "263",
+      "role": "cell",
+      "name": "4 points by justinweiss 14 minutes ago  | hide | discuss",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "268",
+      "role": "link",
+      "name": "14 minutes ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "266",
+      "role": "link",
+      "name": "justinweiss",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "270",
+      "role": "link",
+      "name": "discuss",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "269",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "282",
+      "role": "row",
+      "name": "22 points by ColinWright 2 hours ago  | hide | 22 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "284",
+      "role": "cell",
+      "name": "22 points by ColinWright 2 hours ago  | hide | 22 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "291",
+      "role": "link",
+      "name": "22 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "289",
+      "role": "link",
+      "name": "2 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "287",
+      "role": "link",
+      "name": "ColinWright",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "290",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "306",
+      "role": "row",
+      "name": "23 points by pavel_lishin 1 hour ago  | hide | 2 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "308",
+      "role": "cell",
+      "name": "23 points by pavel_lishin 1 hour ago  | hide | 2 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "315",
+      "role": "link",
+      "name": "2 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "311",
+      "role": "link",
+      "name": "pavel_lishin",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "313",
+      "role": "link",
+      "name": "1 hour ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "314",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "328",
+      "role": "row",
+      "name": "3 hours ago | hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "330",
+      "role": "cell",
+      "name": "3 hours ago | hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "332",
+      "role": "link",
+      "name": "3 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "333",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "348",
+      "role": "row",
+      "name": "261 points by ankitg12 13 hours ago  | hide | 53 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "350",
+      "role": "cell",
+      "name": "261 points by ankitg12 13 hours ago  | hide | 53 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "357",
+      "role": "link",
+      "name": "53 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "355",
+      "role": "link",
+      "name": "13 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "353",
+      "role": "link",
+      "name": "ankitg12",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "356",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "372",
+      "role": "row",
+      "name": "111 points by NicoConstant 5 hours ago  | hide | 58 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "374",
+      "role": "cell",
+      "name": "111 points by NicoConstant 5 hours ago  | hide | 58 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "381",
+      "role": "link",
+      "name": "58 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "377",
+      "role": "link",
+      "name": "NicoConstant",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "379",
+      "role": "link",
+      "name": "5 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "380",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "396",
+      "role": "row",
+      "name": "75 points by pramodbiligiri 8 hours ago  | hide | 28 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "398",
+      "role": "cell",
+      "name": "75 points by pramodbiligiri 8 hours ago  | hide | 28 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "401",
+      "role": "link",
+      "name": "pramodbiligiri",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "405",
+      "role": "link",
+      "name": "28 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "403",
+      "role": "link",
+      "name": "8 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "404",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "420",
+      "role": "row",
+      "name": "20 points by onemoresoop 54 minutes ago  | hide | 1 comment",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "422",
+      "role": "cell",
+      "name": "20 points by onemoresoop 54 minutes ago  | hide | 1 comment",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "427",
+      "role": "link",
+      "name": "54 minutes ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "425",
+      "role": "link",
+      "name": "onemoresoop",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "429",
+      "role": "link",
+      "name": "1 comment",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "428",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "444",
+      "role": "row",
+      "name": "501 points by mattrighetti 18 hours ago  | hide | 76 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "446",
+      "role": "cell",
+      "name": "501 points by mattrighetti 18 hours ago  | hide | 76 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "453",
+      "role": "link",
+      "name": "76 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "451",
+      "role": "link",
+      "name": "18 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "449",
+      "role": "link",
+      "name": "mattrighetti",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "452",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "468",
+      "role": "row",
+      "name": "13 points by GabrielBianconi 3 hours ago  | hide | discuss",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "470",
+      "role": "cell",
+      "name": "13 points by GabrielBianconi 3 hours ago  | hide | discuss",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "473",
+      "role": "link",
+      "name": "GabrielBianconi",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "475",
+      "role": "link",
+      "name": "3 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "477",
+      "role": "link",
+      "name": "discuss",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "476",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "492",
+      "role": "row",
+      "name": "1659 points by craigmart 22 hours ago  | hide | 1293 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "494",
+      "role": "cell",
+      "name": "1659 points by craigmart 22 hours ago  | hide | 1293 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "501",
+      "role": "link",
+      "name": "1293 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "499",
+      "role": "link",
+      "name": "22 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "497",
+      "role": "link",
+      "name": "craigmart",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "500",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "55",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "79",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "103",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "127",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "151",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "175",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "199",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "223",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "247",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "271",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "292",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "316",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "334",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "358",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "382",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "406",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "430",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "454",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "478",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "503",
+      "role": "row",
+      "name": "21.An Obsessive Focus on UX: Pilot's Pressure-Regulating Kire-Na Highlighter (core77.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "510",
+      "role": "cell",
+      "name": "An Obsessive Focus on UX: Pilot's Pressure-Regulating Kire-Na Highlighter (core77.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "512",
+      "role": "link",
+      "name": "An Obsessive Focus on UX: Pilot's Pressure-Regulating Kire-Na Highlighter",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "514",
+      "role": "link",
+      "name": "core77.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "504",
+      "role": "cell",
+      "name": "21.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "508",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "527",
+      "role": "row",
+      "name": "22.Let's compile Quake like it's 1997 (fabiensanglard.net)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "534",
+      "role": "cell",
+      "name": "Let's compile Quake like it's 1997 (fabiensanglard.net)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "536",
+      "role": "link",
+      "name": "Let's compile Quake like it's 1997",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "538",
+      "role": "link",
+      "name": "fabiensanglard.net",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "528",
+      "role": "cell",
+      "name": "22.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "532",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "551",
+      "role": "row",
+      "name": "23.Do U.S. Presidents Always Make This Much Money? [video] (youtube.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "558",
+      "role": "cell",
+      "name": "Do U.S. Presidents Always Make This Much Money? [video] (youtube.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "560",
+      "role": "link",
+      "name": "Do U.S. Presidents Always Make This Much Money? [video]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "562",
+      "role": "link",
+      "name": "youtube.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "552",
+      "role": "cell",
+      "name": "23.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "556",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "575",
+      "role": "row",
+      "name": "24.Is AI causing a repeat of Front end's Lost Decade? (mastrojs.github.io)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "582",
+      "role": "cell",
+      "name": "Is AI causing a repeat of Front end's Lost Decade? (mastrojs.github.io)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "584",
+      "role": "link",
+      "name": "Is AI causing a repeat of Front end's Lost Decade?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "586",
+      "role": "link",
+      "name": "mastrojs.github.io",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "576",
+      "role": "cell",
+      "name": "24.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "580",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "599",
+      "role": "row",
+      "name": "25.Volkswagen blocks Home Assistant by requiring client assertion (github.com/robinostlund)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "606",
+      "role": "cell",
+      "name": "Volkswagen blocks Home Assistant by requiring client assertion (github.com/robinostlund)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "608",
+      "role": "link",
+      "name": "Volkswagen blocks Home Assistant by requiring client assertion",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "610",
+      "role": "link",
+      "name": "github.com/robinostlund",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "600",
+      "role": "cell",
+      "name": "25.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "604",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "623",
+      "role": "row",
+      "name": "26.Show HN: Context-aware Japanese furigana using Sudachi and ModernBERT (ezfurigana.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "630",
+      "role": "cell",
+      "name": "Show HN: Context-aware Japanese furigana using Sudachi and ModernBERT (ezfurigana.com)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "632",
+      "role": "link",
+      "name": "Show HN: Context-aware Japanese furigana using Sudachi and ModernBERT",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "634",
+      "role": "link",
+      "name": "ezfurigana.com",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "624",
+      "role": "cell",
+      "name": "26.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "628",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "647",
+      "role": "row",
+      "name": "27.Is This Sustainable? (jamiehurst.co.uk)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "654",
+      "role": "cell",
+      "name": "Is This Sustainable? (jamiehurst.co.uk)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "656",
+      "role": "link",
+      "name": "Is This Sustainable?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "658",
+      "role": "link",
+      "name": "jamiehurst.co.uk",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "648",
+      "role": "cell",
+      "name": "27.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "652",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "671",
+      "role": "row",
+      "name": "28.Wterm – Terminal Emulator for the Web (wterm.dev)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "678",
+      "role": "cell",
+      "name": "Wterm – Terminal Emulator for the Web (wterm.dev)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "680",
+      "role": "link",
+      "name": "Wterm – Terminal Emulator for the Web",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "682",
+      "role": "link",
+      "name": "wterm.dev",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "672",
+      "role": "cell",
+      "name": "28.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "676",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "695",
+      "role": "row",
+      "name": "29.Italians and Dutch share the same gestural instinct for teaching (mpi.nl)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "702",
+      "role": "cell",
+      "name": "Italians and Dutch share the same gestural instinct for teaching (mpi.nl)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "704",
+      "role": "link",
+      "name": "Italians and Dutch share the same gestural instinct for teaching",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "706",
+      "role": "link",
+      "name": "mpi.nl",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "696",
+      "role": "cell",
+      "name": "29.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "700",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "719",
+      "role": "row",
+      "name": "30.Ten Basic Clouds (noaa.gov)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "726",
+      "role": "cell",
+      "name": "Ten Basic Clouds (noaa.gov)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "728",
+      "role": "link",
+      "name": "Ten Basic Clouds",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "730",
+      "role": "link",
+      "name": "noaa.gov",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "720",
+      "role": "cell",
+      "name": "30.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "724",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "744",
+      "role": "row",
+      "name": "More",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "746",
+      "role": "cell",
+      "name": "More",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "747",
+      "role": "link",
+      "name": "More",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "516",
+      "role": "row",
+      "name": "31 points by surprisetalk 4 hours ago  | hide | 9 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "518",
+      "role": "cell",
+      "name": "31 points by surprisetalk 4 hours ago  | hide | 9 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "525",
+      "role": "link",
+      "name": "9 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "523",
+      "role": "link",
+      "name": "4 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "521",
+      "role": "link",
+      "name": "surprisetalk",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "524",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "540",
+      "role": "row",
+      "name": "122 points by goranmoomin 12 hours ago  | hide | 44 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "542",
+      "role": "cell",
+      "name": "122 points by goranmoomin 12 hours ago  | hide | 44 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "545",
+      "role": "link",
+      "name": "goranmoomin",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "549",
+      "role": "link",
+      "name": "44 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "547",
+      "role": "link",
+      "name": "12 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "548",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "564",
+      "role": "row",
+      "name": "15 points by Kapura 24 minutes ago  | hide | 4 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "566",
+      "role": "cell",
+      "name": "15 points by Kapura 24 minutes ago  | hide | 4 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "571",
+      "role": "link",
+      "name": "24 minutes ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "573",
+      "role": "link",
+      "name": "4 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "569",
+      "role": "link",
+      "name": "Kapura",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "572",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "588",
+      "role": "row",
+      "name": "153 points by xyzal 4 hours ago  | hide | 153 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "590",
+      "role": "cell",
+      "name": "153 points by xyzal 4 hours ago  | hide | 153 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "597",
+      "role": "link",
+      "name": "153 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "595",
+      "role": "link",
+      "name": "4 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "593",
+      "role": "link",
+      "name": "xyzal",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "596",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "612",
+      "role": "row",
+      "name": "303 points by Kwastie 9 hours ago  | hide | 150 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "614",
+      "role": "cell",
+      "name": "303 points by Kwastie 9 hours ago  | hide | 150 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "621",
+      "role": "link",
+      "name": "150 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "619",
+      "role": "link",
+      "name": "9 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "617",
+      "role": "link",
+      "name": "Kwastie",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "620",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "636",
+      "role": "row",
+      "name": "10 points by epitrochoid413 2 hours ago  | hide | 5 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "638",
+      "role": "cell",
+      "name": "10 points by epitrochoid413 2 hours ago  | hide | 5 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "641",
+      "role": "link",
+      "name": "epitrochoid413",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "645",
+      "role": "link",
+      "name": "5 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "643",
+      "role": "link",
+      "name": "2 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "644",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "660",
+      "role": "row",
+      "name": "71 points by ColinEberhardt 5 hours ago  | hide | 68 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "662",
+      "role": "cell",
+      "name": "71 points by ColinEberhardt 5 hours ago  | hide | 68 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "665",
+      "role": "link",
+      "name": "ColinEberhardt",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "669",
+      "role": "link",
+      "name": "68 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "667",
+      "role": "link",
+      "name": "5 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "668",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "684",
+      "role": "row",
+      "name": "26 points by m3h 6 hours ago  | hide | 5 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "686",
+      "role": "cell",
+      "name": "26 points by m3h 6 hours ago  | hide | 5 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "693",
+      "role": "link",
+      "name": "5 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "691",
+      "role": "link",
+      "name": "6 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "689",
+      "role": "link",
+      "name": "m3h",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "692",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "708",
+      "role": "row",
+      "name": "98 points by vi_sextus_vi 12 hours ago  | hide | 45 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "710",
+      "role": "cell",
+      "name": "98 points by vi_sextus_vi 12 hours ago  | hide | 45 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "717",
+      "role": "link",
+      "name": "45 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "715",
+      "role": "link",
+      "name": "12 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "713",
+      "role": "link",
+      "name": "vi_sextus_vi",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "716",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "732",
+      "role": "row",
+      "name": "171 points by nopg 16 hours ago  | hide | 44 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "734",
+      "role": "cell",
+      "name": "171 points by nopg 16 hours ago  | hide | 44 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "741",
+      "role": "link",
+      "name": "44 comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "739",
+      "role": "link",
+      "name": "16 hours ago",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "737",
+      "role": "link",
+      "name": "nopg",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "740",
+      "role": "link",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "743",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "502",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "526",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "550",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "574",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "598",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "622",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "646",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "670",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "694",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "718",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "742",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "5",
+      "role": "row",
+      "name": "Hacker Newsnew | past | comments | ask | show | jobs | submitlogin",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "6",
+      "role": "cell",
+      "name": "Hacker Newsnew | past | comments | ask | show | jobs | submitlogin",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "7",
+      "role": "table",
+      "name": "Hacker Newsnew | past | comments | ask | show | jobs | submitlogin",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "9",
+      "role": "row",
+      "name": "Hacker Newsnew | past | comments | ask | show | jobs | submitlogin",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "13",
+      "role": "cell",
+      "name": "Hacker Newsnew | past | comments | ask | show | jobs | submit",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "23",
+      "role": "link",
+      "name": "submit",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "22",
+      "role": "link",
+      "name": "jobs",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "16",
+      "role": "link",
+      "name": "Hacker News",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "19",
+      "role": "link",
+      "name": "comments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "21",
+      "role": "link",
+      "name": "show",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "18",
+      "role": "link",
+      "name": "past",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "17",
+      "role": "link",
+      "name": "new",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "20",
+      "role": "link",
+      "name": "ask",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "24",
+      "role": "cell",
+      "name": "login",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "26",
+      "role": "link",
+      "name": "login",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "11",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "27",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "748",
+      "role": "row",
+      "name": "Guidelines | FAQ | Lists | API | Security | Legal | Apply to YC | Contact\nSearch:",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "749",
+      "role": "cell",
+      "name": "Guidelines | FAQ | Lists | API | Security | Legal | Apply to YC | Contact\nSearch:",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "764",
+      "role": "form",
+      "name": "Search:",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "765",
+      "role": "textbox",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "752",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "762",
+      "role": "link",
+      "name": "Apply to YC",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "756",
+      "role": "link",
+      "name": "Guidelines",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "760",
+      "role": "link",
+      "name": "Security",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "763",
+      "role": "link",
+      "name": "Contact",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "761",
+      "role": "link",
+      "name": "Legal",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "758",
+      "role": "link",
+      "name": "Lists",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "757",
+      "role": "link",
+      "name": "FAQ",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "759",
+      "role": "link",
+      "name": "API",
+      "value": "",
+      "flags": ""
+    }
+  ]
+}

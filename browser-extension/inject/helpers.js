@@ -1,22 +1,25 @@
 /**
  * In-page helpers. Idempotent — re-running is a no-op.
  *
- * Defines two globals on the page's isolated world (or MAIN, per how the
+ * Defines these globals on the page's isolated world (or MAIN, per how the
  * service worker injects this):
  *   - globalThis.__mcpA11y()             → raw a11y tree
  *   - globalThis.__mcpAct(kind, opts)    → click/type/hover/scroll/...
+ *   - globalThis.__mcpResolveRef(ref)    → liveness probe for a single ref
  *
- * Refs are sequential numeric IDs assigned by walking the same interactive
- * elements in the same BFS order both here and in the daemon's pruner.
+ * Refs are stable numeric IDs: a given element keeps the same id across every
+ * walk (via a persistent WeakMap) and resolves for as long as it stays
+ * attached to the DOM — they are not re-derived per snapshot. The daemon's
+ * pruner passes these ids straight through as the `ref` the agent sees.
  */
 
 (() => {
   // Versioned guard. On reinjection (chrome.scripting.executeScript pushes
   // helpers.js on every action call), bail out if the same version is already
-  // loaded — preserves the in-page nodeMap so sequential action tools still
-  // resolve refs from the most recent snapshot. Bump the integer when changing
-  // the in-page contract (new act kind, return-shape change).
-  const HELPERS_VERSION = 6;
+  // loaded — preserves the in-page ref maps so refs stay stable and resolvable
+  // across an action sequence. Bump the integer when changing the in-page
+  // contract (new act kind, return-shape change, ref-identity scheme).
+  const HELPERS_VERSION = 8;
   if (globalThis.__mcpHelpersVersion === HELPERS_VERSION) return;
   globalThis.__mcpHelpersVersion = HELPERS_VERSION;
   globalThis.__mcpHelpersLoaded = true;
@@ -152,9 +155,30 @@
     return rect.right > 0 && rect.bottom > 0 && rect.left < vw && rect.top < vh;
   }
 
-  /** @type {Map<string, Element>} */
-  let nodeMap = new Map();
-  let nodeCounter = 0;
+  // Stable, non-evicting refs (HELPERS_VERSION 7). A given element keeps the
+  // SAME id across every walk via a persistent WeakMap, and a ref resolves for
+  // as long as its element stays connected to the DOM — even if a later
+  // snapshot dropped it (out of the pruner's cap, scrolled out of viewport, or
+  // hidden). The reverse id→element map holds WeakRefs so detached/replaced
+  // nodes stay garbage-collectable (this runs inside the user's real browser).
+  // Neither structure is reset on __mcpA11y(); a re-rendered element is a new
+  // object and correctly earns a fresh id.
+  /** @type {WeakMap<Element, string>} stable element→id identity */
+  const elementIds = new WeakMap();
+  /** @type {Map<string, WeakRef<Element>>} id→element reverse lookup (self-pruning) */
+  const nodeMap = new Map();
+  let persistentCounter = 0;
+
+  /** Mint (or reuse) the stable id for an element and refresh its reverse entry. */
+  function idFor(el) {
+    let id = elementIds.get(el);
+    if (id === undefined) {
+      id = String(++persistentCounter);
+      elementIds.set(el, id);
+    }
+    nodeMap.set(id, new WeakRef(el));
+    return id;
+  }
 
   /**
    * @param {Element} el
@@ -171,8 +195,7 @@
     if (zeroRect && el.children.length === 0) return null;
     const role = roleOf(el);
     const name = role ? nameOf(el) : "";
-    const nodeId = String(++nodeCounter);
-    nodeMap.set(nodeId, el);
+    const nodeId = idFor(el);
     const style = window.getComputedStyle(el);
     const node = {
       nodeId,
@@ -221,7 +244,17 @@
   }
 
   function findByRef(ref) {
-    return nodeMap.get(String(ref)) || null;
+    const wr = nodeMap.get(String(ref));
+    if (!wr) return null;
+    const el = wr.deref();
+    // Liveness gate: a ref resolves only while its element is still attached to
+    // the document. A detached (or GC'd) element is genuinely gone — drop the
+    // dead entry and report a miss so the bridge surfaces an actionable error.
+    if (!el || !el.isConnected) {
+      nodeMap.delete(String(ref));
+      return null;
+    }
+    return el;
   }
 
   globalThis.__mcpResolveRef = function (ref) {
@@ -243,8 +276,18 @@
   }
 
   globalThis.__mcpA11y = function () {
-    nodeMap = new Map();
-    nodeCounter = 0;
+    // Refs are stable + non-evicting: do NOT reset nodeMap/counter here, or an
+    // element would renumber every snapshot and refs from a prior snapshot
+    // would stop resolving. Bound the reverse map's growth on long-lived SPAs
+    // by sweeping dead WeakRefs — but only past a threshold so the common case
+    // pays nothing. (Lazy pruning in findByRef covers refs the agent re-probes;
+    // this sweep reclaims the rest.)
+    if (nodeMap.size > 5000) {
+      for (const [id, wr] of nodeMap) {
+        const el = wr.deref();
+        if (!el || !el.isConnected) nodeMap.delete(id);
+      }
+    }
     const root = walkA11y(document.body, 0) || {
       role: "WebArea",
       name: document.title,
@@ -479,6 +522,151 @@
     return { uploaded: opts.files.map((f) => f.name), ref: opts.ref };
   }
 
+  // ─── drag & drop (HELPERS_VERSION 8) ──────────────────────────────
+  //
+  // Two synthetic-event families, all page-side (no CDP Input.*, no window
+  // raise): the HTML5 DnD-API sequence (dragstart→dragover→drop with a shared
+  // DataTransfer) drives `draggable="true"` sources and is the only way to
+  // synthesize a FILE drop; the pointer sequence (mousedown→mousemove→mouseup
+  // with PointerEvents) drives pointer-based DnD libraries (SortableJS
+  // fallback, react-beautiful-dnd, kanban boards). isTrusted is false on
+  // synthetic events — a minority of libraries that gate on it won't react.
+
+  function centerOf(el) {
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  function clampToViewport(x, y) {
+    return {
+      x: Math.max(0, Math.min(Math.round(x), window.innerWidth - 1)),
+      y: Math.max(0, Math.min(Math.round(y), window.innerHeight - 1)),
+    };
+  }
+
+  function mouseInit(x, y, opts = {}) {
+    return {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      view: window,
+      clientX: x,
+      clientY: y,
+      screenX: x,
+      screenY: y,
+      button: opts.button ?? 0,
+      buttons: opts.buttons ?? 0,
+    };
+  }
+
+  function fireMouse(el, type, x, y, opts = {}) {
+    el.dispatchEvent(new MouseEvent(type, mouseInit(x, y, opts)));
+  }
+
+  function firePointer(el, type, x, y, opts = {}) {
+    // Some pointer-based DnD libs listen for PointerEvent specifically; the
+    // paired MouseEvent (fired alongside) carries the drag for the rest.
+    const Ctor = window.PointerEvent;
+    if (!Ctor) return;
+    el.dispatchEvent(
+      new Ctor(type, {
+        ...mouseInit(x, y, opts),
+        pointerId: 1,
+        pointerType: "mouse",
+        isPrimary: true,
+        width: 1,
+        height: 1,
+        pressure: opts.pressure ?? 0,
+      }),
+    );
+  }
+
+  function fireDrag(el, type, dataTransfer, x, y) {
+    // A real DragEvent carrying a DataTransfer drives HTML5 DnD-API listeners.
+    let ev;
+    try {
+      ev = new DragEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        view: window,
+        clientX: x,
+        clientY: y,
+        screenX: x,
+        screenY: y,
+        dataTransfer,
+      });
+    } catch {
+      // Some engines reject a dataTransfer init on DragEvent — fall back to a
+      // MouseEvent with the dataTransfer pinned on as an own property.
+      ev = new MouseEvent(type, mouseInit(x, y));
+      try {
+        Object.defineProperty(ev, "dataTransfer", { value: dataTransfer });
+      } catch {}
+    }
+    el.dispatchEvent(ev);
+  }
+
+  function actDrag(opts) {
+    const src = findByRef(opts.ref);
+    if (!src) return { error: `ref ${opts.ref} not found` };
+    const tgt = findByRef(opts.targetRef);
+    if (!tgt) return { error: `target ref ${opts.targetRef} not found` };
+    const mechanism =
+      opts.mechanism && opts.mechanism !== "auto"
+        ? opts.mechanism
+        : src.draggable === true || src.getAttribute?.("draggable") === "true"
+          ? "native"
+          : "pointer";
+    const s = centerOf(src);
+    const t = centerOf(tgt);
+    if (mechanism === "native") {
+      const dt = new DataTransfer();
+      fireMouse(src, "mousedown", s.x, s.y, { buttons: 1 });
+      fireDrag(src, "dragstart", dt, s.x, s.y);
+      fireDrag(tgt, "dragenter", dt, t.x, t.y);
+      fireDrag(tgt, "dragover", dt, t.x, t.y);
+      fireDrag(tgt, "drop", dt, t.x, t.y);
+      fireDrag(src, "dragend", dt, t.x, t.y);
+      fireMouse(src, "mouseup", t.x, t.y, { buttons: 0 });
+    } else {
+      // Press on the source, step toward the target dispatching on the element
+      // under each interpolated point (so libs tracking elementFromPoint see
+      // the transit), release on the target.
+      firePointer(src, "pointerdown", s.x, s.y, { buttons: 1, pressure: 0.5 });
+      fireMouse(src, "mousedown", s.x, s.y, { buttons: 1 });
+      const steps = 8;
+      for (let i = 1; i <= steps; i++) {
+        const x = s.x + ((t.x - s.x) * i) / steps;
+        const y = s.y + ((t.y - s.y) * i) / steps;
+        const cp = clampToViewport(x, y);
+        const under = document.elementFromPoint(cp.x, cp.y) || tgt;
+        firePointer(under, "pointermove", x, y, { buttons: 1, pressure: 0.5 });
+        fireMouse(under, "mousemove", x, y, { buttons: 1 });
+      }
+      firePointer(tgt, "pointerup", t.x, t.y, { buttons: 0 });
+      fireMouse(tgt, "mouseup", t.x, t.y, { buttons: 0 });
+    }
+    return { dragged: opts.ref, to: opts.targetRef, mechanism };
+  }
+
+  function actDrop(opts) {
+    const tgt = findByRef(opts.ref);
+    if (!tgt) return { error: `ref ${opts.ref} not found` };
+    const dt = new DataTransfer();
+    for (const f of opts.files || []) {
+      const bin = atob(f.dataBase64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      dt.items.add(new File([bytes], f.name, { type: f.mimeType }));
+    }
+    const t = centerOf(tgt);
+    fireDrag(tgt, "dragenter", dt, t.x, t.y);
+    fireDrag(tgt, "dragover", dt, t.x, t.y);
+    fireDrag(tgt, "drop", dt, t.x, t.y);
+    return { dropped: (opts.files || []).map((f) => f.name), ref: opts.ref };
+  }
+
   function runAct(kind, opts) {
     switch (kind) {
       case "click":
@@ -497,6 +685,10 @@
         return actWaitFor(opts);
       case "upload":
         return actUpload(opts);
+      case "drag":
+        return actDrag(opts);
+      case "drop":
+        return actDrop(opts);
       default:
         return { error: `unknown act kind: ${kind}` };
     }

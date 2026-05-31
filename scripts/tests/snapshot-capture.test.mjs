@@ -287,6 +287,16 @@ test("screenshot:\"off\" → snapshot_capture hop sets withScreenshot:false, no 
   assert.equal(calls[0].command.withScreenshot, false);
   assert.equal(out.image, undefined, "no image block on screenshot:\"off\"");
   assert.ok(out.payload.tree, "tree still returns");
+  // CP3: the tree is now the compact indented-text outline (a string), not a
+  // nested JSON object, and structured meta is surfaced separately.
+  assert.equal(typeof out.payload.tree, "string", "tree is the compact text outline");
+  assert.match(
+    out.payload.tree,
+    /- button "Click me" \[ref=1\]/,
+    "outline carries the button line with its ref",
+  );
+  assert.ok(out.payload.meta, "structured meta is surfaced separately from the tree");
+  assert.equal(typeof out.payload.meta.total_candidates, "number", "meta keeps total_candidates");
 });
 
 test("screenshot:\"annotated\" → 2 hops, image carries annotated bytes", async () => {
@@ -339,4 +349,30 @@ test("screenshot:\"raw\" → 1 hop only, image carries the raw capture bytes (no
   assert.equal(calls[0].command.withScreenshot, true);
   assert.equal(out.image.data, "raw-bytes", "image carries the unannotated capture bytes");
   assert.ok(out.payload.tree, "tree still returns alongside the raw image");
+});
+
+// CP3 — the pruner's recovery notice (set on a cap/fallback) must be inlined as
+// the outline's first line, prefixed "NOTE: ". detail:"full" at limit<1000 trips
+// the full-mode floor (limit_adjusted) → a deterministic notice with no real page.
+test("meta.notice is inlined as the outline's first line (NOTE: prefix)", async () => {
+  const { ctx } = makeCtx([
+    { tree: TREE_ONE_BUTTON, screenshot: undefined, cssViewport: { w: 1024, h: 768 } },
+  ]);
+  ctx.session.lastLeasedTab = 5;
+  const out = await runUnifiedCapture(ctx, 5, {
+    detail: "full",
+    limit: 500,
+    viewportOnly: false,
+    screenshot: "off",
+    quality: 70,
+    save_to_path: false,
+    withTree: true,
+  });
+  assert.equal(out.payload.meta.limit_adjusted, 1000, "full-mode floor raised the limit");
+  assert.match(out.payload.meta.notice, /limit raised to 1000/i, "meta carries the recovery notice");
+  assert.ok(
+    out.payload.tree.startsWith("NOTE: "),
+    `outline must lead with the NOTE: line, got: ${out.payload.tree.slice(0, 40)}`,
+  );
+  assert.match(out.payload.tree.split("\n")[0], /limit raised to 1000/i, "NOTE: line carries the notice text");
 });

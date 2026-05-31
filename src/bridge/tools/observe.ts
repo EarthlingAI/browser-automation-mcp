@@ -48,8 +48,13 @@ export function registerObserveTools(
         .int()
         .min(1)
         .max(5000)
-        .default(500)
-        .describe("Max nodes returned (ranked)."),
+        .default(1500)
+        .describe(
+          "Max nodes returned. The pruner includes the whole page's semantic " +
+            "tree (landmarks + interactive + content), ranks by salience, and " +
+            "caps at this limit — a loud meta.notice fires if any ranked node " +
+            "was deferred. Raise it to pull a dense page in fully.",
+        ),
       viewportOnly: z
         .preprocess(coerceBoolean, z.boolean().default(false))
         .describe(
@@ -128,72 +133,6 @@ export function registerObserveTools(
         maxWidth,
         save_to_path,
         withTree: true,
-      });
-    },
-  });
-
-  registerTool(server, ctx, {
-    name: "browser_screenshot",
-    title: "[DEPRECATED — use browser_snapshot(screenshot:\"raw\")] Screenshot the leased tab",
-    description:
-      "DEPRECATED — superseded by `browser_snapshot(screenshot:\"raw\")` which returns clean pixels " +
-      "alongside the a11y tree from one call. This tool will be removed in an upcoming release. " +
-      "Background-tab screenshot via CDP `Page.captureScreenshot` — never raises the window. " +
-      "Returns the image as a native MCP image content block. Format follows `save_to_path`'s file " +
-      "extension when a string (\".png\" → PNG, \".jpg/.jpeg\" → JPEG); defaults to JPEG otherwise.",
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    schema: {
-      tabId: z
-        .coerce.number()
-        .int()
-        .optional()
-        .describe("Tab to capture. Defaults to the most recently leased tab."),
-      // Image format is not an agent-facing arg — follows `save_to_path`'s
-      // extension when a string; defaults to JPEG otherwise.
-      quality: z
-        .coerce.number()
-        .int()
-        .min(1)
-        .max(100)
-        .default(70)
-        .describe(
-          "JPEG quality (1–100). Ignored for PNG saves. Applies to inline (always JPEG) and to any `.jpg`/`.jpeg` save target.",
-        ),
-      maxWidth: z
-        .coerce.number()
-        .int()
-        .min(64)
-        .max(4096)
-        .optional()
-        .describe(
-          "Downscale the captured image to at most this width (preserves aspect ratio).",
-        ),
-      save_to_path: saveToPathSchema,
-    },
-    handler: async ({ tabId, quality, maxWidth, save_to_path }) => {
-      const target = tabId ?? ctx.session.lastLeasedTab;
-      if (!target)
-        throw new Error(
-          "no leased tab; call browser_switch_tab or browser_open_tab first",
-        );
-      // Implementation: route through the same unified pipeline that
-      // browser_snapshot(screenshot:"raw") would use, but with withTree:false
-      // so the legacy contract (no tree in the payload) is preserved until
-      // the tool is removed.
-      return runUnifiedCapture(ctx, target, {
-        detail: "standard",
-        limit: 0,
-        viewportOnly: true,
-        screenshot: "raw",
-        quality,
-        maxWidth,
-        save_to_path,
-        withTree: false,
       });
     },
   });

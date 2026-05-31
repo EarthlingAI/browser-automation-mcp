@@ -14,6 +14,51 @@ import {
   runUnifiedCapture,
 } from "../../dist/test-exports.mjs";
 
+// CP5 fixtures — every node carries a nodeId so prune uses it verbatim as the
+// ref (no String(n+1) fallback, which can collide with a real nodeId on a
+// nodeId-less synthetic root). T2 = T1 plus a second button, so the diff
+// against T1's pruned baseline is a single "+ button" line.
+const T1 = {
+  nodeId: "100",
+  role: "WebArea",
+  name: "App",
+  depth: 0,
+  cssViewport: { w: 1280, h: 720 },
+  children: [
+    {
+      nodeId: "1",
+      role: "button",
+      name: "Open",
+      depth: 1,
+      rect: { x: 10, y: 20, w: 80, h: 30 },
+      inViewport: true,
+      children: [],
+    },
+  ],
+};
+const T2 = {
+  ...T1,
+  children: [
+    ...T1.children,
+    {
+      nodeId: "2",
+      role: "button",
+      name: "Save",
+      depth: 1,
+      rect: { x: 100, y: 20, w: 80, h: 30 },
+      inViewport: true,
+      children: [],
+    },
+  ],
+};
+const STD_PARAMS = {
+  detail: "standard",
+  limit: 1500,
+  viewportOnly: false,
+  screenshot: "off",
+  quality: 70,
+};
+
 function makeCtx({ daemonResponses, sessionInit }) {
   const calls = [];
   const responses = [...daemonResponses];
@@ -210,12 +255,13 @@ test("replaySnapshot error path preserves structured fields (kind/recovery/hint/
   assert.equal(stub.since, "2026-05-17T12:00:00Z");
 });
 
-test("runUnifiedCapture: withTree:false + screenshot:\"raw\" mirrors the deprecated browser_screenshot handler", async () => {
-  // The deprecated `browser_screenshot` handler routes through the unified
-  // pipeline with these exact args. One hop, no tree in payload, raw bytes.
-  // The screenshot:"raw" mode is the contract the deprecated tool ships with
-  // — keep this test mirroring the production handler so a refactor that
-  // breaks the contract fails here, not silently in prod.
+test("runUnifiedCapture: withTree:false + screenshot:\"raw\" → tree-less raw capture (one hop)", async () => {
+  // The unified pipeline still supports a tree-less raw capture (withTree:false
+  // + screenshot:"raw"): one hop, no tree in the payload, raw bytes. No tool
+  // currently reaches this path (browser_snapshot and the auto-snapshot replay
+  // both pass withTree:true), but the capability is a deliberate part of the
+  // capture contract — keep this test pinning it so a refactor that breaks it
+  // fails here, not silently.
   const { ctx, calls } = makeCtx({
     daemonResponses: [
       {
@@ -246,7 +292,7 @@ test("runUnifiedCapture: withTree:false + screenshot:\"raw\" mirrors the depreca
 });
 
 test("runUnifiedCapture: screenshot:\"annotated\" + withTree:false → annotation hop still skipped (defence in depth)", async () => {
-  // Even though `withTree:false` makes the deprecated tool safe regardless of
+  // Even though `withTree:false` makes a tree-less capture safe regardless of
   // the enum, this test guards against a future refactor that changes the
   // gate. Currently the annotate hop is skipped because `justPopulated`
   // never flips true without a tree — but a code change that drops that
@@ -272,4 +318,107 @@ test("runUnifiedCapture: screenshot:\"annotated\" + withTree:false → annotatio
   });
   assert.equal(calls.length, 1, "annotation must NOT fire when there is no tree");
   assert.equal(out.image.data, "raw-bytes");
+});
+
+// ─── CP5: diff snapshots on the auto-snapshot path ──────────────────
+//
+// replaySnapshot passes allowDiff:true, so an auto-snapshot returns a diff
+// against the prior pruned tree of the same tab (when one exists and the delta
+// is smaller than the full outline); the first auto-snapshot of a tab, or an
+// explicit browser_snapshot (allowDiff unset), returns full. meta.mode records
+// which path was taken.
+
+test("auto-snapshot: first call returns full (no prior), second call returns a diff", async () => {
+  const { ctx, session } = makeCtx({
+    daemonResponses: [
+      { tree: T1, screenshot: undefined, cssViewport: { w: 1280, h: 720 } },
+      { tree: T2, screenshot: undefined, cssViewport: { w: 1280, h: 720 } },
+    ],
+  });
+  updateSnapshotParams(ctx.session, { tabId: 7, ...STD_PARAMS });
+  session.lastLeasedTab = 7;
+
+  const first = await replaySnapshot(ctx);
+  assert.equal(first.payload.meta.mode, "full", "first snapshot of the tab has no prior → full");
+  assert.ok(first.payload.tree.startsWith("- "), "full outline starts with a node bullet");
+
+  const second = await replaySnapshot(ctx);
+  assert.equal(second.payload.meta.mode, "diff", "second snapshot diffs against the stored baseline");
+  assert.ok(second.payload.tree.startsWith("Δ "), `diff outline leads with the Δ header, got: ${second.payload.tree.slice(0, 30)}`);
+  assert.match(second.payload.tree, /1 added, 0 removed, 0 changed/);
+  assert.match(second.payload.tree, /\+ button "Save" \[ref=2\]/);
+});
+
+test("auto-snapshot falls back to full when the prior tree is for a DIFFERENT tab", async () => {
+  const { ctx, session } = makeCtx({
+    daemonResponses: [{ tree: T1, screenshot: undefined, cssViewport: { w: 1280, h: 720 } }],
+    sessionInit: (s) => {
+      // A baseline left over from a different tab must not diff against tab 7 —
+      // page-side ref ids are per-tab.
+      s.lastPrunedTree = { ref: "100", role: "WebArea", name: "App", children: [] };
+      s.lastPrunedTreeTabId = 99;
+    },
+  });
+  updateSnapshotParams(ctx.session, { tabId: 7, ...STD_PARAMS });
+  session.lastLeasedTab = 7;
+
+  const out = await replaySnapshot(ctx);
+  assert.equal(out.payload.meta.mode, "full", "cross-tab prior is not comparable → full");
+  assert.ok(out.payload.tree.startsWith("- "));
+});
+
+test("auto-snapshot falls back to full when the diff would be larger than the full outline", async () => {
+  // Navigation churn: the prior tree shares only its root with the new tree, so
+  // a diff is 5 removed + 1 added (long) while the full outline is 2 lines. The
+  // size guard must pick full so the "diff" is never worse than a full snapshot.
+  const bigPrior = {
+    ref: "100",
+    role: "WebArea",
+    name: "App",
+    children: [201, 202, 203, 204, 205].map((n) => ({
+      ref: String(n),
+      role: "button",
+      name: `Old ${n}`,
+      children: [],
+    })),
+  };
+  const { ctx, session } = makeCtx({
+    daemonResponses: [{ tree: T1, screenshot: undefined, cssViewport: { w: 1280, h: 720 } }],
+    sessionInit: (s) => {
+      s.lastPrunedTree = bigPrior;
+      s.lastPrunedTreeTabId = 7;
+    },
+  });
+  updateSnapshotParams(ctx.session, { tabId: 7, ...STD_PARAMS });
+  session.lastLeasedTab = 7;
+
+  const out = await replaySnapshot(ctx);
+  assert.equal(out.payload.meta.mode, "full", "an oversized diff must fall back to full");
+  assert.ok(out.payload.tree.startsWith("- "), "full outline, not a Δ diff");
+});
+
+test("explicit-style call (allowDiff unset) always returns full and refreshes the baseline", async () => {
+  // browser_snapshot calls runUnifiedCapture WITHOUT allowDiff. Even with a
+  // comparable prior tree present, it must serialize full — and still update
+  // the baseline so the NEXT auto-snapshot diffs against this snapshot.
+  const seedPrior = { ref: "100", role: "WebArea", name: "App", children: [] };
+  const { ctx, session } = makeCtx({
+    daemonResponses: [{ tree: T2, screenshot: undefined, cssViewport: { w: 1280, h: 720 } }],
+    sessionInit: (s) => {
+      s.lastPrunedTree = seedPrior;
+      s.lastPrunedTreeTabId = 9;
+      s.lastLeasedTab = 9;
+    },
+  });
+  const out = await runUnifiedCapture(ctx, 9, {
+    ...STD_PARAMS,
+    save_to_path: false,
+    withTree: true,
+    // allowDiff intentionally omitted → explicit-snapshot semantics.
+  });
+  assert.equal(out.payload.meta.mode, "full", "explicit snapshot never diffs");
+  assert.ok(out.payload.tree.startsWith("- "));
+  assert.equal(session.lastPrunedTreeTabId, 9, "baseline tab tracked");
+  assert.notEqual(session.lastPrunedTree, seedPrior, "baseline refreshed to the new tree");
+  assert.match(out.payload.tree, /button "Save" \[ref=2\]/, "new tree was serialized in full");
 });

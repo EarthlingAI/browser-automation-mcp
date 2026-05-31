@@ -2,14 +2,23 @@
  * Daemon-side watchdog inference for outgoing extension RPCs.
  *
  * The daemon owns a per-request watchdog timer over every command it dispatches
- * to the MV3 extension. Most commands resolve in milliseconds; the 30s default
- * is a safety net that catches a wedged `chrome.debugger` attach or a hung CDP
- * call.
+ * to the MV3 extension. The base 30s default is a safety net that catches a
+ * wedged `chrome.debugger` attach or a hung CDP call on the slower commands
+ * (page loads, screenshots, user-supplied evaluate expressions).
  *
- * `wait_for` is the exception — the agent-facing schema advertises a max
- * timeout of 5 minutes, and the extension's `runWaitForCondition` polls until
- * that deadline before returning a polite "predicate did not become truthy"
- * response. A 30s daemon watchdog would cut that short. So `wait_for` gets a
+ * Synthetic-event action kinds (`click`/`type`/`hover`/`scroll`/`press_key`/
+ * `select_option`/`drag`/`drop`/`resolve_ref`) complete in milliseconds plus
+ * the wrapper's settle (default 1.5s); they get a tighter 10s budget so a
+ * wedged action surfaces as `extension_timeout` in ~10s instead of 30s. This
+ * complements the page-side safe-default `Page.handleJavaScriptDialog{accept:
+ * false}` for native dialogs (invariant #35) — even if an edge case slips past
+ * the auto-dismiss, the agent only waits 10s for an action to give up rather
+ * than 30s.
+ *
+ * `wait_for` is the slow exception in the other direction — the agent-facing
+ * schema advertises a max timeout of 5 minutes, and the extension's
+ * `runWaitForCondition` polls until that deadline before returning a polite
+ * "predicate did not become truthy" response. So `wait_for` gets a
  * command-aware budget: the caller's `timeout` plus a 5s buffer for WS framing
  * and JSON round-trip on a saturated service worker.
  *
@@ -20,6 +29,7 @@
 import type { ExtCommand } from "../protocol";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
+const FAST_ACTION_TIMEOUT_MS = 10_000;
 const WAIT_FOR_BUFFER_MS = 5_000;
 /**
  * Mirrors the extension's own default at `runWaitForCondition` in
@@ -28,9 +38,34 @@ const WAIT_FOR_BUFFER_MS = 5_000;
  */
 const WAIT_FOR_DEFAULT_MS = 10_000;
 
+/**
+ * Synthetic-event action kinds that should complete in milliseconds plus the
+ * wrapper's settle. A 10s budget is plenty (settle defaults to 1.5s, leaving
+ * ~8.5s for the action proper) and bounds the worst-case agent wait if the
+ * safe-default dialog dismiss (#35) ever misses an edge case. Kept narrow —
+ * `evaluate` stays on the 30s default because the agent supplies the
+ * expression and may include long awaits; `upload` stays on 30s because the
+ * 25 MB file payload + base64 round-trip can take seconds on a saturated SW;
+ * `navigate` family stays on 30s for slow first-load pages.
+ */
+const FAST_ACTION_KINDS = new Set<ExtCommand["kind"]>([
+  "click",
+  "type",
+  "select_option",
+  "hover",
+  "scroll",
+  "press_key",
+  "drag",
+  "drop",
+  "resolve_ref",
+]);
+
 export function inferExtTimeout(command: ExtCommand): number {
   if (command.kind === "wait_for") {
     return (command.timeout ?? WAIT_FOR_DEFAULT_MS) + WAIT_FOR_BUFFER_MS;
+  }
+  if (FAST_ACTION_KINDS.has(command.kind)) {
+    return FAST_ACTION_TIMEOUT_MS;
   }
   return DEFAULT_TIMEOUT_MS;
 }

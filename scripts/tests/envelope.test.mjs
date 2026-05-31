@@ -73,9 +73,9 @@ test("toolError: surfaces recovery + kind when present", () => {
   assert.match(decoded.recovery, /reconnect/);
 });
 
-// Round 5 — mixed-content envelope. Unified-capture tools (browser_snapshot,
-// browser_screenshot) emit a native MCP image content block alongside the
-// text payload so vision-capable hosts can attend to the picture directly.
+// Round 5 — mixed-content envelope. Unified-capture calls (browser_snapshot and
+// the auto-snapshot replay path) emit a native MCP image content block alongside
+// the text payload so vision-capable hosts can attend to the picture directly.
 
 test("toolResult: with image arg emits image-then-text mixed envelope", () => {
   const env = toolResult(

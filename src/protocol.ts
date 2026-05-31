@@ -122,8 +122,8 @@ export type ExtCommand =
    * extension uses a single `chrome.debugger` attach for the screenshot and
    * walks the tree inside the same promise.
    *
-   * Either `withTree` or `withScreenshot` may be false — `browser_screenshot`
-   * uses `{withTree:false, withScreenshot:true}` for a pixels-only payload.
+   * Either `withTree` or `withScreenshot` may be false — `{withTree:false,
+   * withScreenshot:true}` yields a tree-less, pixels-only payload.
    *
    * Response shape (extension → daemon):
    *   { tree?: RawNode, screenshot?: { format, dataBase64, resizedTo? },
@@ -150,7 +150,7 @@ export type ExtCommand =
    *
    * Lives in a separate hop (not folded into snapshot_capture) so the bridge
    * can decide whether to spend the annotation cycle and so each hop stays
-   * independently testable. Standalone `browser_screenshot` never calls this.
+   * independently testable. A tree-less capture (`withTree:false`) never calls this.
    *
    * Response shape: `{ format, dataBase64, resizedTo? }`.
    */
@@ -241,6 +241,37 @@ export type ExtCommand =
       files: Array<{ name: string; mimeType: string; dataBase64: string }>;
       settle?: SettleOptions;
     }
+  /**
+   * Drag the source ref's element onto the target ref's element. Page-side
+   * synthetic events (helpers.js::actDrag) — no CDP `Input.*`, no window raise.
+   * `mechanism` picks the event family: "native" fires the HTML5 DnD-API
+   * sequence (dragstart→dragenter→dragover→drop→dragend with a shared
+   * DataTransfer) for `draggable="true"` sources; "pointer" fires a
+   * mousedown→interpolated-mousemove→mouseup pointer sequence for pointer-based
+   * DnD libraries (SortableJS forceFallback, react-beautiful-dnd, kanban
+   * boards). "auto" (default) inspects the source's `draggable` IDL flag and
+   * picks native when set, pointer otherwise.
+   */
+  | {
+      kind: "drag";
+      ref: string;
+      targetRef: string;
+      mechanism?: "auto" | "native" | "pointer";
+      settle?: SettleOptions;
+    }
+  /**
+   * Drop files onto the target ref's element — synthesizes an HTML5
+   * dragenter→dragover→drop sequence carrying the files in a constructed
+   * DataTransfer (the page sees `dataTransfer.files`, same shape a real desktop
+   * file-drop produces). Page-side (helpers.js::actDrop); reuses the upload
+   * command's base64 file-payload shape.
+   */
+  | {
+      kind: "drop";
+      ref: string;
+      files: Array<{ name: string; mimeType: string; dataBase64: string }>;
+      settle?: SettleOptions;
+    }
   | {
       kind: "press_key";
       key: string;
@@ -248,6 +279,17 @@ export type ExtCommand =
       settle?: SettleOptions;
     }
   | { kind: "evaluate"; expression: string }
+  /**
+   * Read-only liveness probe for a single ref. Runs `__mcpResolveRef` in the
+   * page and returns `{name, role, tag, rect}` while the ref's element is still
+   * attached to the DOM, or `null` once it's gone. Used by the bridge's
+   * non-evicting ref resolution: a ref that fell out of the latest snapshot
+   * (pruner cap, scrolled out of viewport, hidden) is verified live via this
+   * probe before the action fires, so genuinely-removed elements surface an
+   * actionable error instead of a silent no-op. Performs no mutation and never
+   * settles.
+   */
+  | { kind: "resolve_ref"; ref: string }
   | {
       kind: "wait_for";
       selector?: string;
@@ -270,6 +312,41 @@ export type ExtCommand =
    * invariants #27/#28.
    */
   | { kind: "set_focus_emulation"; enabled: boolean }
+  /**
+   * Override the leased tab's viewport via CDP `Emulation.setDeviceMetricsOverride`
+   * (debugger-session-scoped, same infra as focus-emulation — no window raise, no
+   * focus theft). Resizes the visual viewport so `window.innerWidth/Height`, media
+   * queries, and responsive layout reflect `width`×`height` in CSS pixels.
+   * `deviceScaleFactor:0` (host-natural DPR) + `mobile:false` keep it a pure desktop
+   * viewport resize. STICKY per-tab: the override is tracked SW-side in the
+   * `deviceMetrics` Map and re-asserted on every fresh debugger attach, so it
+   * survives the attach/detach churn of an action sequence; it clears on tab-close
+   * or extension reload (and transiently when focus-emulation is disabled, which
+   * detaches the debugger — re-asserted on the next attach).
+   */
+  | { kind: "resize"; width: number; height: number }
+  /**
+   * Pre-arm an auto-response for the leased tab's next native JS dialog
+   * (alert / confirm / prompt / beforeunload). The extension subscribes to CDP
+   * `Page.javascriptDialogOpening` events on tabs with an armed disposition and
+   * answers via `Page.handleJavaScriptDialog{accept, promptText?}`. `disposition`
+   * is "accept" or "dismiss"; `promptText` (only meaningful when accepting a
+   * `prompt`) is fed into the dialog's input. `lifetime:"one_shot"` (default)
+   * clears the disposition after the next dialog fires; `"sticky"` persists until
+   * an explicit `clear:true` (xor with disposition) or tab close. `Page.enable` is
+   * scoped to tabs with an active handler and dropped via `Page.disable` the
+   * moment the handler clears — never enabled on focus-emulation alone (invariant
+   * #35). The disposition is debugger-session-tracked but the Map is SW state, so
+   * `debuggerAttach` re-asserts `Page.enable` on every fresh attach for tabs with
+   * an entry (same model as focus-emulation / resize).
+   */
+  | {
+      kind: "handle_dialog";
+      disposition?: "accept" | "dismiss";
+      promptText?: string;
+      lifetime?: "one_shot" | "sticky";
+      clear?: boolean;
+    }
   /**
    * Raise the real OS browser window and activate the tab (`chrome.windows.update`
    * + `chrome.tabs.update({active})`). This GENUINELY steals the user's focus — the

@@ -4,12 +4,12 @@
  *
  *   - `browser_snapshot`        (observe.ts)    — withTree:true; capture hop fires
  *                                                  when `screenshot !== "off"`.
- *   - `browser_screenshot`      (observe.ts)    — DEPRECATED; withTree:false +
- *                                                  screenshot:"raw" (preserves the
- *                                                  legacy no-tree-in-payload contract
- *                                                  until removal).
- *   - `replaySnapshot` auto-snap (registry.ts)   — replays the last params verbatim;
- *                                                  save_to_path always off.
+ *   - `replaySnapshot` auto-snap (registry.ts)   — replays the last params verbatim
+ *                                                  (withTree:true); save_to_path always off.
+ *
+ * The `withTree:false` path (tree-less raw capture) is still supported by this
+ * function but has no tool caller today — kept as a deliberate capability of the
+ * capture contract and pinned by a direct test in `replay.test.mjs`.
  *
  * Two extension hops:
  *
@@ -29,7 +29,14 @@
  * native MCP image content block alongside the text payload.
  */
 
-import { prune, RawNode } from "../../snapshot/prune";
+import {
+  prune,
+  type PrunedNode,
+  type PruneMeta,
+  RawNode,
+} from "../../snapshot/prune";
+import { serializeTree } from "../../snapshot/serialize";
+import { serializeDiff } from "../../snapshot/diff";
 import type { TabId } from "../../protocol";
 import {
   type ImagePayload,
@@ -47,10 +54,10 @@ import { VISUAL_CONSTANTS } from "./visual";
  *   "annotated"  — tree + image with red ref badges painted over each rect
  *   "raw"        — tree + image with NO badges (clean pixels alongside the tree)
  *
- * Promoted from a boolean to a 3-state enum so the agent can ask for a clean
- * screenshot without reaching for the (now-deprecated) `browser_screenshot`
- * tool. The annotate hop fires only when `screenshot === "annotated"`; for
- * `"raw"` the captured bytes flow straight through to the image block.
+ * Promoted from a boolean to a 3-state enum so the agent can get a clean
+ * screenshot (no badges) from browser_snapshot itself — no separate tool. The
+ * annotate hop fires only when `screenshot === "annotated"`; for `"raw"` the
+ * captured bytes flow straight through to the image block.
  */
 export type ScreenshotMode = "off" | "annotated" | "raw";
 
@@ -68,6 +75,14 @@ export interface CaptureOpts {
   save_to_path: boolean | string;
   /** False for `browser_snapshot(screenshot:"raw", withTree:false)` paths — skip the tree walk entirely. */
   withTree: boolean;
+  /**
+   * CP5: when true (the auto-snapshot replay path), emit a diff against the
+   * previous pruned tree of this tab instead of the full outline — provided a
+   * comparable prior tree exists and the delta is actually smaller than the full
+   * outline. Explicit `browser_snapshot` leaves this false (default) and always
+   * returns full. Either way the new tree becomes the next diff baseline.
+   */
+  allowDiff?: boolean;
 }
 
 export interface CaptureResult {
@@ -151,7 +166,45 @@ export async function runUnifiedCapture(
       detail: opts.detail,
     });
     populateRefs(ctx.session, prunedTree, captureResp.tree, tabId);
-    payload.tree = prunedTree;
+    // CP3: serialize the tree to the compact indented outline (a string) and
+    // surface the structured meta separately. The pruner's recovery `notice`
+    // (cap/fallback) is inlined as the outline's first line so it can't be
+    // missed; the same notice stays machine-readable in `payload.meta`. The
+    // transport envelope stays JSON (action results nest this under
+    // `payload.snapshot`); only the tree representation goes to text.
+    const { meta, ...rest } = prunedTree;
+    const newTree = rest as PrunedNode;
+    // CP5: on the auto-snapshot path (allowDiff), serialize a diff against the
+    // previous pruned tree of THIS tab instead of the full outline — but never
+    // when the diff would be larger than the full tree (a full-page navigation
+    // turns over every ref, so the delta is all-removed + all-added). An
+    // explicit browser_snapshot leaves allowDiff false → always full. `meta.mode`
+    // records what was actually returned so the agent can tell at a glance.
+    const prior =
+      opts.allowDiff && ctx.session.lastPrunedTreeTabId === tabId
+        ? ctx.session.lastPrunedTree
+        : undefined;
+    const snapMeta: PruneMeta = { ...(meta ?? {}) };
+    const fullBody = serializeTree(newTree);
+    let body: string;
+    if (prior) {
+      const diffBody = serializeDiff(prior, newTree);
+      if (diffBody.length < fullBody.length) {
+        body = diffBody;
+        snapMeta.mode = "diff";
+      } else {
+        body = fullBody;
+        snapMeta.mode = "full";
+      }
+    } else {
+      body = fullBody;
+      snapMeta.mode = "full";
+    }
+    payload.tree = meta?.notice ? `NOTE: ${meta.notice}\n${body}` : body;
+    payload.meta = snapMeta;
+    // Refresh the baseline for the NEXT auto-snapshot diff (CP5).
+    ctx.session.lastPrunedTree = newTree;
+    ctx.session.lastPrunedTreeTabId = tabId;
     justPopulated = true;
   }
 

@@ -52,13 +52,19 @@ const EXPECTED = {
     idempotent: true,
     openWorld: true,
   },
-  browser_set_active: {
+  browser_activate_tab: {
     readOnly: false,
     destructive: false,
     idempotent: true,
     openWorld: true,
   },
-  browser_bring_to_front: {
+  browser_resize: {
+    readOnly: false,
+    destructive: false,
+    idempotent: true,
+    openWorld: true,
+  },
+  browser_handle_dialog: {
     readOnly: false,
     destructive: false,
     idempotent: true,
@@ -66,12 +72,6 @@ const EXPECTED = {
   },
   // Observe
   browser_snapshot: {
-    readOnly: true,
-    destructive: false,
-    idempotent: true,
-    openWorld: true,
-  },
-  browser_screenshot: {
     readOnly: true,
     destructive: false,
     idempotent: true,
@@ -120,6 +120,12 @@ const EXPECTED = {
     idempotent: false,
     openWorld: true,
   },
+  browser_fill_form: {
+    readOnly: false,
+    destructive: true,
+    idempotent: false,
+    openWorld: true,
+  },
   browser_hover: {
     readOnly: false,
     destructive: false,
@@ -133,6 +139,18 @@ const EXPECTED = {
     openWorld: true,
   },
   browser_upload: {
+    readOnly: false,
+    destructive: true,
+    idempotent: false,
+    openWorld: true,
+  },
+  browser_drag: {
+    readOnly: false,
+    destructive: true,
+    idempotent: false,
+    openWorld: true,
+  },
+  browser_drop: {
     readOnly: false,
     destructive: true,
     idempotent: false,

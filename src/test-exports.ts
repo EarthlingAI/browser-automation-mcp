@@ -8,12 +8,17 @@
  */
 
 export { prune, type RawNode, type PrunedNode } from "./snapshot/prune";
+export { serializeTree } from "./snapshot/serialize";
+export { serializeDiff } from "./snapshot/diff";
 export { BridgeSession } from "./bridge/session";
 export {
   toolResult,
   toolError,
   populateRefs,
   resolveRef,
+  refNeedsVerification,
+  nearbyRefsError,
+  execOnLeasedTab,
   replaySnapshot,
   updateSnapshotParams,
   type ImagePayload,
