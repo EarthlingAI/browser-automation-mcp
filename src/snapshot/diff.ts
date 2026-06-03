@@ -33,6 +33,7 @@
 
 import type { PrunedNode } from "./prune";
 import { formatNodeFields, formatNodeIdentity, quoted } from "./serialize";
+import { compareRefs } from "./ref";
 
 /** Flatten a pruned tree to ref → node, skipping the synthetic root ("0"). */
 function flattenByRef(node: PrunedNode, map: Map<string, PrunedNode>): void {
@@ -90,8 +91,13 @@ function describeChanges(prev: PrunedNode, next: PrunedNode): string[] {
   return out;
 }
 
+// Sort by the (frameId, localId) tuple via the ref chokepoint — NOT a bare
+// `Number(a.ref)-Number(b.ref)`, which returns NaN for any cross-origin `fN:`
+// ref and leaves the sort order undefined. `ref` is always set on a flattened
+// node ("0" synthetic root is excluded by flattenByRef), so the `?? ""` is only
+// to satisfy the optional-field type.
 const byRef = (a: PrunedNode, b: PrunedNode): number =>
-  Number(a.ref) - Number(b.ref);
+  compareRefs(a.ref ?? "", b.ref ?? "");
 
 /**
  * Serialize the delta between two pruned trees of the same tab to the compact

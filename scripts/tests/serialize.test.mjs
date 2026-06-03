@@ -100,3 +100,18 @@ test("a leaf with no children and no extra fields is just role + ref", () => {
   const out = serializeTree({ ref: "1", role: "WebArea" });
   assert.equal(out, "- WebArea [ref=1]");
 });
+
+test("cross-origin frame leaf renders a loud not-descended boundary marker", () => {
+  const out = serializeTree({
+    ref: "12",
+    role: "iframe",
+    name: "https://cc.sans.org/dispatch",
+    crossOrigin: true,
+    frameUrl: "https://cc.sans.org/dispatch",
+    children: [],
+  });
+  assert.equal(
+    out,
+    '- iframe "https://cc.sans.org/dispatch" [ref=12] [cross-origin frame — not descended]',
+  );
+});

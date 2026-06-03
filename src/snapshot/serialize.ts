@@ -60,6 +60,10 @@ export function formatNodeFields(node: PrunedNode): string {
   if (node.values && node.values.length) {
     s += ` values: ${node.values.map((v) => `"${quoted(v)}"`).join(", ")}`;
   }
+  // Cross-origin frame leaf — the walk couldn't traverse its document. Render a
+  // loud, machine-readable boundary marker so the agent knows content exists
+  // here that the default snapshot did not reach.
+  if (node.crossOrigin) s += " [cross-origin frame — not descended]";
   return s;
 }
 

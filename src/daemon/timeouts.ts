@@ -50,6 +50,8 @@ const WAIT_FOR_DEFAULT_MS = 10_000;
  */
 const FAST_ACTION_KINDS = new Set<ExtCommand["kind"]>([
   "click",
+  "click_xy",
+  "draw",
   "type",
   "select_option",
   "hover",
@@ -63,6 +65,13 @@ const FAST_ACTION_KINDS = new Set<ExtCommand["kind"]>([
 export function inferExtTimeout(command: ExtCommand): number {
   if (command.kind === "wait_for") {
     return (command.timeout ?? WAIT_FOR_DEFAULT_MS) + WAIT_FOR_BUFFER_MS;
+  }
+  // `evaluate` with an explicit positive timeout: widen the daemon watchdog to
+  // match the in-page deadline (+buffer) so the watchdog never fires before CDP
+  // aborts the promise. `timeout:0`/undefined means "no CDP abort" (matching
+  // runEvaluate's `timeout > 0` guard) → stays on the 30s default below.
+  if (command.kind === "evaluate" && command.timeout && command.timeout > 0) {
+    return command.timeout + WAIT_FOR_BUFFER_MS;
   }
   if (FAST_ACTION_KINDS.has(command.kind)) {
     return FAST_ACTION_TIMEOUT_MS;

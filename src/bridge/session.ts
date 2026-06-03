@@ -98,4 +98,12 @@ export class BridgeSession {
    * the auto-snapshot to fall back to a full serialization.
    */
   lastPrunedTreeTabId?: TabId;
+  /**
+   * CSS-pixel layout viewport (`window.innerWidth/Height`) from the most recent
+   * tree capture. Used by `browser_click_xy`/`browser_draw` to reject
+   * coordinates outside the visible viewport with an actionable error (trusted
+   * CDP input has no ref indirection, so a stale/typo'd coordinate would
+   * otherwise click nothing). Best-effort: unset until the first snapshot.
+   */
+  lastViewport?: { w: number; h: number };
 }

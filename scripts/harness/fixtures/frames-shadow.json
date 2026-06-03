@@ -1,0 +1,108 @@
+{
+  "url": "synthetic://frames-shadow",
+  "title": "Frames + shadow descent (Phase 1)",
+  "capturedAt": "2026-06-03T00:00:00.000Z",
+  "_note": "Hand-authored raw tree mimicking helpers.js v9 output AFTER same-origin iframe + open-shadow descent: a generic same-origin <iframe> wrapper whose child subtree carries TOP-VIEWPORT (offset-applied) rects, an open shadow host surfacing a UI5-style web-component button, an occluded ghost control, and a cross-origin <iframe> leaf. Guards that the pruner keeps every needed node through the deep spliced shape and that the cross-origin leaf survives. Page-side descent itself is validated live (Phase 6).",
+  "rawTree": {
+    "nodeId": "0",
+    "role": "WebArea",
+    "name": "Course Player",
+    "depth": 0,
+    "rect": { "x": 0, "y": 0, "w": 1280, "h": 1024 },
+    "inViewport": true,
+    "frames": [
+      { "url": "about:srcdoc", "descended": true },
+      { "url": "https://cc.sans.org/ScormEngineInterface/dispatch/DispatchHost.html", "descended": false }
+    ],
+    "children": [
+      {
+        "nodeId": "1",
+        "role": "navigation",
+        "name": "Course nav",
+        "depth": 1,
+        "rect": { "x": 0, "y": 0, "w": 1280, "h": 64 },
+        "inViewport": true,
+        "children": [
+          {
+            "nodeId": "2",
+            "role": "button",
+            "name": "Menu",
+            "depth": 2,
+            "rect": { "x": 16, "y": 16, "w": 80, "h": 32 },
+            "inViewport": true,
+            "children": []
+          }
+        ]
+      },
+      {
+        "nodeId": "3",
+        "role": "generic",
+        "name": "",
+        "depth": 1,
+        "rect": { "x": 40, "y": 80, "w": 800, "h": 600 },
+        "inViewport": true,
+        "children": [
+          {
+            "nodeId": "4",
+            "role": "generic",
+            "name": "",
+            "depth": 2,
+            "rect": { "x": 40, "y": 80, "w": 800, "h": 600 },
+            "inViewport": true,
+            "children": [
+              {
+                "nodeId": "5",
+                "role": "button",
+                "name": "Begin",
+                "depth": 3,
+                "rect": { "x": 380, "y": 360, "w": 120, "h": 40 },
+                "inViewport": true,
+                "children": []
+              },
+              {
+                "nodeId": "6",
+                "role": "button",
+                "name": "Next",
+                "depth": 3,
+                "rect": { "x": 700, "y": 620, "w": 100, "h": 36 },
+                "inViewport": true,
+                "occluded": true,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "nodeId": "7",
+        "role": "generic",
+        "name": "",
+        "depth": 1,
+        "rect": { "x": 900, "y": 80, "w": 320, "h": 200 },
+        "inViewport": true,
+        "children": [
+          {
+            "nodeId": "8",
+            "role": "button",
+            "name": "Continue Course",
+            "depth": 2,
+            "rect": { "x": 930, "y": 120, "w": 200, "h": 48 },
+            "inViewport": true,
+            "children": []
+          }
+        ]
+      },
+      {
+        "nodeId": "9",
+        "role": "iframe",
+        "name": "https://cc.sans.org/ScormEngineInterface/dispatch/DispatchHost.html",
+        "depth": 1,
+        "rect": { "x": 40, "y": 700, "w": 800, "h": 280 },
+        "inViewport": true,
+        "crossOrigin": true,
+        "frameUrl": "https://cc.sans.org/ScormEngineInterface/dispatch/DispatchHost.html",
+        "children": []
+      }
+    ]
+  }
+}

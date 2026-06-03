@@ -36,6 +36,8 @@ const ACTION_KINDS = new Set([
   "navigate",
   "navigate_back",
   "click",
+  "click_xy",
+  "draw",
   "type",
   "select_option",
   "hover",
@@ -155,6 +157,8 @@ async function dispatch(req) {
 // → double-submit" failure mode (see Issue #1 in the 2026-05-14 report).
 const SETTLE_KINDS = new Set([
   "click",
+  "click_xy",
+  "draw",
   "type",
   "select_option",
   "hover",
@@ -356,6 +360,10 @@ async function dispatchInner(req) {
       });
     case "click":
       return runHelper(tabId, "click", c);
+    case "click_xy":
+      return dispatchTrustedClick(tabId, c.x, c.y, c);
+    case "draw":
+      return dispatchTrustedStroke(tabId, c.points, c);
     case "type":
       return runHelper(tabId, "type", c);
     case "select_option":
@@ -371,9 +379,11 @@ async function dispatchInner(req) {
     case "drop":
       return runHelper(tabId, "drop", c);
     case "press_key":
-      return runHelper(tabId, "press_key", c);
+      return c.trusted
+        ? dispatchTrustedKey(tabId, c.key, c.modifiers)
+        : runHelper(tabId, "press_key", c);
     case "evaluate":
-      return runEvaluate(tabId, c.expression);
+      return runEvaluate(tabId, c.expression, c.timeout);
     case "resolve_ref":
       return runResolveRef(tabId, c.ref);
     case "set_focus_emulation":
@@ -1008,6 +1018,265 @@ async function setFocusEmulation(tabId, enabled) {
   return { focusEmulation: enabled };
 }
 
+// ─── trusted CDP coordinate / key input (invariant #34) ─────────────
+//
+// Page-side synthetic events (helpers.js::__mcpAct) are the DEFAULT — they reach
+// the page's JS model for the vast majority of UI without a debugger attach. A
+// minority of widgets need REAL browser input: those that gate on
+// `event.isTrusted` (custom switches, signature canvases, some media players), or
+// interactions that need true coordinate hit-testing through overlays/iframes
+// (where there's no ref to target). CDP `Input.*` is the sanctioned escalation
+// for exactly those cases. Each trusted dispatch auto-asserts focus-emulation
+// first so a backgrounded/occluded tab composites + hit-tests at the dispatched
+// coordinates (without raising the window) — otherwise the hit-test can miss.
+
+// CDP modifier bitfield (Input.dispatch*Event `modifiers`): Alt=1, Ctrl=2,
+// Meta/Cmd=4, Shift=8. Accepts the same human modifier names browser_press_key
+// already takes.
+const CDP_MODIFIER_BITS = {
+  alt: 1,
+  control: 2,
+  ctrl: 2,
+  meta: 4,
+  command: 4,
+  cmd: 4,
+  shift: 8,
+};
+// Mouse button → CDP `buttons` bitfield (left=1, right=2, middle=4).
+const CDP_BUTTON_BITS = { left: 1, right: 2, middle: 4 };
+// Modifier name → the modifier key's own event fields, so a real keydown for the
+// held modifier precedes the main key (browser shortcuts like Ctrl+A need the
+// actual modifier key events, not just the bitfield).
+const CDP_MODIFIER_KEYS = {
+  alt: { key: "Alt", code: "AltLeft", keyCode: 18 },
+  control: { key: "Control", code: "ControlLeft", keyCode: 17 },
+  ctrl: { key: "Control", code: "ControlLeft", keyCode: 17 },
+  shift: { key: "Shift", code: "ShiftLeft", keyCode: 16 },
+  meta: { key: "Meta", code: "MetaLeft", keyCode: 91 },
+  command: { key: "Meta", code: "MetaLeft", keyCode: 91 },
+  cmd: { key: "Meta", code: "MetaLeft", keyCode: 91 },
+};
+// Non-printable keys → CDP key-event fields so the browser performs the key's
+// DEFAULT action (Enter submits, Tab moves focus, arrows scroll/navigate). A
+// single printable character is handled generically by `keyEventFields` and
+// needs no entry here.
+const CDP_KEY_DEFS = {
+  Enter: { code: "Enter", keyCode: 13, text: "\r" },
+  Tab: { code: "Tab", keyCode: 9 },
+  Escape: { code: "Escape", keyCode: 27 },
+  Esc: { code: "Escape", keyCode: 27 },
+  Backspace: { code: "Backspace", keyCode: 8 },
+  Delete: { code: "Delete", keyCode: 46 },
+  ArrowUp: { code: "ArrowUp", keyCode: 38 },
+  ArrowDown: { code: "ArrowDown", keyCode: 40 },
+  ArrowLeft: { code: "ArrowLeft", keyCode: 37 },
+  ArrowRight: { code: "ArrowRight", keyCode: 39 },
+  Home: { code: "Home", keyCode: 36 },
+  End: { code: "End", keyCode: 35 },
+  PageUp: { code: "PageUp", keyCode: 33 },
+  PageDown: { code: "PageDown", keyCode: 34 },
+  " ": { code: "Space", keyCode: 32, text: " " },
+  Space: { code: "Space", keyCode: 32, text: " " },
+};
+
+function cdpModifierBits(names) {
+  let m = 0;
+  for (const n of names || []) m |= CDP_MODIFIER_BITS[String(n).toLowerCase()] || 0;
+  return m;
+}
+
+// CDP `code` for a printable character (best-effort; the page rarely depends on
+// it once `text` is set, but a correct code keeps KeyboardEvent.code faithful).
+function printableCode(ch) {
+  if (/^[a-zA-Z]$/.test(ch)) return "Key" + ch.toUpperCase();
+  if (/^[0-9]$/.test(ch)) return "Digit" + ch;
+  return "";
+}
+
+// Build the shared key-event fields (key/code/text/virtual-key-code) for a
+// key name. Special keys come from CDP_KEY_DEFS; a single printable char is
+// derived generically; an unknown multi-char name falls back to `key`-only.
+function keyEventFields(key) {
+  const def = CDP_KEY_DEFS[key];
+  if (def) {
+    const f = {
+      key,
+      code: def.code,
+      windowsVirtualKeyCode: def.keyCode,
+      nativeVirtualKeyCode: def.keyCode,
+    };
+    if (def.text) f.text = def.text;
+    return f;
+  }
+  if ([...key].length === 1) {
+    // VK code coincides with the ASCII code point for A–Z / 0–9 (correct); for
+    // punctuation it's the code point, not the OEM virtual-key code — harmless
+    // because `text` drives character insertion, and a page keying off `keyCode`
+    // for a punctuation SHORTCUT is vanishingly rare. Add an OEM map here if that
+    // ever matters.
+    const kc = key.toUpperCase().codePointAt(0);
+    return {
+      key,
+      text: key,
+      code: printableCode(key),
+      windowsVirtualKeyCode: kc,
+      nativeVirtualKeyCode: kc,
+    };
+  }
+  return { key };
+}
+
+// Auto-assert focus-emulation before a trusted dispatch so an occluded
+// background tab composites + hit-tests at the dispatched coordinates — without
+// raising the window. Idempotent: flag the tab in `focusEmulated` so the
+// attach hook keeps re-asserting it for the lease, and the lease-release detach
+// (applyIndicatorState) owns teardown. Only attaches + asserts once per tab.
+async function ensureFocusForTrustedInput(tabId) {
+  if (tabId == null) throw new Error("trusted input requires a tabId");
+  await debuggerAttach(tabId);
+  if (!focusEmulated.has(tabId)) {
+    await assertFocusEmulation(tabId, true);
+    focusEmulated.add(tabId);
+  }
+  // Keep the debugger held for the lease — each trusted dispatch resets the
+  // idle backstop, same model as runEvaluate/setFocusEmulation.
+  debuggerDetachLater(tabId);
+}
+
+async function dispatchTrustedClick(tabId, x, y, opts) {
+  await ensureFocusForTrustedInput(tabId);
+  const button = opts?.button || "left";
+  const clickCount = opts?.clickCount || 1;
+  const modifiers = cdpModifierBits(opts?.modifiers);
+  const buttons = CDP_BUTTON_BITS[button] || 1;
+  // Move first so hover state + the element under the point resolve correctly.
+  await sendDebuggerCommand(tabId, "Input.dispatchMouseEvent", {
+    type: "mouseMoved",
+    x,
+    y,
+    button: "none",
+    buttons: 0,
+    modifiers,
+  });
+  // Press/release pairs with an incrementing clickCount — Chromium derives
+  // dblclick/tripleclick from clickCount on consecutive same-point events. The
+  // browser emits `contextmenu` natively for a right-button pair.
+  for (let i = 1; i <= clickCount; i++) {
+    await sendDebuggerCommand(tabId, "Input.dispatchMouseEvent", {
+      type: "mousePressed",
+      x,
+      y,
+      button,
+      buttons,
+      clickCount: i,
+      modifiers,
+    });
+    await sendDebuggerCommand(tabId, "Input.dispatchMouseEvent", {
+      type: "mouseReleased",
+      x,
+      y,
+      button,
+      buttons: 0,
+      clickCount: i,
+      modifiers,
+    });
+  }
+  return { clicked: { x, y }, trusted: true, button, clickCount };
+}
+
+async function dispatchTrustedKey(tabId, key, modifierNames) {
+  await ensureFocusForTrustedInput(tabId);
+  const mods = (modifierNames || []).map((m) => String(m).toLowerCase());
+  const modBits = cdpModifierBits(mods);
+  const modKeys = mods.map((m) => CDP_MODIFIER_KEYS[m]).filter(Boolean);
+  // Hold modifier keys down first so real browser shortcuts fire (Ctrl+A,
+  // Shift+Tab) — the bitfield alone makes the page see event.ctrlKey but
+  // doesn't always trigger the browser's own handling.
+  for (const mk of modKeys) {
+    await sendDebuggerCommand(tabId, "Input.dispatchKeyEvent", {
+      type: "rawKeyDown",
+      key: mk.key,
+      code: mk.code,
+      windowsVirtualKeyCode: mk.keyCode,
+      nativeVirtualKeyCode: mk.keyCode,
+      modifiers: modBits,
+    });
+  }
+  const ev = { ...keyEventFields(key), modifiers: modBits };
+  // With a NON-Shift modifier held (Ctrl/Alt/Meta) the keystroke is a COMMAND,
+  // not text entry — and Chromium suppresses the browser command path for a
+  // keyDown that carries `text`. Strip `text` so Ctrl+A / Ctrl+C / Meta-shortcuts
+  // fire as real commands. Shift-only keeps `text` (Shift+printable is still a
+  // character). Bits: Alt=1, Ctrl=2, Meta=4 (Shift=8 is intentionally excluded).
+  const COMMAND_MODIFIER_BITS = 1 | 2 | 4;
+  if (modBits & COMMAND_MODIFIER_BITS) delete ev.text;
+  // `keyDown` (vs `rawKeyDown`) is required to emit the `input`/`textInput` that
+  // a printable character produces; non-text keys (and command keystrokes, above)
+  // use rawKeyDown.
+  await sendDebuggerCommand(tabId, "Input.dispatchKeyEvent", {
+    type: ev.text ? "keyDown" : "rawKeyDown",
+    ...ev,
+  });
+  await sendDebuggerCommand(tabId, "Input.dispatchKeyEvent", {
+    type: "keyUp",
+    ...ev,
+  });
+  for (const mk of [...modKeys].reverse()) {
+    await sendDebuggerCommand(tabId, "Input.dispatchKeyEvent", {
+      type: "keyUp",
+      key: mk.key,
+      code: mk.code,
+      windowsVirtualKeyCode: mk.keyCode,
+      nativeVirtualKeyCode: mk.keyCode,
+      modifiers: 0,
+    });
+  }
+  return { pressed: key, trusted: true };
+}
+
+async function dispatchTrustedStroke(tabId, points, opts) {
+  if (!Array.isArray(points) || points.length < 2)
+    throw new Error("draw requires at least 2 points");
+  await ensureFocusForTrustedInput(tabId);
+  const button = opts?.button || "left";
+  const buttons = CDP_BUTTON_BITS[button] || 1;
+  const p0 = points[0];
+  await sendDebuggerCommand(tabId, "Input.dispatchMouseEvent", {
+    type: "mouseMoved",
+    x: p0.x,
+    y: p0.y,
+    button: "none",
+    buttons: 0,
+  });
+  await sendDebuggerCommand(tabId, "Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    x: p0.x,
+    y: p0.y,
+    button,
+    buttons,
+    clickCount: 1,
+  });
+  for (let i = 1; i < points.length; i++) {
+    await sendDebuggerCommand(tabId, "Input.dispatchMouseEvent", {
+      type: "mouseMoved",
+      x: points[i].x,
+      y: points[i].y,
+      button,
+      buttons,
+    });
+  }
+  const last = points[points.length - 1];
+  await sendDebuggerCommand(tabId, "Input.dispatchMouseEvent", {
+    type: "mouseReleased",
+    x: last.x,
+    y: last.y,
+    button,
+    buttons: 0,
+    clickCount: 1,
+  });
+  return { drew: { points: points.length } };
+}
+
 /** Apply the tracked viewport override. Assumes the debugger is already attached. */
 async function assertDeviceMetrics(tabId) {
   const m = deviceMetrics.get(tabId);
@@ -1383,22 +1652,29 @@ async function runWaitForCondition(tabId, c) {
   }
 }
 
-async function runEvaluate(tabId, expression) {
+async function runEvaluate(tabId, expression, timeout) {
   // Use chrome.debugger Runtime.evaluate — runs in the page's JS context but as the debugger,
   // so it bypasses the page's CSP (which would otherwise reject `new Function()` on strict sites
   // like chatgpt.com). Attach is reused if already held (debuggerAttach is idempotent).
   await debuggerAttach(tabId);
+  const startedAt = Date.now();
   try {
+    const params = {
+      expression,
+      returnByValue: true,
+      awaitPromise: true,
+      userGesture: false,
+    };
+    // CDP's own execution timeout: aborts the in-page promise on expiry rather
+    // than leaving a runaway async loop running unsupervised after the call
+    // returns. Only set when the agent asked for it — without it the behaviour
+    // (and the daemon's ~30s watchdog) is unchanged.
+    if (timeout && timeout > 0) params.timeout = timeout;
     const result = await new Promise((resolve, reject) => {
       chrome.debugger.sendCommand(
         { tabId },
         "Runtime.evaluate",
-        {
-          expression,
-          returnByValue: true,
-          awaitPromise: true,
-          userGesture: false,
-        },
+        params,
         (r) => {
           if (chrome.runtime.lastError)
             reject(new Error(chrome.runtime.lastError.message));
@@ -1408,6 +1684,30 @@ async function runEvaluate(tabId, expression) {
     });
     if (result?.exceptionDetails) {
       const ex = result.exceptionDetails;
+      const elapsedMs = Date.now() - startedAt;
+      const desc = ex.exception?.description || ex.text || "";
+      // Distinguish a CDP timeout-abort from a genuine in-page error: when a
+      // timeout was set and we either reached it or CDP signalled a timeout,
+      // return a clean {timed_out} result the agent can act on (raise timeout,
+      // or split into bounded steps) instead of a confusing thrown error.
+      // The CDP-message regex is the PRIMARY signal (fires regardless of how
+      // small the timeout is). The elapsed-time backup only applies for
+      // timeouts > 500ms — below that, `timeout - 250` is at/below zero, so the
+      // elapsed check would be trivially true and would misreport a genuine
+      // immediate error (ReferenceError/SyntaxError) as a timeout. For small
+      // timeouts we rely on the regex alone.
+      const timedOut =
+        timeout &&
+        timeout > 0 &&
+        ((timeout > 500 && elapsedMs >= timeout - 250) ||
+          /timed out|Promise was collected/i.test(desc));
+      if (timedOut) {
+        return {
+          timed_out: true,
+          elapsedMs,
+          hint: `evaluate aborted after ${elapsedMs}ms (timeout ${timeout}ms) — raise timeout or run one bounded step per call`,
+        };
+      }
       throw new Error(
         ex.exception?.description || ex.text || "evaluation failed",
       );

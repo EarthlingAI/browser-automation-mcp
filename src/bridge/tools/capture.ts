@@ -166,6 +166,10 @@ export async function runUnifiedCapture(
       detail: opts.detail,
     });
     populateRefs(ctx.session, prunedTree, captureResp.tree, tabId);
+    // Remember the CSS viewport so trusted coordinate input (browser_click_xy /
+    // browser_draw) can reject out-of-viewport coordinates with an actionable
+    // error. Only set on a tree capture — that's the only hop that returns it.
+    if (captureResp.cssViewport) ctx.session.lastViewport = captureResp.cssViewport;
     // CP3: serialize the tree to the compact indented outline (a string) and
     // surface the structured meta separately. The pruner's recovery `notice`
     // (cap/fallback) is inlined as the outline's first line so it can't be
@@ -185,6 +189,12 @@ export async function runUnifiedCapture(
         ? ctx.session.lastPrunedTree
         : undefined;
     const snapMeta: PruneMeta = { ...(meta ?? {}) };
+    // Surface the child-frame summary from the raw tree root (helpers.js logs
+    // every frame the walk saw). Loud cross-origin boundaries (invariant #20):
+    // a frame with `descended:false` was not traversed by the default snapshot.
+    if (captureResp.tree.frames?.length) {
+      snapMeta.frames = captureResp.tree.frames;
+    }
     const fullBody = serializeTree(newTree);
     let body: string;
     if (prior) {

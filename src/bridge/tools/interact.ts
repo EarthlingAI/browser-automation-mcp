@@ -7,6 +7,8 @@ import {
   ToolContext,
   execOnLeasedTab,
   resolveRef,
+  refNeedsVerification,
+  nearbyRefsError,
 } from "../registry";
 import { coerceToArray, coerceLiteralNumber, coerceBoolean } from "./coerce";
 
@@ -60,6 +62,24 @@ function readUploadPayloads(
       dataBase64: buf.toString("base64"),
     };
   });
+}
+
+// Reject a trusted-input coordinate that falls outside the last-known CSS
+// viewport with an actionable error — trusted CDP input has no ref indirection,
+// so a stale (post-scroll) or typo'd coordinate would otherwise dispatch into
+// nothing. Best-effort: a no-op until the first snapshot populates the viewport.
+function assertInViewport(ctx: ToolContext, x: number, y: number): void {
+  const vp = ctx.session.lastViewport;
+  if (!vp) return;
+  // Half-open [0, w) / [0, h) — a coordinate at exactly w/h is one past the last
+  // addressable pixel (matches helpers.js::inViewportAbs's `left < vw`).
+  if (x < 0 || y < 0 || x >= vp.w || y >= vp.h) {
+    const err = new Error(
+      `coordinate (${x}, ${y}) is outside the ${vp.w}×${vp.h} viewport`,
+    ) as Error & { hint?: string };
+    err.hint = `coordinate outside viewport ${vp.w}×${vp.h}; re-run browser_snapshot or a screenshot for current coordinates (scrolling shifts them)`;
+    throw err;
+  }
 }
 
 // Standard annotations for write-y action tools (click, type, navigate, etc).
@@ -123,7 +143,7 @@ export function registerInteractTools(
     name: "browser_click",
     title: "Click an element",
     description:
-      "Click an element by `ref` from a recent snapshot. Supports modifiers, double/right click.",
+      "Click an element by `ref` from a recent snapshot. Supports modifiers, double/right click. Set trusted:true to escalate to a real CDP coordinate click (clicks the ref's centre) for widgets that gate on event.isTrusted or sit under an overlay — costs the debugger infobar; see browser_click_xy for arbitrary coordinates.",
     annotations: ACTION_WRITE,
     schema: {
       ref: z.string().describe('Element ref from browser_snapshot (e.g. "5").'),
@@ -136,15 +156,129 @@ export function registerInteractTools(
       modifiers: z
         .preprocess(coerceToArray, z.array(z.string()).optional())
         .describe('Keys held during click, e.g. ["Control"], ["Shift"].'),
+      trusted: z
+        .preprocess(coerceBoolean, z.boolean().default(false))
+        .describe(
+          "Fire a real CDP mouse click at the ref's centre instead of a page-side synthetic event. For isTrusted-gated or overlay-occluded widgets.",
+        ),
     },
-    handler: async ({ ref, tabId, button, clickCount, modifiers }) =>
-      execOnLeasedTab(ctx, tabId, {
+    handler: async ({ ref, tabId, button, clickCount, modifiers, trusted }) => {
+      if (trusted) {
+        // Resolve the ref's rect (validates it too) and click its centre via a
+        // trusted coordinate click. A ref without a rect (synthetic root, never
+        // laid out) can't be coordinate-clicked — point the agent at the
+        // explicit-coordinate tool. Cross-tab guard first: the ref's rect is in
+        // its snapshot tab's viewport space, so clicking those coords on a
+        // different tab would land at a stale point (execOnLeasedTab's own guard
+        // never sees these coords — click_xy carries no ref).
+        const target = tabId ?? ctx.session.lastLeasedTab;
+        if (
+          ctx.session.lastSnapshotTabId !== undefined &&
+          target !== undefined &&
+          ctx.session.lastSnapshotTabId !== target
+        ) {
+          throw new Error(
+            `ref ${ref} was captured on tab ${ctx.session.lastSnapshotTabId} but this trusted click targets tab ${target}. Call browser_snapshot on tab ${target} first.`,
+          );
+        }
+        const meta = resolveRef(ctx.session, ref);
+        if (!meta.rect)
+          throw new Error(
+            `ref ${ref} has no bounding rect — can't compute a trusted-click coordinate. Re-run browser_snapshot, or use browser_click_xy with explicit coordinates.`,
+          );
+        // Liveness parity with the synthetic path: click_xy carries no ref, so
+        // execOnLeasedTab's probe never runs — probe here so a since-removed
+        // element errors instead of clicking empty space. We keep the SNAPSHOT
+        // rect for coordinates (it's offset-accumulated to top-viewport space);
+        // resolve_ref returns a frame-LOCAL rect, which would be wrong for a
+        // same-origin-iframe element, so its rect is deliberately not used.
+        if (target !== undefined && refNeedsVerification(ctx.session, ref)) {
+          const live = await ctx.daemon.exec(target, {
+            kind: "resolve_ref",
+            ref,
+          });
+          if (!live) throw nearbyRefsError(ctx.session, ref, { gone: true });
+        }
+        const x = meta.rect.x + meta.rect.w / 2;
+        const y = meta.rect.y + meta.rect.h / 2;
+        return execOnLeasedTab(ctx, tabId, {
+          kind: "click_xy",
+          x,
+          y,
+          button,
+          clickCount,
+          modifiers,
+        });
+      }
+      return execOnLeasedTab(ctx, tabId, {
         kind: "click",
         ref,
         button,
         clickCount,
         modifiers,
-      }),
+      });
+    },
+  });
+
+  registerActionTool(server, ctx, {
+    name: "browser_click_xy",
+    title: "Trusted click at viewport coordinates",
+    description:
+      "Click at an absolute (x, y) CSS-pixel coordinate in the viewport via a TRUSTED CDP mouse event — it hit-tests through overlays/iframes and satisfies event.isTrusted gates that page-side synthetic clicks can't. Use when there's no usable ref (cross-origin iframe, canvas widget, a custom control that ignores synthetic events). Coordinates share the snapshot's coordinate space (top-left origin, pre-scroll). Costs the debugger infobar and auto-asserts focus-emulation. Prefer browser_click(ref) for ordinary elements.",
+    annotations: ACTION_WRITE,
+    schema: {
+      x: z.coerce.number().describe("Viewport X in CSS pixels (left origin)."),
+      y: z.coerce.number().describe("Viewport Y in CSS pixels (top origin)."),
+      tabId: z.coerce.number().int().optional(),
+      button: z.enum(["left", "right", "middle"]).default("left"),
+      clickCount: z.preprocess(
+        coerceLiteralNumber,
+        z.union([z.literal(1), z.literal(2), z.literal(3)]).default(1),
+      ),
+      modifiers: z
+        .preprocess(coerceToArray, z.array(z.string()).optional())
+        .describe('Keys held during click, e.g. ["Control"], ["Shift"].'),
+    },
+    handler: async ({ x, y, tabId, button, clickCount, modifiers }) => {
+      assertInViewport(ctx, x, y);
+      return execOnLeasedTab(ctx, tabId, {
+        kind: "click_xy",
+        x,
+        y,
+        button,
+        clickCount,
+        modifiers,
+      });
+    },
+  });
+
+  registerActionTool(server, ctx, {
+    name: "browser_draw",
+    title: "Trusted freehand pointer stroke",
+    description:
+      "Draw a continuous pointer stroke through a list of (x, y) CSS-pixel viewport coordinates via TRUSTED CDP mouse events (press → moves → release, button held throughout). For signature pads, canvas drawing surfaces, slider drags, and pointer-based drag-and-drop that need real coordinate input. Give at least 2 points; more points trace a smoother path. Costs the debugger infobar and auto-asserts focus-emulation.",
+    annotations: ACTION_WRITE,
+    schema: {
+      points: z
+        .preprocess(
+          coerceToArray,
+          z
+            .array(
+              z.object({
+                x: z.coerce.number(),
+                y: z.coerce.number(),
+              }),
+            )
+            .min(2),
+        )
+        .describe("Ordered viewport coordinates to trace; minimum 2."),
+      tabId: z.coerce.number().int().optional(),
+      button: z.enum(["left", "right", "middle"]).default("left"),
+    },
+    handler: async ({ points, tabId, button }) => {
+      for (const p of points) assertInViewport(ctx, p.x, p.y);
+      return execOnLeasedTab(ctx, tabId, { kind: "draw", points, button });
+    },
   });
 
   registerActionTool(server, ctx, {
@@ -381,7 +515,7 @@ export function registerInteractTools(
     name: "browser_press_key",
     title: "Press a keyboard key/shortcut",
     description:
-      "Press a keyboard shortcut at page level. Key names follow KeyboardEvent.key.",
+      "Press a keyboard shortcut at page level. Key names follow KeyboardEvent.key. Set trusted:true to escalate to a real CDP key event for inputs that gate on event.isTrusted or need the browser's own key handling (real form-submit on Enter, focus navigation on Tab) — costs the debugger infobar; see invariant #34.",
     annotations: ACTION_WRITE,
     schema: {
       key: z.string().describe('e.g. "Enter", "Tab", "a", "F5".'),
@@ -389,9 +523,14 @@ export function registerInteractTools(
       modifiers: z
         .preprocess(coerceToArray, z.array(z.string()).optional())
         .describe('e.g. ["Control"], ["Shift", "Alt"].'),
+      trusted: z
+        .preprocess(coerceBoolean, z.boolean().default(false))
+        .describe(
+          "Fire a real CDP key event instead of a page-side synthetic one. For isTrusted-gated inputs or when the browser's native key action is needed.",
+        ),
     },
-    handler: async ({ key, tabId, modifiers }) =>
-      execOnLeasedTab(ctx, tabId, { kind: "press_key", key, modifiers }),
+    handler: async ({ key, tabId, modifiers, trusted }) =>
+      execOnLeasedTab(ctx, tabId, { kind: "press_key", key, modifiers, trusted }),
   });
 
   registerActionTool(server, ctx, {
@@ -407,9 +546,18 @@ export function registerInteractTools(
           "JS expression; the value of the last expression is returned.",
         ),
       tabId: z.coerce.number().int().optional(),
+      timeout: z
+        .coerce.number()
+        .int()
+        .min(0)
+        .max(300_000)
+        .optional()
+        .describe(
+          "Max ms for the expression (including any awaited promise) before it is aborted and a {timed_out:true, elapsedMs} result returns. Omit for the default ~30s watchdog; max 300000 (5 min). Set this for long async loops so a runaway promise can't keep running unsupervised.",
+        ),
     },
-    handler: async ({ expression, tabId }) =>
-      execOnLeasedTab(ctx, tabId, { kind: "evaluate", expression }),
+    handler: async ({ expression, tabId, timeout }) =>
+      execOnLeasedTab(ctx, tabId, { kind: "evaluate", expression, timeout }),
   });
 
   registerActionTool(server, ctx, {

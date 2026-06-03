@@ -5,6 +5,7 @@ import { DaemonClient } from "./client";
 import { BridgeSession, RefMeta, SnapshotParams } from "./session";
 import { ExtCommand, SettleOptions, TabId } from "../protocol";
 import { PrunedNode, RawNode } from "../snapshot/prune";
+import { parseRef } from "../snapshot/ref";
 import { coerceBoolean } from "./tools/coerce";
 import { runUnifiedCapture } from "./tools/capture";
 
@@ -363,21 +364,28 @@ export function nearbyRefsError(
   ref: string,
   opts?: { gone?: boolean },
 ): Error {
-  const wanted = Number(ref);
+  const wanted = parseRef(ref);
   // Never suggest the failed ref itself as a nearby alternative — in the `gone`
   // case it's still carried in the registry, so without this it would be listed
   // as "available" right after we said it no longer exists.
   const all = Array.from(session.refRegistry.entries()).filter(
     ([r]) => r !== ref,
   );
-  const nearby = isFinite(wanted)
+  // Proximity is within the SAME frame (local-id distance); refs in a different
+  // frame get a huge finite offset so same-frame refs rank first and cross-frame
+  // refs (if any make the top-20) trail them. A malformed ref (NaN local id)
+  // falls back to a positional listing.
+  const nearby = Number.isFinite(wanted.localId)
     ? all
-        .map(([r, m]) => ({
-          ref: r,
-          meta: m,
-          dist: Math.abs(Number(r) - wanted),
-        }))
-        .filter((e) => isFinite(e.dist))
+        .map(([r, m]) => {
+          const p = parseRef(r);
+          const dist =
+            p.frameId === wanted.frameId
+              ? Math.abs(p.localId - wanted.localId)
+              : Number.MAX_SAFE_INTEGER;
+          return { ref: r, meta: m, dist };
+        })
+        .filter((e) => Number.isFinite(e.dist))
         .sort((a, b) => a.dist - b.dist)
         .slice(0, 20)
     : all.slice(0, 20).map((e) => ({ ref: e[0], meta: e[1], dist: 0 }));
@@ -467,6 +475,8 @@ export function toolError(err: any) {
 // settle policy merged in before being sent to the daemon.
 const SETTLEABLE_KINDS = new Set([
   "click",
+  "click_xy",
+  "draw",
   "type",
   "select_option",
   "hover",

@@ -30,7 +30,10 @@ snapshot spans the WHOLE page's semantic tree (landmarks + interactive + content
 viewport), ranked by salience and capped at 'limit'. Structured counts live in payload.meta
 (total_candidates is always there); if the pruner deferred a ranked tail or auto-scoped a huge page
 to the viewport, a 'NOTE: …' recovery hint leads the outline telling you what was hidden and how to
-reach it (raise 'limit', scroll, or scope to a region).
+reach it (raise 'limit', scroll, or scope to a region). The snapshot spans SAME-ORIGIN iframes and
+open shadow DOM automatically (refs inside them work like any other); a CROSS-ORIGIN iframe shows as
+a single '- iframe "<url>" [cross-origin frame — not descended]' leaf, and payload.meta.frames lists
+every child frame with whether it was descended.
 
 Diff snapshots: action tools auto-snapshot after acting, and that auto-snapshot returns a DIFF — only
 what changed since the previous snapshot of the tab — led by a 'Δ {A} added, {R} removed, {K} changed'
@@ -58,6 +61,19 @@ SortableJS need different event families). browser_drop drops local files onto a
 synthesizing a desktop-style file drop (dragenter/dragover/drop with the files in a DataTransfer) —
 for "drag files here" zones that expose no <input type=file> for browser_upload. Both are background
 synthetic events: no window raise, no focus theft.
+
+Trusted input: ordinary browser_click / browser_press_key fire page-side SYNTHETIC events (isTrusted
+false) — fine for almost everything. When a widget ignores them (a custom switch / signature pad /
+media control that gates on event.isTrusted) or there's no usable ref (a coordinate inside a
+cross-origin iframe, a <canvas> hit-region), escalate to a REAL CDP input event: browser_click_xy
+clicks an (x,y) viewport coordinate, browser_draw traces a freehand pointer stroke through a points
+list (signature pads, sliders, pointer-DnD), and browser_click / browser_press_key take trusted:true
+(click uses the ref's centre). Coordinates are CSS-pixel viewport coords in the same space as snapshot
+rects (top-left origin, pre-scroll) — re-snapshot after scrolling since coords shift; an out-of-viewport
+coordinate is rejected with the current viewport size. Cost vs synthetic: it attaches the debugger
+(the "started debugging this browser" infobar shows for the lease) and auto-asserts focus-emulation so
+the backgrounded tab hit-tests faithfully — still no window raise. Prefer ref-based synthetic actions;
+reach for trusted only when synthetic doesn't land.
 
 Native dialogs: alert / confirm / prompt / beforeunload block the page until answered. The bridge
 safe-defaults to AUTO-DISMISS so no tool can block on an unhandled dialog — Page.* is enabled on

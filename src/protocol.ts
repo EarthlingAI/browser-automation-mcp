@@ -276,9 +276,56 @@ export type ExtCommand =
       kind: "press_key";
       key: string;
       modifiers?: string[];
+      /**
+       * Escalate from the default page-side synthetic KeyboardEvent to a TRUSTED
+       * CDP `Input.dispatchKeyEvent`. Set when a widget gates on `event.isTrusted`
+       * or needs the browser's own key handling (real form-submit on Enter, focus
+       * navigation on Tab). Auto-asserts focus-emulation before dispatch. Costs the
+       * "started debugging" infobar; see invariant #37. Omitted/false → synthetic.
+       */
+      trusted?: boolean;
       settle?: SettleOptions;
     }
-  | { kind: "evaluate"; expression: string }
+  /**
+   * Trusted coordinate click via CDP `Input.dispatchMouseEvent` (mouseMoved →
+   * mousePressed → mouseReleased ×clickCount). Unlike `click` (ref-based,
+   * page-side synthetic by default), this fires REAL browser mouse input at a
+   * viewport coordinate — it hit-tests through overlays/iframes and satisfies
+   * `event.isTrusted` gates. Coordinates are CSS pixels relative to the layout
+   * viewport (same space as snapshot rects). Auto-asserts focus-emulation so a
+   * backgrounded tab composites + hit-tests faithfully. See invariant #37.
+   */
+  | {
+      kind: "click_xy";
+      x: number;
+      y: number;
+      button?: "left" | "right" | "middle";
+      clickCount?: 1 | 2 | 3;
+      modifiers?: string[];
+      settle?: SettleOptions;
+    }
+  /**
+   * Trusted freehand pointer stroke via CDP `Input.dispatchMouseEvent`
+   * (mousePressed → N×mouseMoved → mouseReleased, button held throughout). Draws
+   * a continuous path through `points` (CSS-pixel viewport coords) — the input a
+   * signature pad, canvas drawing tool, or pointer-DnD surface needs. Auto-asserts
+   * focus-emulation. See invariant #37.
+   */
+  | {
+      kind: "draw";
+      points: Array<{ x: number; y: number }>;
+      button?: "left" | "right" | "middle";
+      settle?: SettleOptions;
+    }
+  /**
+   * Run a JS expression in the page via CDP `Runtime.evaluate`. When `timeout`
+   * is set (ms), it is passed to CDP so the in-page promise is ABORTED on expiry
+   * (not left running unsupervised) and a `{timed_out:true, elapsedMs}` result
+   * returns instead of a thrown error. Omitted → the daemon's ~30s watchdog is
+   * the only bound (unchanged default). The daemon widens its own watchdog to
+   * `timeout + buffer` (timeouts.ts) so it never fires before the in-page deadline.
+   */
+  | { kind: "evaluate"; expression: string; timeout?: number }
   /**
    * Read-only liveness probe for a single ref. Runs `__mcpResolveRef` in the
    * page and returns `{name, role, tag, rect}` while the ref's element is still

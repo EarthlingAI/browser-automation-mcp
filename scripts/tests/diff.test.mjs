@@ -122,3 +122,22 @@ test("added lines sort by numeric ref (not string order)", () => {
   assert.equal(lines[1], '+ button "Small" [ref=9]');
   assert.equal(lines[2], '+ button "Big" [ref=100]');
 });
+
+test("cross-origin fN: refs sort after main-frame refs by (frame, local) tuple", () => {
+  // Forward-compat (Phase 4): a tree mixing main-frame and OOPIF refs must sort
+  // deterministically — the old `Number(a.ref)-Number(b.ref)` returned NaN for
+  // any `fN:` ref, leaving Array.sort order undefined.
+  const prev = tree([btn("2", "Keep")]);
+  const next = tree([
+    btn("2", "Keep"),
+    btn("f2:1", "FrameTwo"),
+    btn("f1:9", "FrameOneHi"),
+    btn("f1:2", "FrameOneLo"),
+    btn("5", "Main"),
+  ]);
+  const lines = serializeDiff(prev, next).split("\n");
+  assert.equal(lines[1], '+ button "Main" [ref=5]');
+  assert.equal(lines[2], '+ button "FrameOneLo" [ref=f1:2]');
+  assert.equal(lines[3], '+ button "FrameOneHi" [ref=f1:9]');
+  assert.equal(lines[4], '+ button "FrameTwo" [ref=f2:1]');
+});

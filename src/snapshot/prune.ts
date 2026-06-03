@@ -28,6 +28,31 @@ export interface RawNode {
   dialogModal?: boolean;
   position?: string;
   /**
+   * Set by helpers.js when this interactive element is NOT the topmost
+   * hit-tested element at its own centre — a ghost/under-layer node (e.g. a
+   * stale Articulate Storyline slide kept mounted under the active one). The
+   * pruner DEPRIORITISES occluded nodes via a score penalty; it never excludes
+   * them (a uniquely-named occluded control must still surface).
+   */
+  occluded?: boolean;
+  /**
+   * Set by helpers.js on a child-frame node whose document could not be
+   * traversed (cross-origin SecurityError, too-deep nesting, or unloaded). The
+   * subtree is a single leaf; `frameUrl` carries the frame's src. Phase 4 adds
+   * opt-in cross-origin descent — until then the serializer renders a recovery
+   * hint so the boundary is loud.
+   */
+  crossOrigin?: boolean;
+  frameUrl?: string;
+  /**
+   * Per-walk frame summary, set ONLY on the tree root by helpers.js — every
+   * child frame the walk encountered and whether it was descended (same-origin)
+   * or skipped (cross-origin / too-deep / unloaded). The pruner passes this
+   * through: `runUnifiedCapture` reads `tree.frames` and surfaces it as
+   * `meta.frames` so skipped frames are loud (invariant #20).
+   */
+  frames?: Array<{ url: string; descended: boolean }>;
+  /**
    * Page CSS-pixel viewport (`window.innerWidth` × `innerHeight`) at snapshot
    * time. Set on the tree root only by `helpers.js::__mcpA11y`. The pruner
    * does not consume this — it's a passthrough: the extension's
@@ -50,6 +75,10 @@ export interface PrunedNode {
   disabled?: boolean;
   level?: number;
   values?: string[];
+  /** Cross-origin child-frame leaf — see RawNode.crossOrigin. The serializer
+   * renders a recovery hint next to it. */
+  crossOrigin?: boolean;
+  frameUrl?: string;
   children?: PrunedNode[];
 }
 
@@ -98,6 +127,14 @@ export interface PruneMeta {
    * full outline, else "full".
    */
   mode?: "diff" | "full";
+  /**
+   * Child-frame summary surfaced from the raw tree root (helpers.js sets it
+   * during the walk). Lists every child frame and whether the snapshot
+   * descended it. Set by `runUnifiedCapture` (not `prune` — it lives on the raw
+   * root, which the pruner doesn't carry through), and only when ≥1 child frame
+   * exists. Makes a skipped cross-origin frame loud (invariant #20).
+   */
+  frames?: Array<{ url: string; descended: boolean }>;
 }
 
 const INTERACTIVE_ROLES = new Set([
@@ -449,6 +486,10 @@ export function prune(
     if (c.node.selected !== undefined) node.selected = c.node.selected;
     if (c.node.disabled) node.disabled = true;
     if (c.node.level !== undefined) node.level = c.node.level;
+    if (c.node.crossOrigin) {
+      node.crossOrigin = true;
+      if (c.node.frameUrl) node.frameUrl = c.node.frameUrl;
+    }
 
     const children = childrenOf.get(idx) ?? [];
     if (children.length === 0) return node;
@@ -572,6 +613,14 @@ function scoreCandidate(
   // Modal boost: when a <dialog open> is in the top layer, its descendants
   // are almost certainly what the user is supposed to interact with next.
   if (c.inModalSubtree) score += 40;
+
+  // Active-layer penalty: an interactive element occluded by another layer at
+  // its own centre (a ghost stale-slide control under the live one) ranks
+  // below its live twin. Deliberately a moderate penalty, not exclusion — a
+  // uniquely-named occluded control (no live twin competing for the slot) still
+  // makes the cut. Only set on interactive nodes (helpers.js gates the
+  // hit-test), so structural/named-container nodes are unaffected.
+  if (c.node.occluded) score -= 60;
 
   return score;
 }

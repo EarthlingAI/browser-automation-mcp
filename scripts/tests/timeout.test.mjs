@@ -36,7 +36,8 @@ test("inferExtTimeout: slow commands keep the 30s default", () => {
     inferExtTimeout({ kind: "snapshot_capture", withTree: true, withScreenshot: false }),
     30_000,
   );
-  // Evaluate — user-supplied expression may include long awaits.
+  // Evaluate without an explicit timeout — user-supplied expression may include
+  // long awaits; stays on the 30s default.
   assert.equal(inferExtTimeout({ kind: "evaluate", expression: "1+1" }), 30_000);
   // Upload — base64 file payload (up to 25 MB) over the WS.
   assert.equal(
@@ -84,5 +85,25 @@ test("inferExtTimeout: wait_for with undefined timeout defaults to 10s+5s", () =
   assert.equal(
     inferExtTimeout({ kind: "wait_for", condition: "true" }),
     15_000,
+  );
+});
+
+test("inferExtTimeout: evaluate with explicit timeout widens to timeout+5s buffer", () => {
+  // An agent-supplied evaluate timeout must widen the daemon watchdog so it
+  // never fires before CDP aborts the in-page promise at the deadline.
+  assert.equal(
+    inferExtTimeout({ kind: "evaluate", expression: "await x()", timeout: 120_000 }),
+    125_000,
+  );
+  // Schema max 300_000 → daemon allows 305_000.
+  assert.equal(
+    inferExtTimeout({ kind: "evaluate", expression: "x", timeout: 300_000 }),
+    305_000,
+  );
+  // timeout:0 means "no CDP timeout" (matches runEvaluate's `timeout > 0`
+  // guard) → stays on the 30s default, never a 5s watchdog.
+  assert.equal(
+    inferExtTimeout({ kind: "evaluate", expression: "x", timeout: 0 }),
+    30_000,
   );
 });

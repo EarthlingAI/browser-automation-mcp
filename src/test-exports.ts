@@ -10,6 +10,7 @@
 export { prune, type RawNode, type PrunedNode } from "./snapshot/prune";
 export { serializeTree } from "./snapshot/serialize";
 export { serializeDiff } from "./snapshot/diff";
+export { parseRef, formatRef, compareRefs } from "./snapshot/ref";
 export { BridgeSession } from "./bridge/session";
 export {
   toolResult,

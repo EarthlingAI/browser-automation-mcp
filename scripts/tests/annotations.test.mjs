@@ -108,6 +108,18 @@ const EXPECTED = {
     idempotent: false,
     openWorld: true,
   },
+  browser_click_xy: {
+    readOnly: false,
+    destructive: true,
+    idempotent: false,
+    openWorld: true,
+  },
+  browser_draw: {
+    readOnly: false,
+    destructive: true,
+    idempotent: false,
+    openWorld: true,
+  },
   browser_type: {
     readOnly: false,
     destructive: true,

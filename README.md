@@ -1,6 +1,6 @@
 # browser-automation-mcp
 
-Cross-tab control of the user's real authenticated Chrome session via a passive MV3 extension. 25 tools across tabs, observation, and interaction — actions run in the background by default, never raising the window or stealing focus. The one exception is `browser_activate_tab(level:"foreground")`, an explicit opt-in focus-steal for OS file pickers / clipboard / drag-drop; the default `browser_activate_tab(level:"render")` resumes faithful rendering of a backgrounded canvas tab without any window raise.
+Cross-tab control of the user's real authenticated Chrome session via a passive MV3 extension. 27 tools across tabs, observation, and interaction — actions run in the background by default, never raising the window or stealing focus. The one exception is `browser_activate_tab(level:"foreground")`, an explicit opt-in focus-steal for OS file pickers / clipboard / drag-drop; the default `browser_activate_tab(level:"render")` resumes faithful rendering of a backgrounded canvas tab without any window raise.
 
 ## Setup
 
@@ -174,7 +174,7 @@ Once `"annotated"` or `"raw"` is set, every subsequent action's auto-snapshot re
 
 `detail:"full"` at `limit < 1000` raises the effective limit to 1000 and surfaces `meta.limit_adjusted` in the response.
 
-**Pruner meta.** Every response includes `meta.total_candidates` (the full count of accessible candidate nodes the pruner saw before any viewport-filtering or limit cap). When the pruner auto-falls-back to viewport-only (`total_candidates > 3 × effectiveLimit` AND the caller did NOT pass `viewportOnly:true`), an additional `meta.viewport_fallback: { active:true, reason:"page_too_large", threshold, total_candidates }` surfaces so the agent knows useful nodes may sit off-screen. Whenever a cap or fallback fires, `meta.notice` carries a one-line recovery hint (what was hidden, how to reach it) that is also inlined as the first line of the serialized outline, prefixed `NOTE: `.
+**Pruner meta.** Every response includes `meta.total_candidates` (the full count of accessible candidate nodes the pruner saw before any viewport-filtering or limit cap). When the pruner auto-falls-back to viewport-only (`total_candidates > 3 × effectiveLimit` AND the caller did NOT pass `viewportOnly:true`), an additional `meta.viewport_fallback: { active:true, reason:"page_too_large", threshold, total_candidates }` surfaces so the agent knows useful nodes may sit off-screen. Whenever a cap or fallback fires, `meta.notice` carries a one-line recovery hint (what was hidden, how to reach it) that is also inlined as the first line of the serialized outline, prefixed `NOTE: `. When the page has child frames, `meta.frames` lists each as `{ url, descended }` — `descended:false` marks a cross-origin (or unreachable) frame whose content the default snapshot did not traverse.
 
 **Auto-snapshot carries the image forward.** Once you call `browser_snapshot(screenshot:"annotated")` or `browser_snapshot(screenshot:"raw")`, every subsequent action-tool auto-snapshot replays the visual params (`screenshot`, `quality`, `maxWidth`) — the agent sees one image per action, not just per explicit snapshot. `save_to_path` is NEVER replayed: saving is per-call opt-in, never a session mode.
 
@@ -229,7 +229,7 @@ Go back one entry in the leased tab's history.
 
 #### `browser_click`
 
-Click an element by `ref` from a recent snapshot. Supports modifiers, double/right click.
+Click an element by `ref` from a recent snapshot. Supports modifiers, double/right click. Page-side synthetic by default; set `trusted:true` to escalate to a real CDP coordinate click at the ref's centre for widgets that gate on `event.isTrusted` or sit under an overlay (costs the debugger infobar — see invariant #37).
 
 | Parameter    | Type     | Default  | Description                                              |
 | ------------ | -------- | -------- | -------------------------------------------------------- |
@@ -238,6 +238,7 @@ Click an element by `ref` from a recent snapshot. Supports modifiers, double/rig
 | `button`     | enum     | `"left"` | `"left"`, `"right"`, or `"middle"`.                      |
 | `clickCount` | 1 \| 2 \| 3 | `1`     | Single, double, or triple click.                         |
 | `modifiers`  | string[] | —        | Keys held during click, e.g. `["Control"]`, `["Shift"]`. |
+| `trusted`    | boolean  | `false`  | Fire a real CDP mouse click at the ref's centre instead of a synthetic event. |
 
 #### `browser_type`
 
@@ -342,15 +343,43 @@ Drop local files onto a drop-zone element by `ref` — synthesizes the HTML5 `dr
 
 Same file limits as `browser_upload` (10 files, 25 MB each, 50 MB total). Returns `{ dropped, ref }`.
 
+#### `browser_click_xy`
+
+Click at an absolute `(x, y)` CSS-pixel coordinate in the viewport via a **trusted** CDP mouse event — it hit-tests through overlays/iframes and satisfies `event.isTrusted` gates that page-side synthetic clicks can't. Use when there's no usable ref (cross-origin iframe, `<canvas>` widget, a custom control that ignores synthetic events). Coordinates share the snapshot's coordinate space (top-left origin, pre-scroll); an out-of-viewport coordinate is rejected with an actionable error. Costs the debugger infobar and auto-asserts focus-emulation. Prefer `browser_click(ref)` for ordinary elements.
+
+| Parameter    | Type     | Default  | Description                                       |
+| ------------ | -------- | -------- | ------------------------------------------------- |
+| `x`          | number   | —        | Viewport X in CSS pixels (left origin).           |
+| `y`          | number   | —        | Viewport Y in CSS pixels (top origin).            |
+| `tabId`      | int      | last     | Tab to act on.                                    |
+| `button`     | enum     | `"left"` | `"left"`, `"right"`, or `"middle"`.               |
+| `clickCount` | 1 \| 2 \| 3 | `1`    | Single, double, or triple click.                  |
+| `modifiers`  | string[] | —        | Keys held during click, e.g. `["Control"]`.       |
+
+Returns `{ clicked:{x,y}, trusted:true, button, clickCount }`.
+
+#### `browser_draw`
+
+Draw a continuous pointer stroke through a list of `(x, y)` CSS-pixel viewport coordinates via **trusted** CDP mouse events (press → moves → release, button held throughout). For signature pads, canvas drawing surfaces, slider drags, and pointer-based drag-and-drop that need real coordinate input. Give at least 2 points; more points trace a smoother path. Costs the debugger infobar and auto-asserts focus-emulation.
+
+| Parameter | Type     | Default  | Description                                            |
+| --------- | -------- | -------- | ------------------------------------------------------ |
+| `points`  | object[] | —        | Ordered `{x, y}` viewport coordinates to trace (2+).   |
+| `tabId`   | int      | last     | Tab to act on.                                         |
+| `button`  | enum     | `"left"` | `"left"`, `"right"`, or `"middle"`.                    |
+
+Returns `{ drew:{points:N} }`. A coordinate outside the known viewport is rejected before any action.
+
 #### `browser_press_key`
 
-Press a keyboard shortcut at page level. Key names follow `KeyboardEvent.key`.
+Press a keyboard shortcut at page level. Key names follow `KeyboardEvent.key`. Synthetic by default; set `trusted:true` to escalate to a real CDP key event for inputs that gate on `event.isTrusted` or need the browser's own key handling (real form-submit on Enter, focus navigation on Tab).
 
 | Parameter   | Type     | Default | Description                                            |
 | ----------- | -------- | ------- | ------------------------------------------------------ |
 | `key`       | string   | —       | e.g. `"Enter"`, `"Tab"`, `"a"`, `"F5"`.                |
 | `tabId`     | int      | last    | Tab to act on.                                         |
 | `modifiers` | string[] | —       | e.g. `["Control"]`, `["Shift", "Alt"]`.                |
+| `trusted`   | boolean  | `false` | Fire a real CDP key event instead of a synthetic one.  |
 
 #### `browser_evaluate`
 
@@ -360,6 +389,9 @@ Run a JS expression in the leased tab and return the JSON-serialisable result. S
 | ------------ | ------ | ------- | -------------------------------------------------------------------------------- |
 | `expression` | string | —       | JS expression; the value of the last expression is returned.                     |
 | `tabId`      | int    | last    | Tab to act on.                                                                   |
+| `timeout`    | int    | —       | Max ms for the expression (including any awaited promise) before CDP aborts it and a `{timed_out:true, elapsedMs}` result returns. Omit for the default ~30s watchdog; max 300000 (5 min). Set this for long async loops so a runaway promise can't keep running unsupervised. |
+
+On timeout, returns `{ timed_out: true, elapsedMs, hint }` rather than a thrown error — the in-page promise is aborted, not left running. The daemon widens its own watchdog to `timeout + 5s` so it never fires before the in-page deadline.
 
 #### `browser_wait_for` (read-only)
 
@@ -394,6 +426,8 @@ Condition mode runs through `chrome.debugger Runtime.evaluate` to bypass strict-
 | `browser_navigate`         | —            | ✓               | —              | ✓             |
 | `browser_navigate_back`    | —            | ✓               | —              | ✓             |
 | `browser_click`            | —            | ✓               | —              | ✓             |
+| `browser_click_xy`         | —            | ✓               | —              | ✓             |
+| `browser_draw`             | —            | ✓               | —              | ✓             |
 | `browser_type`             | —            | ✓               | —              | ✓             |
 | `browser_select_option`    | —            | ✓               | —              | ✓             |
 | `browser_fill_form`        | —            | ✓               | —              | ✓             |
@@ -435,7 +469,7 @@ browser-automation-mcp/
 │   │   ├── server.ts         # WebSocket + bridge TCP server + command router
 │   │   ├── spawn.ts          # Race-safe daemon spawn (shared by startup + recovery)
 │   │   ├── leases.ts         # TabLeaseManager — per-tab single-holder claim/release
-│   │   └── timeouts.ts       # Pure helper inferring per-command extension-RPC watchdog (wait_for honours its own timeout + 5s; synthetic-event action kinds — click/type/select_option/hover/scroll/press_key/drag/drop/resolve_ref — get a 10s budget; everything else gets 30s)
+│   │   └── timeouts.ts       # Pure helper inferring per-command extension-RPC watchdog (wait_for honours its own timeout + 5s; fast action kinds — click/click_xy/draw/type/select_option/hover/scroll/press_key/drag/drop/resolve_ref — get a 10s budget; evaluate with an explicit timeout widens to timeout+5s; everything else gets 30s)
 │   ├── bridge/
 │   │   ├── mcp.ts            # MCP server entry (stdio + streamable-HTTP transports)
 │   │   ├── meta.ts           # SERVER_INSTRUCTIONS string + BUILD_STAMP (injected by esbuild)
@@ -445,7 +479,7 @@ browser-automation-mcp/
 │   │   └── tools/
 │   │       ├── tabs.ts            # 8 tab tools (5 tab/lease + browser_activate_tab + browser_resize + browser_handle_dialog)
 │   │       ├── observe.ts         # 3 observation tools (browser_snapshot, console, network)
-│   │       ├── interact.ts        # 14 action tools (auto-snapshot + auto-settle wrapped)
+│   │       ├── interact.ts        # 16 action tools (auto-snapshot + auto-settle wrapped)
 │   │       ├── capture.ts         # Unified-capture orchestrator — single source of truth for browser_snapshot and the auto-snapshot replay path
 │   │       ├── save.ts            # save_to_path schema + resolver (resolveSavePath, writeImage, getOutputsDir)
 │   │       ├── visual.ts          # Annotation visual constants (badge color, font, sizing) — travel inside annotate_image payload
@@ -454,7 +488,8 @@ browser-automation-mcp/
 │   └── snapshot/
 │       ├── prune.ts          # A11y tree pruner — scoring, cookie-collapse, sidebar penalty, data-collapse, full-mode floor
 │       ├── serialize.ts      # serializeTree + shared formatNodeFields/formatNodeIdentity — pruned tree → compact indented-text outline (payload.tree)
-│       └── diff.ts           # serializeDiff — delta between two pruned trees (added/removed/changed) for the auto-snapshot path
+│       ├── diff.ts           # serializeDiff — delta between two pruned trees (added/removed/changed) for the auto-snapshot path
+│       └── ref.ts            # Ref-grammar chokepoint — parseRef/formatRef/compareRefs (bare-numeric main-frame refs + cross-origin fN:localId refs)
 ├── browser-extension/
 │   ├── manifest.json         # MV3 — CRX key pinned for stable ID, alarms permission for keepalive
 │   ├── background.js         # Service worker — WS client, chrome.* glue, settle observers, screenshot resize
@@ -475,12 +510,15 @@ browser-automation-mcp/
         ├── coerce.test.mjs            # Schema coercion (stringified numbers/booleans/arrays)
         ├── envelope.test.mjs          # toolResult / toolError envelope shape (incl. mixed image+text content)
         ├── evaluate.test.mjs          # browser_evaluate primitive-wrap (Issue #2 regression)
+        ├── click_xy.test.mjs         # browser_click_xy + trusted-click/press_key bridge wiring (coord forwarding, viewport bounds check, ref→centre resolution, trusted-flag passthrough)
+        ├── draw.test.mjs             # browser_draw bridge wiring (point-list forwarding, per-point viewport bounds check, best-effort when no viewport)
         ├── drag.test.mjs              # browser_drag bridge wiring (single drag ExtCommand, mechanism passthrough, target-ref validation)
         ├── drop.test.mjs              # browser_drop bridge wiring (file-payload read + drop ExtCommand, missing-file rejection)
         ├── handle_dialog.test.mjs     # browser_handle_dialog bridge wiring (arm/clear forwards, default lifetime, xor validation, leased-tab fallback)
         ├── fill_form.test.mjs         # browser_fill_form bridge-side batching (type/select_option/click sequencing, default kind, value validation)
         ├── fingerprint.test.mjs       # Build fingerprint surfaces in SERVER_INSTRUCTIONS
         ├── prune.test.mjs             # Pruner heuristics (cookie collapse, sidebar penalty, full-mode floor, etc.)
+        ├── ref.test.mjs              # Ref-grammar chokepoint (parseRef/formatRef round-trip, compareRefs (frameId,localId) tuple order, NaN-safety)
         ├── registry.test.mjs          # populateRefs + resolveRef (no-snapshot / fresh-miss / non-evicting / liveness-probe paths)
         ├── replay.test.mjs            # replaySnapshot — visual params replayed; save_to_path never replayed
         ├── resize.test.mjs            # browser_resize bridge wiring (forwards resize ExtCommand, leased-tab fallback)
@@ -511,6 +549,8 @@ browser-automation-mcp/
 Grammar: `{indent}- {role}[ "{name}"][ [ref={N}]][ = "{value}"][ flags…][ values: …]`. State flags render in order `[checked]`/`[mixed]` → `[selected]` → `[disabled]` → `[level=N]`. Names/values are whitespace-collapsed with embedded `"` escaped; the synthetic multi-root sentinel (`ref "0"`) prints no `[ref]` tag. The outline lands in `payload.tree` (string); structured counts go to `payload.meta`. When the pruner caps or falls back, `meta.notice` carries a recovery hint that is also inlined as the outline's first line, prefixed `NOTE: `. Against the harness fixtures this outline is ~25% smaller than the former JSON-tree serialization with zero element loss. The pruner heuristics below decide WHICH nodes appear; the serializer only changes how they're rendered:
 
 - **Keep the whole semantic tree** — `standard` mode admits everything interactive/navigational/data-bearing PLUS any **named** node, including named landmarks/containers (`region`/`main`/`navigation`/`list`/`group` with an aria-label) that wrap and structure the page. Only **unnamed** structural nodes are dropped from `standard`; `detail:"full"` returns the complete tree.
+- **Spans same-origin frames + shadow DOM** — the walk descends **open shadow roots** (surfacing web components like UI5 buttons) and **same-origin child iframes** (Storyline/SCORM courseware, embedded SPAs), splicing their subtrees in with rects offset-accumulated to top-viewport coordinates, so every node — wherever it lives — earns a normal bare-numeric `ref`. A **cross-origin** iframe can't be DOM-traversed, so it appears as a single `- iframe "<url>" [cross-origin frame — not descended]` leaf; `meta.frames` lists every child frame and whether each was descended.
+- **Active-layer ordering** — an interactive element occluded at its own centre by another layer (a ghost stale-slide control kept mounted under the live one) is flagged and scored down so its live twin ranks first. It's a deprioritisation, never an exclusion — a uniquely-named occluded control still surfaces.
 - **Score to ORDER, not to exclude** — area, named-ness, viewport bounds, depth, navigation-role bonus, form-field-in-form boost, and modal-subtree boost rank the candidates. Within budget the score only decides the order siblings appear in — it never silently drops a node.
 - **Cap at `limit`** (default 1500 — CP3's compact outline funds the larger tree) with reserved slots for nav-role items (tab/menuitem/treeitem) AND for form-field roles inside a `<form>` ancestor — a deep listbox can't crowd out the primary interactive form. When in-scope candidates overflow the limit, the lowest-ranked tail is **deferred** and `meta.notice` says so (count + how to recover) — never a silent truncation.
 - **Cookie-banner collapse** — OneTrust / Cookiebot / Quantcast-style consent banners (`position:fixed` + name matching `/cookie|consent|gdpr|privacy preference/i`) collapse to a single placeholder node. The agent can still dismiss the banner by clicking the placeholder.
@@ -746,7 +786,7 @@ npm test                   # node --test scripts/tests/*.test.mjs
 npm run dev                # esbuild watch mode (main bundle only)
 ```
 
-The test harness imports from `dist/test-exports.mjs`, so run `npm run build` once before `npm test`. Tests cover pruner heuristics (including viewportOnly auto-fallback, total_candidates surfacing, and the Round 7 philosophy flip — named-landmark widening, within-budget no-drop, score-only-reordering, and the loud over-limit `meta.notice`), the ref registry (non-evicting resolution, tab-change reset, and the `resolve_ref` liveness probe in `execOnLeasedTab`), envelope shape (including the mixed image+text content array), schema coercion, build fingerprint, annotation policy, daemon watchdog inference, the `browser_evaluate` primitive-wrap regression, the unified-capture two-hop topology (`snapshot_capture` + `annotate_image`), the tri-state screenshot mode (`"off"` → no image, `"annotated"` → 2 hops, `"raw"` → 1 hop with raw bytes, plus defense-in-depth for `"annotated"` + `withTree:false`), the annotation scale formula (`scaleX = imgW / cssViewport.w`, pixel-accurate across the DPR × maxWidth matrix), `save_to_path` resolution (format-from-extension inference, unknown-extension rejection, outputs_dir precedence, traversal rejection, non-fatal save errors), `replaySnapshot` (visual params replayed; `save_to_path` never replayed), `computeDrawStroke` (containment-based parent-bbox suppression), the visual-constants contract, the compact-outline serializer (`serialize.test.mjs` — grammar shape and content: flags, value, values-collapse, whitespace-collapse, quote-escape, nesting, synthetic-root) and the `meta.notice` inlining (`NOTE:` first line), and the diff serializer (`diff.test.mjs` — added/removed/changed classification, `Δ`-header counts, multi-field transitions, no-changes case, synthetic-root skip, numeric-ref sort) plus its auto-snapshot integration (`replay.test.mjs` — diff on the second snapshot of a tab, full fallback when there's no prior / a cross-tab prior / an oversized diff, and explicit-snapshot-always-full), and the CP6 parity tools (`fill_form.test.mjs` — bridge-side type/select_option/click sequencing, default kind, value validation; `resize.test.mjs` — resize ExtCommand forwarding + leased-tab fallback), and the CP7 drag-and-drop parity tools (`drag.test.mjs` — single `drag` ExtCommand forwarding, mechanism passthrough, target-ref validation; `drop.test.mjs` — file-payload read off disk + `drop` ExtCommand forwarding, missing-file rejection), and the CP8 dialog parity tool (`handle_dialog.test.mjs` — arm forwards a single `handle_dialog` ExtCommand carrying disposition/promptText/lifetime, clear forwards `{clear:true}`, default lifetime is `"one_shot"`, xor validation rejects both/neither before any daemon hop, leased-tab fallback when `tabId` is omitted, sticky-lifetime passthrough, promptText-on-dismiss permissive forwarding), and the CP9 fast-action timeout policy (`timeout.test.mjs` — synthetic-event action kinds — click/type/select_option/hover/scroll/press_key/drag/drop/resolve_ref — get the 10 s budget; navigate/evaluate/upload/snapshot_capture/CDP-glue commands stay on the 30 s default; wait_for still adds the 5 s buffer to the caller timeout) — 153 cases total. All tests run without standing up the daemon or extension; they exercise pure helpers.
+The test harness imports from `dist/test-exports.mjs`, so run `npm run build` once before `npm test`. Tests cover pruner heuristics (including viewportOnly auto-fallback, total_candidates surfacing, and the Round 7 philosophy flip — named-landmark widening, within-budget no-drop, score-only-reordering, and the loud over-limit `meta.notice`), the ref registry (non-evicting resolution, tab-change reset, and the `resolve_ref` liveness probe in `execOnLeasedTab`), envelope shape (including the mixed image+text content array), schema coercion, build fingerprint, annotation policy, daemon watchdog inference, the `browser_evaluate` primitive-wrap regression, the unified-capture two-hop topology (`snapshot_capture` + `annotate_image`), the tri-state screenshot mode (`"off"` → no image, `"annotated"` → 2 hops, `"raw"` → 1 hop with raw bytes, plus defense-in-depth for `"annotated"` + `withTree:false`), the annotation scale formula (`scaleX = imgW / cssViewport.w`, pixel-accurate across the DPR × maxWidth matrix), `save_to_path` resolution (format-from-extension inference, unknown-extension rejection, outputs_dir precedence, traversal rejection, non-fatal save errors), `replaySnapshot` (visual params replayed; `save_to_path` never replayed), `computeDrawStroke` (containment-based parent-bbox suppression), the visual-constants contract, the compact-outline serializer (`serialize.test.mjs` — grammar shape and content: flags, value, values-collapse, whitespace-collapse, quote-escape, nesting, synthetic-root) and the `meta.notice` inlining (`NOTE:` first line), and the diff serializer (`diff.test.mjs` — added/removed/changed classification, `Δ`-header counts, multi-field transitions, no-changes case, synthetic-root skip, numeric-ref sort) plus its auto-snapshot integration (`replay.test.mjs` — diff on the second snapshot of a tab, full fallback when there's no prior / a cross-tab prior / an oversized diff, and explicit-snapshot-always-full), and the CP6 parity tools (`fill_form.test.mjs` — bridge-side type/select_option/click sequencing, default kind, value validation; `resize.test.mjs` — resize ExtCommand forwarding + leased-tab fallback), and the CP7 drag-and-drop parity tools (`drag.test.mjs` — single `drag` ExtCommand forwarding, mechanism passthrough, target-ref validation; `drop.test.mjs` — file-payload read off disk + `drop` ExtCommand forwarding, missing-file rejection), and the CP8 dialog parity tool (`handle_dialog.test.mjs` — arm forwards a single `handle_dialog` ExtCommand carrying disposition/promptText/lifetime, clear forwards `{clear:true}`, default lifetime is `"one_shot"`, xor validation rejects both/neither before any daemon hop, leased-tab fallback when `tabId` is omitted, sticky-lifetime passthrough, promptText-on-dismiss permissive forwarding), and the CP9 fast-action timeout policy (`timeout.test.mjs` — synthetic-event action kinds — click/type/select_option/hover/scroll/press_key/drag/drop/resolve_ref — get the 10 s budget; navigate/evaluate/upload/snapshot_capture/CDP-glue commands stay on the 30 s default; wait_for still adds the 5 s buffer to the caller timeout), and the trusted CDP coordinate-input tools (`click_xy.test.mjs` — `browser_click_xy` coordinate forwarding, the last-snapshot viewport bounds check with its actionable error, best-effort pass-through when no viewport is known yet, `browser_click(trusted:true)` ref→rect-centre resolution into a `click_xy` command, the rect-less-ref error, and `browser_press_key(trusted)` flag passthrough; `draw.test.mjs` — `browser_draw` point-list forwarding and per-point bounds check), and the ref-grammar chokepoint (`ref.test.mjs` — `parseRef`/`formatRef` round-trip for bare-numeric main-frame refs and cross-origin `fN:localId` refs, and `compareRefs`'s NaN-safe (frameId, localId) tuple order; `diff.test.mjs` also pins that the diff serializer sorts mixed main-frame + `fN:` refs deterministically) — 180 cases total. All tests run without standing up the daemon or extension; they exercise pure helpers.
 
 ## License
 

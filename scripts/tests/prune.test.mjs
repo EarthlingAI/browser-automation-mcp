@@ -523,3 +523,57 @@ test("over-budget cap emits a loud, recoverable meta.notice (nothing silent)", (
   assert.match(out.meta.notice, /limit/i);
   assert.match(out.meta.notice, /9 lower-ranked/);
 });
+
+// ─── Phase 1: active-layer (occlusion) penalty + cross-origin leaf passthrough ───
+
+test("occluded interactive node is deprioritised below its live twin at the limit boundary", () => {
+  // Two same-role/name buttons compete for the last slot; the one flagged
+  // `occluded` (a ghost under-layer control, e.g. a stale Storyline slide) must
+  // be the one deferred. Penalty reorders — it never excludes outright.
+  const root = node({
+    nodeId: "r",
+    role: "WebArea",
+    name: "Slide",
+    children: [
+      node({ nodeId: "live", role: "button", name: "Next" }),
+      node({ nodeId: "ghost", role: "button", name: "Next", occluded: true }),
+    ],
+  });
+  // limit 2 → only the WebArea root + the highest-ranked button survive.
+  const out = prune(root, { limit: 2 });
+  assert.ok(findByRef(out, "live"), "live (non-occluded) button kept");
+  assert.equal(findByRef(out, "ghost"), null, "occluded ghost button deferred");
+});
+
+test("a uniquely-named occluded control still surfaces (penalty, not exclusion)", () => {
+  const root = node({
+    nodeId: "r",
+    role: "WebArea",
+    name: "Slide",
+    children: [node({ nodeId: "only", role: "button", name: "Submit", occluded: true })],
+  });
+  const out = prune(root, { limit: 10 });
+  assert.ok(findByRef(out, "only"), "occluded node with no competitor is kept");
+});
+
+test("cross-origin frame leaf passes crossOrigin + frameUrl through to the pruned tree", () => {
+  const root = node({
+    nodeId: "r",
+    role: "WebArea",
+    name: "Course",
+    children: [
+      node({
+        nodeId: "f",
+        role: "iframe",
+        name: "https://cc.sans.org/dispatch",
+        crossOrigin: true,
+        frameUrl: "https://cc.sans.org/dispatch",
+      }),
+    ],
+  });
+  const out = prune(root, { limit: 50 });
+  const leaf = findByRef(out, "f");
+  assert.ok(leaf, "named cross-origin leaf is kept");
+  assert.equal(leaf.crossOrigin, true);
+  assert.equal(leaf.frameUrl, "https://cc.sans.org/dispatch");
+});

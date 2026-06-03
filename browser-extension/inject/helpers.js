@@ -19,7 +19,7 @@
   // loaded — preserves the in-page ref maps so refs stay stable and resolvable
   // across an action sequence. Bump the integer when changing the in-page
   // contract (new act kind, return-shape change, ref-identity scheme).
-  const HELPERS_VERSION = 8;
+  const HELPERS_VERSION = 9;
   if (globalThis.__mcpHelpersVersion === HELPERS_VERSION) return;
   globalThis.__mcpHelpersVersion = HELPERS_VERSION;
   globalThis.__mcpHelpersLoaded = true;
@@ -126,8 +126,22 @@
     return undefined;
   }
 
+  // The element's own view — `window.getComputedStyle`/`elementFromPoint` must
+  // be called on the document the element actually lives in once the walk
+  // descends into a same-origin child frame (its elements belong to the frame's
+  // document, not the top one). Falls back to the top `window` for detached
+  // nodes. The top `window` stays the reference for top-viewport math
+  // (inViewport, offset accumulation) — those are deliberately frame-agnostic.
+  function viewOf(el) {
+    try {
+      return (el.ownerDocument && el.ownerDocument.defaultView) || window;
+    } catch {
+      return window;
+    }
+  }
+
   function isHidden(el) {
-    const style = window.getComputedStyle(el);
+    const style = viewOf(el).getComputedStyle(el);
     return (
       style.visibility === "hidden" ||
       style.display === "none" ||
@@ -149,11 +163,28 @@
     return true;
   }
 
-  function inViewport(rect) {
+  // Viewport test against the TOP window using TOP-VIEWPORT (offset-applied)
+  // coordinates — so an element inside a same-origin child frame is judged by
+  // where it actually paints on the user's screen, not by the frame's own
+  // viewport. `window` is lexically the top frame's window throughout (this
+  // closure is injected once into the top frame's isolated world).
+  function inViewportAbs(left, top, right, bottom) {
     const vw = window.innerWidth,
       vh = window.innerHeight;
-    return rect.right > 0 && rect.bottom > 0 && rect.left < vw && rect.top < vh;
+    return right > 0 && bottom > 0 && left < vw && top < vh;
   }
+
+  // Max same-origin iframe nesting we descend, guarding against pathological
+  // self-embedding pages. Open shadow roots don't count toward this — they're
+  // same-document and can't cycle.
+  const MAX_FRAME_DEPTH = 10;
+
+  // Per-`__mcpA11y()` log of every child frame the walk encountered, surfaced on
+  // the tree root so the bridge can build a `meta.frames` summary WITHOUT a
+  // second round trip or a debugger attach. `descended:false` marks a
+  // cross-origin (or too-deep / unloaded) frame whose content the snapshot
+  // could not traverse — making the skipped boundary loud (invariant #20).
+  let frameLog = [];
 
   // Stable, non-evicting refs (HELPERS_VERSION 7). A given element keeps the
   // SAME id across every walk via a persistent WeakMap, and a ref resolves for
@@ -183,27 +214,42 @@
   /**
    * @param {Element} el
    * @param {number} depth
+   * @param {{dx:number, dy:number, frameDepth:number}} [offset]
+   *   Accumulated top-viewport offset. `getBoundingClientRect` is relative to
+   *   the element's OWN document's viewport, so inside a same-origin child frame
+   *   we add the frame's content-box origin (in top coords) to lift descendant
+   *   rects to top-viewport space. Shadow roots add nothing (same document).
    */
-  function walkA11y(el, depth) {
+  function walkA11y(el, depth, offset) {
+    offset = offset || { dx: 0, dy: 0, frameDepth: 0 };
     const rect = el.getBoundingClientRect();
     if (!isVisible(el, rect)) return null;
+    const hasShadow = !!el.shadowRoot; // open shadow root only — closed is null
+    const isFrame = el.tagName === "IFRAME" || el.tagName === "FRAME";
     // A truly geometric-zero LEAF is hidden — drop. But a zero-rect element
-    // WITH children might be a zero-dim wrapper around overflowing content;
-    // recurse into its children even though the wrapper itself emits nothing
-    // useful.
+    // WITH children (or a shadow host / frame) might wrap rendered content;
+    // recurse before bailing.
     const zeroRect = rect.width === 0 || rect.height === 0;
-    if (zeroRect && el.children.length === 0) return null;
+    if (zeroRect && el.children.length === 0 && !hasShadow && !isFrame)
+      return null;
     const role = roleOf(el);
     const name = role ? nameOf(el) : "";
     const nodeId = idFor(el);
-    const style = window.getComputedStyle(el);
+    const style = viewOf(el).getComputedStyle(el);
+    const absLeft = rect.left + offset.dx;
+    const absTop = rect.top + offset.dy;
     const node = {
       nodeId,
       role: role || "generic",
       name,
       depth,
-      rect: { x: rect.left, y: rect.top, w: rect.width, h: rect.height },
-      inViewport: inViewport(rect),
+      rect: { x: absLeft, y: absTop, w: rect.width, h: rect.height },
+      inViewport: inViewportAbs(
+        absLeft,
+        absTop,
+        absLeft + rect.width,
+        absTop + rect.height,
+      ),
       children: [],
     };
     const value = valueOf(el);
@@ -234,13 +280,92 @@
     if (style && style.position && style.position !== "static") {
       node.position = style.position;
     }
+    // Active-layer pass: flag an interactive element that is NOT the topmost
+    // hit-tested element at its own centre as `occluded`. SPAs that keep a stale
+    // previous-slide / under-layer mounted (Articulate Storyline) produce ghost
+    // interactives at the same coordinates as the live ones; the pruner uses
+    // this flag only to DEPRIORITISE (score penalty), never to exclude — so a
+    // legitimately-overlapped-but-unique control still surfaces. Hit-test in the
+    // element's OWN document with LOCAL coords (pre-offset). Layout is already
+    // clean mid-walk (no mutations), so elementFromPoint adds no re-layout cost.
+    if (!zeroRect && isInteractive(el)) {
+      try {
+        const doc = el.ownerDocument;
+        const top = doc.elementFromPoint(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2,
+        );
+        if (top && top !== el && !el.contains(top) && !top.contains(el))
+          node.occluded = true;
+      } catch {}
+    }
 
     for (const child of Array.from(el.children)) {
-      const sub = walkA11y(child, depth + 1);
+      const sub = walkA11y(child, depth + 1, offset);
       if (sub) node.children.push(sub);
     }
+    // Open shadow root: its children render in the host's coordinate space
+    // (same document), so the SAME offset applies. Surfaces web components (e.g.
+    // UI5 custom elements) that a light-DOM-only walk would never see.
+    if (hasShadow) {
+      for (const child of Array.from(el.shadowRoot.children)) {
+        const sub = walkA11y(child, depth + 1, offset);
+        if (sub) node.children.push(sub);
+      }
+    }
+    // Child frame: descend if same-origin (mutates `node` in place — marks a
+    // cross-origin boundary as a leaf, or splices the frame document's subtree).
+    if (isFrame) descendFrame(el, node, depth, offset, absLeft, absTop, role, name);
     if (node.children.length === 0 && !role && name) node.role = "text";
     return node;
+  }
+
+  /**
+   * Descend a child <iframe>/<frame>. Same-origin → splice the frame document's
+   * pruned subtree under `node`, with descendant rects shifted to top-viewport
+   * by the frame's content-box origin. Cross-origin (SecurityError on
+   * `contentDocument`), too-deep, or unloaded → turn `node` into a single
+   * `iframe` leaf flagged `crossOrigin` so the boundary is loud and nameable
+   * (Phase 4 adds opt-in cross-origin descent). Every frame is logged for the
+   * `meta.frames` summary.
+   */
+  function descendFrame(el, node, depth, offset, absLeft, absTop, role, name) {
+    let url = "";
+    try {
+      url = el.src || el.getAttribute("src") || "";
+    } catch {}
+    let doc = null;
+    try {
+      doc = el.contentDocument; // throws / null for cross-origin
+    } catch {
+      doc = null;
+    }
+    const tooDeep = offset.frameDepth >= MAX_FRAME_DEPTH;
+    if (!doc || tooDeep) {
+      // Cross-origin / unreachable: present a named leaf so the pruner keeps it
+      // (named nodes are kept) and the serializer can render a recovery hint.
+      // Only override role/name when this node carries no semantics of its own.
+      if (!role && !name) {
+        node.role = "iframe";
+        node.name = url || "cross-origin frame";
+      }
+      node.crossOrigin = true;
+      if (url) node.frameUrl = url;
+      frameLog.push({ url, descended: false });
+      return;
+    }
+    frameLog.push({ url, descended: true });
+    const body = doc.body;
+    if (!body) return;
+    const childOffset = {
+      // clientLeft/clientTop = the iframe's border widths; the content box
+      // origin sits inside the border, so add them to the border-box origin.
+      dx: absLeft + (el.clientLeft || 0),
+      dy: absTop + (el.clientTop || 0),
+      frameDepth: offset.frameDepth + 1,
+    };
+    const sub = walkA11y(body, depth + 1, childOffset);
+    if (sub) node.children.push(sub);
   }
 
   function findByRef(ref) {
@@ -288,6 +413,9 @@
         if (!el || !el.isConnected) nodeMap.delete(id);
       }
     }
+    // Reset the per-walk frame log; walkA11y/descendFrame append to it as the
+    // tree is built across same-origin frames and cross-origin boundaries.
+    frameLog = [];
     const root = walkA11y(document.body, 0) || {
       role: "WebArea",
       name: document.title,
@@ -297,6 +425,9 @@
     };
     root.role = "WebArea";
     root.name = document.title;
+    // Surface the frame summary so the bridge can build `meta.frames` (which
+    // child frames exist and whether each was descended) with no extra hop.
+    if (frameLog.length) root.frames = frameLog;
     // Surface CSS viewport so the annotation hop can scale CSS-pixel rects to
     // canvas-pixel coordinates via `imgW / cssViewport.w` (and the matching
     // `imgH / cssViewport.h`) — independent of DPR and resize history. DPR
