@@ -33,7 +33,11 @@ to the viewport, a 'NOTE: …' recovery hint leads the outline telling you what 
 reach it (raise 'limit', scroll, or scope to a region). The snapshot spans SAME-ORIGIN iframes and
 open shadow DOM automatically (refs inside them work like any other); a CROSS-ORIGIN iframe shows as
 a single '- iframe "<url>" [cross-origin frame — not descended]' leaf, and payload.meta.frames lists
-every child frame with whether it was descended.
+every child frame with whether it was descended. To reach inside a cross-origin frame (e.g. a SCORM
+course or embedded app hosted on another domain), call browser_snapshot(includeCrossOriginFrames:true):
+the leaf is descended and its subtree spliced in with 'fN:localId' refs (e.g. f1:7) that you click/type
+like any other ref — the leaf then renders '[cross-origin frame — descended]'. It's opt-in (extra
+injection per frame) and replayed on auto-snapshots until you set it false.
 
 Diff snapshots: action tools auto-snapshot after acting, and that auto-snapshot returns a DIFF — only
 what changed since the previous snapshot of the tab — led by a 'Δ {A} added, {R} removed, {K} changed'

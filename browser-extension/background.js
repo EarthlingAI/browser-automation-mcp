@@ -24,6 +24,21 @@ let backoffMs = 500;
 
 const consoleBuffers = new Map(); // tabId → string[]
 const networkBuffers = new Map(); // tabId → request entries
+// Cross-origin OOPIF descent (Phase 4b). tabId → Map<logicalN, chromeFrameId>.
+// Rebuilt on every includeCrossOriginFrames snapshot; the logical N (1-based) is
+// the `fN:` ref namespace, decoupled from Chrome's large opaque frameId. SW
+// state (not persisted) — cleared on tab close. Lets a later action on an
+// `fN:localId` ref route executeScript to the right cross-origin frame.
+const frameRegistry = new Map();
+// Stable logical-N allocation. tabId → Map<chromeFrameId, logicalN>. Unlike
+// frameRegistry (rebuilt every descent), this PERSISTS for the tab's life so a
+// given OOPIF keeps the SAME `fN` across snapshots — otherwise a frame added or
+// reordered between two descents (ad refresh, SPA churn, the auto-snapshot
+// replay) would re-map `f1:` to a different frame and route a carried-forward
+// ref into the wrong realm (invariant #10). Numbers only ever grow; entries are
+// never individually removed (so N stays unique per frame), only cleared on tab
+// close. See allocFrameNumber.
+const frameNumbers = new Map();
 const indicatorState = new Map(); // tabId → {state, agentLabel}
 const indicatorInjected = new Set(); // tabIds where inject/indicator.js has been pushed
 const tabGroupRegistry = new Map(); // windowId → Map<agentLabel, groupId>
@@ -286,6 +301,86 @@ function watchNetworkSettle(tabId, timeout) {
   });
 }
 
+// Service-worker-side sustained-network-idle watcher for `browser_wait_for`'s
+// networkIdle mode. The page-side helper (`actWaitFor`) has no network visibility
+// — only the SW sees `chrome.webRequest` — so this is the ONLY correct home for
+// it. Resolves once the tab has had no in-flight requests AND no new request
+// activity for `IDLE_MS`, or times out. Always a result object (never throws),
+// matching the selector/condition branches' shape. The three listeners are
+// call-scoped and removed in cleanup so concurrent/back-to-back waits never leak.
+function runWaitForNetworkIdle(tabId, c) {
+  const IDLE_MS = 500; // "no network activity for 500ms" — the documented bar.
+  const timeout = c.timeout ?? 10_000;
+  return new Promise((resolve) => {
+    const t0 = Date.now();
+    // Counts only requests that START after the listeners attach — a request
+    // already in flight at call time isn't seen (webRequest has no "pending
+    // snapshot"), so a page mid-fetch when the wait begins can read idle a touch
+    // early. Acceptable: the common use is waiting on requests an action just
+    // triggered, which are all caught. Pair with a selector/condition when a
+    // specific in-flight response must land.
+    let inFlight = 0;
+    let lastActivityAt = Date.now();
+    let done = false;
+
+    // Cast to `any` so TS's chrome.webRequest typings don't insist on a
+    // BlockingResponse return — we never opt into blocking mode.
+    const onStart = /** @type {any} */ ((details) => {
+      if (details.tabId !== tabId) return;
+      inFlight++;
+      lastActivityAt = Date.now();
+    });
+    const onEnd = /** @type {any} */ ((details) => {
+      if (details.tabId !== tabId) return;
+      if (inFlight > 0) inFlight--;
+      lastActivityAt = Date.now();
+    });
+
+    const addFilter = (event, cb) => {
+      try {
+        event.addListener(cb, { urls: ["<all_urls>"], tabId });
+      } catch {
+        // tabId-scoped filter not supported in this Chrome; fall back to all
+        // and filter in the callback (the `details.tabId !== tabId` guard above).
+        event.addListener(cb, { urls: ["<all_urls>"] });
+      }
+    };
+
+    const finish = (result) => {
+      if (done) return;
+      done = true;
+      clearInterval(poll);
+      try {
+        chrome.webRequest.onBeforeRequest.removeListener(onStart);
+      } catch {}
+      try {
+        chrome.webRequest.onCompleted.removeListener(onEnd);
+      } catch {}
+      try {
+        chrome.webRequest.onErrorOccurred.removeListener(onEnd);
+      } catch {}
+      resolve(result);
+    };
+
+    addFilter(chrome.webRequest.onBeforeRequest, onStart);
+    addFilter(chrome.webRequest.onCompleted, onEnd);
+    addFilter(chrome.webRequest.onErrorOccurred, onEnd);
+
+    const poll = setInterval(() => {
+      const now = Date.now();
+      if (inFlight === 0 && now - lastActivityAt >= IDLE_MS) {
+        finish({ idle: true, elapsedMs: now - t0 });
+      } else if (now - t0 >= timeout) {
+        finish({
+          idle: false,
+          elapsedMs: now - t0,
+          reason: "network did not idle within timeout",
+        });
+      }
+    }, 100);
+  });
+}
+
 async function watchSelectorSettle(tabId, selector, timeout) {
   const t0 = Date.now();
   try {
@@ -400,6 +495,10 @@ async function dispatchInner(req) {
       // ChatGPT that block `new Function()` in injected scripts). Selector and
       // pure-timeout modes stay in helpers.js — they don't use eval.
       if (c.condition) return runWaitForCondition(tabId, c);
+      // networkIdle has no page-side signal (helpers.js can't see network) —
+      // route to the SW-side sustained-idle watcher. Selector/pure-timeout
+      // modes stay in helpers.js.
+      if (c.networkIdle) return runWaitForNetworkIdle(tabId, c);
       return runHelper(tabId, "wait_for", c);
     default:
       throw new Error(`unknown command: ${c.kind}`);
@@ -579,6 +678,22 @@ async function doSnapshotCapture(tabId, opts) {
         tree && typeof tree === "object" && tree.cssViewport
           ? tree.cssViewport
           : { w: 0, h: 0 };
+      // Phase 4b: opt-in cross-origin OOPIF descent. The main-frame walk leaves
+      // each cross-origin frame as a marked leaf; here we walk those frames in
+      // their own realm (executeScript reaches them via the <all_urls> host
+      // permission), namespace their refs `fN:`, lift their rects to the top
+      // viewport, and splice their subtrees in. Non-fatal: a descent failure
+      // must never sink the base snapshot.
+      if (opts.includeCrossOriginFrames && tree && typeof tree === "object") {
+        try {
+          await descendCrossOriginFrames(tabId, tree);
+        } catch (e) {
+          console.error(
+            "[browser-bg] descendCrossOriginFrames failed:",
+            e?.message ?? e,
+          );
+        }
+      }
     }
     if (opts.withScreenshot) {
       result.screenshot = await captureScreenshot(tabId, opts);
@@ -587,6 +702,159 @@ async function doSnapshotCapture(tabId, opts) {
   } finally {
     if (opts.withScreenshot) await setCaptureAttribute(tabId, false);
   }
+}
+
+// ─── Phase 4b: cross-origin OOPIF descent (Branch-EXEC) ─────────────
+//
+// Spike-validated (CYB136E SANS): chrome.scripting.executeScript({frameIds})
+// runs the injected func in a cross-origin frame's OWN realm — the <all_urls>
+// host permission grants it. So we observe + drive cross-origin OOPIFs by
+// reusing the SAME page-side helpers (no CDP child sessions).
+//
+// Algorithm: getAllFrames → for each cross-origin frame, walk it with __mcpA11y,
+// then splice its subtree under the matching cross-origin LEAF the main walk
+// left behind. The leaf's rect is ALREADY the iframe element's top-viewport
+// border-box (the parent walk computed it), so it doubles as the child's
+// top-viewport offset — no per-frame geometry round trip needed (content-box
+// border assumed ~0, true for content/SCORM iframes). Nesting works because we
+// loop in rounds: descending frame 278 creates the subtree whose leaf frame 280
+// then matches, and so on. Each descended frame gets a 1-based logical N — the
+// `fN:` ref namespace — recorded in frameRegistry for later action routing.
+function originOfUrl(u) {
+  try {
+    return new URL(u).origin;
+  } catch {
+    return "null";
+  }
+}
+
+function frameUrlMatches(a, b) {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  // The iframe `src` and getAllFrames `url` can diverge by a trailing fragment
+  // or resolved query; a prefix match either direction is a safe tie.
+  return a.startsWith(b) || b.startsWith(a);
+}
+
+// Stable per-tab logical-N for a chrome frameId — same frame → same `fN` for
+// the tab's life (see frameNumbers). Never reuses a number for a different
+// frame, so a carried-forward `fN:` ref can't silently re-point.
+function allocFrameNumber(tabId, frameId) {
+  let nums = frameNumbers.get(tabId);
+  if (!nums) {
+    nums = new Map();
+    frameNumbers.set(tabId, nums);
+  }
+  let n = nums.get(frameId);
+  if (n === undefined) {
+    n = nums.size + 1;
+    nums.set(frameId, n);
+  }
+  return n;
+}
+
+// Find the first not-yet-descended cross-origin leaf whose frameUrl matches.
+function findCrossOriginLeaf(node, url) {
+  if (!node || typeof node !== "object") return null;
+  if (node.crossOrigin && !node.frameDescended && frameUrlMatches(node.frameUrl, url))
+    return node;
+  if (Array.isArray(node.children)) {
+    for (const c of node.children) {
+      const hit = findCrossOriginLeaf(c, url);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
+// Recursively namespace ids → `fN:id`, lift rects by (dx,dy) to top-viewport,
+// and re-base depths so the spliced subtree is continuous under the leaf.
+function rebaseSubtree(node, n, dx, dy, ddepth) {
+  if (node.nodeId !== undefined) node.nodeId = `f${n}:${node.nodeId}`;
+  if (node.rect) {
+    node.rect.x += dx;
+    node.rect.y += dy;
+  }
+  node.depth = (node.depth || 0) + ddepth;
+  if (Array.isArray(node.children))
+    for (const c of node.children) rebaseSubtree(c, n, dx, dy, ddepth);
+}
+
+async function descendCrossOriginFrames(tabId, mainTree) {
+  let frames;
+  try {
+    frames = await chrome.webNavigation.getAllFrames({ tabId });
+  } catch {
+    return;
+  }
+  if (!frames || !frames.length) return;
+  const mainOrigin = originOfUrl(frames.find((f) => f.frameId === 0)?.url || "");
+  // Candidate frames to descend: every non-main frame whose origin differs from
+  // the top document (same-origin frames are already inline from the main walk).
+  const pending = frames.filter(
+    (f) => f.frameId !== 0 && originOfUrl(f.url) !== mainOrigin,
+  );
+  const registry = new Map();
+  if (!mainTree.frames) mainTree.frames = [];
+  // Rounds: a frame can only splice once its parent's subtree is present, so we
+  // re-sweep until a full pass makes no progress.
+  let progressed = true;
+  while (pending.length && progressed) {
+    progressed = false;
+    for (let i = 0; i < pending.length; i++) {
+      const f = pending[i];
+      // Leaf↔frame correlation is by URL only (the page-side walk records the
+      // iframe `src`, not Chrome's frameId). When two cross-origin iframes share
+      // a src (e.g. two copies of the same widget) this can't tell them apart —
+      // a known limitation; they're spliced in document order, which is usually
+      // (not provably) right. parentFrameId-scoped correlation would need the
+      // walk to emit frameIds, a larger change deferred until a real duplicate
+      // shows up.
+      const leaf = findCrossOriginLeaf(mainTree, f.url);
+      if (!leaf) continue; // parent not descended yet (or no matching leaf)
+      pending.splice(i, 1);
+      i--;
+      progressed = true;
+      let sub;
+      try {
+        await ensureHelpers(tabId, f.frameId);
+        const [exec] = await chrome.scripting.executeScript({
+          target: { tabId, frameIds: [f.frameId] },
+          func: () => globalThis.__mcpA11y?.(),
+        });
+        sub = exec?.result;
+      } catch (e) {
+        // Non-fatal: leave `sub` undefined so the not-descended fallback below
+        // fires. The failure is visible to the agent as meta.frames[].descended
+        // staying false for this frame.
+      }
+      // Fail-fast: a frame we couldn't inject into (CSP/sandbox/detached) or that
+      // returned nothing is NOT descended — leave it as a `crossOrigin` leaf so
+      // the serializer still prints "not descended" and the agent keeps the
+      // browser_click_xy fallback. Marking it descended here would be a failure
+      // masquerading as success.
+      if (!sub || !Array.isArray(sub.children) || !sub.children.length) {
+        continue;
+      }
+      const logicalN = allocFrameNumber(tabId, f.frameId);
+      registry.set(logicalN, f.frameId);
+      const dx = leaf.rect?.x || 0;
+      const dy = leaf.rect?.y || 0;
+      const ddepth = leaf.depth || 0;
+      for (const child of sub.children) {
+        rebaseSubtree(child, logicalN, dx, dy, ddepth);
+        leaf.children.push(child);
+      }
+      // Success: flip the boundary marker (drop `crossOrigin`, set
+      // `frameDescended`) and reconcile the meta.frames log entry to reality.
+      leaf.frameDescended = true;
+      delete leaf.crossOrigin;
+      const logEntry = mainTree.frames.find((e) => frameUrlMatches(e.url, f.url));
+      if (logEntry) logEntry.descended = true;
+      else mainTree.frames.push({ url: f.url, descended: true });
+    }
+  }
+  frameRegistry.set(tabId, registry);
 }
 
 async function setCaptureAttribute(tabId, on) {
@@ -625,9 +893,55 @@ async function setCaptureAttribute(tabId, on) {
   }
 }
 
-async function ensureHelpers(tabId) {
+// executeScript target: a specific child frame when frameId is given (Phase 4b
+// cross-origin descent), else the main frame. `frameIds` and `allFrames` are
+// mutually exclusive in the chrome.scripting API, so we pick one.
+function scriptTarget(tabId, frameId) {
+  return frameId
+    ? { tabId, frameIds: [frameId] }
+    : { tabId, allFrames: false };
+}
+
+// Ref grammar (mirrors src/snapshot/ref.ts, kept tiny + dependency-free here).
+// "5" → main frame, local id "5"; "f2:5" → logical frame 2, local id "5".
+function parseFrameRef(ref) {
+  const s = String(ref);
+  const m = /^f(\d+):(.+)$/.exec(s);
+  if (m) return { frameN: Number(m[1]), localId: m[2] };
+  return { frameN: 0, localId: s };
+}
+
+// Resolve a (possibly `fN:`-namespaced) action to a chrome frameId + rewritten
+// opts whose ref fields carry the bare local id the frame's nodeMap knows. A
+// ref pointing at a frame with no live registry entry (no cross-origin snapshot
+// taken, or the frame navigated away) routes to the main frame and will surface
+// a clean "ref not found" from the page-side helper rather than a silent no-op.
+function routeFrameAction(tabId, opts) {
+  if (!opts || opts.ref === undefined) return { frameId: undefined, opts };
+  const { frameN, localId } = parseFrameRef(opts.ref);
+  if (frameN === 0) return { frameId: undefined, opts };
+  const chromeFrameId = frameRegistry.get(tabId)?.get(frameN);
+  if (chromeFrameId === undefined) return { frameId: undefined, opts };
+  // Rewrite ref (and targetRef, for same-frame drag) to bare local ids.
+  const routed = { ...opts, ref: localId };
+  if (opts.targetRef !== undefined) {
+    const tgt = parseFrameRef(opts.targetRef);
+    // A drag whose source and target live in different frames is impossible
+    // (DataTransfer can't cross realms). Fail fast — blindly stripping the
+    // target's namespace would dispatch into the SOURCE frame against an
+    // unrelated local id (a silent wrong-target drop).
+    if (tgt.frameN !== frameN)
+      throw new Error(
+        `cross-frame drag is not supported: source ref "${opts.ref}" and target ref "${opts.targetRef}" are in different frames`,
+      );
+    routed.targetRef = tgt.localId;
+  }
+  return { frameId: chromeFrameId, opts: routed };
+}
+
+async function ensureHelpers(tabId, frameId) {
   await chrome.scripting.executeScript({
-    target: { tabId, allFrames: false },
+    target: scriptTarget(tabId, frameId),
     files: ["inject/helpers.js"],
   });
 }
@@ -1431,12 +1745,15 @@ async function bringToFront(tabId) {
 // ─── interaction helpers ────────────────────────────────────────────
 
 async function runHelper(tabId, kind, opts) {
-  await ensureHelpers(tabId);
+  const { frameId, opts: routedOpts } = routeFrameAction(tabId, opts);
+  await ensureHelpers(tabId, frameId);
+  // The acting-HUD indicator deliberately stays on the TOP document even when
+  // the action routes into a child frame — it belongs to the tab, not the OOPIF.
   await ensureIndicatorInjected(tabId);
   const [result] = await chrome.scripting.executeScript({
-    target: { tabId, allFrames: false },
+    target: scriptTarget(tabId, frameId),
     func: (k, o) => globalThis.__mcpAct(k, o),
-    args: [kind, opts],
+    args: [kind, routedOpts],
   });
   return result?.result;
 }
@@ -1446,11 +1763,22 @@ async function runHelper(tabId, kind, opts) {
 // an ACTION_KIND (no settle, no indicator); the bridge calls it to confirm an
 // out-of-snapshot ref is still live before firing an action against it.
 async function runResolveRef(tabId, ref) {
-  await ensureHelpers(tabId);
+  const { frameN, localId } = parseFrameRef(ref);
+  let frameId;
+  if (frameN) {
+    frameId = frameRegistry.get(tabId)?.get(frameN);
+    // A cross-origin ref whose frame has no live registry entry (no descend
+    // snapshot this turn, or the frame navigated away) genuinely can't be
+    // resolved. Probing the main frame with the bare local id would
+    // false-positive against an unrelated element and let a stale action
+    // through — so report not-found and let the bridge surface nearby refs.
+    if (frameId === undefined) return null;
+  }
+  await ensureHelpers(tabId, frameId);
   const [result] = await chrome.scripting.executeScript({
-    target: { tabId, allFrames: false },
+    target: scriptTarget(tabId, frameId),
     func: (r) => globalThis.__mcpResolveRef(r),
-    args: [ref],
+    args: [localId],
   });
   return result?.result ?? null;
 }
@@ -1829,6 +2157,8 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   focusEmulated.delete(tabId);
   deviceMetrics.delete(tabId);
   dialogDispositions.delete(tabId);
+  frameRegistry.delete(tabId);
+  frameNumbers.delete(tabId);
   // Chrome auto-detaches the debugger when the tab closes, so we don't call
   // chrome.debugger.detach here — just clear our in-memory state (cancelling any
   // pending idle-backstop timer) so a closed tab leaves no stale entry behind.

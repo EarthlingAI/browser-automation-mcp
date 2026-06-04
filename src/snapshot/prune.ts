@@ -45,6 +45,13 @@ export interface RawNode {
   crossOrigin?: boolean;
   frameUrl?: string;
   /**
+   * Phase 4b: set on a cross-origin frame leaf AFTER its subtree was descended
+   * and spliced in (executeScript into the OOPIF's realm). The `crossOrigin`
+   * flag is cleared on success so only `frameDescended` remains — the serializer
+   * renders "descended" instead of the "not descended" recovery hint.
+   */
+  frameDescended?: boolean;
+  /**
    * Per-walk frame summary, set ONLY on the tree root by helpers.js — every
    * child frame the walk encountered and whether it was descended (same-origin)
    * or skipped (cross-origin / too-deep / unloaded). The pruner passes this
@@ -78,6 +85,8 @@ export interface PrunedNode {
   /** Cross-origin child-frame leaf — see RawNode.crossOrigin. The serializer
    * renders a recovery hint next to it. */
   crossOrigin?: boolean;
+  /** Cross-origin frame whose subtree WAS descended (Phase 4b). */
+  frameDescended?: boolean;
   frameUrl?: string;
   children?: PrunedNode[];
 }
@@ -488,6 +497,10 @@ export function prune(
     if (c.node.level !== undefined) node.level = c.node.level;
     if (c.node.crossOrigin) {
       node.crossOrigin = true;
+      if (c.node.frameUrl) node.frameUrl = c.node.frameUrl;
+    }
+    if (c.node.frameDescended) {
+      node.frameDescended = true;
       if (c.node.frameUrl) node.frameUrl = c.node.frameUrl;
     }
 

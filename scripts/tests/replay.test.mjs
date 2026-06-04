@@ -158,6 +158,53 @@ test("replaySnapshot forwards all visual params and pins save_to_path:false", as
   assert.equal(out.image.mimeType, "image/jpeg");
 });
 
+test("replaySnapshot replays includeCrossOriginFrames onto the snapshot_capture hop (Phase 4b)", async () => {
+  // An agent that opts into cross-origin descent must stay OOPIF-aware across
+  // every auto-snapshot until it flips back off — so the flag has to ride the
+  // session params through registry → capture → the snapshot_capture command.
+  const { ctx, calls, session } = makeCtx({
+    daemonResponses: [
+      { tree: TREE_WITH_REFS, screenshot: undefined, cssViewport: { w: 1280, h: 720 } },
+    ],
+  });
+  updateSnapshotParams(ctx.session, {
+    tabId: 7,
+    detail: "standard",
+    limit: 500,
+    viewportOnly: false,
+    screenshot: "off",
+    quality: 70,
+    includeCrossOriginFrames: true,
+  });
+  session.lastLeasedTab = 7;
+
+  await replaySnapshot(ctx);
+  assert.equal(calls.length, 1, "tree-only replay is a single hop");
+  assert.equal(calls[0].command.kind, "snapshot_capture");
+  assert.equal(
+    calls[0].command.includeCrossOriginFrames,
+    true,
+    "the opt-in flag must reach the extension command on the auto-snapshot path",
+  );
+});
+
+test("replaySnapshot leaves includeCrossOriginFrames off when never opted in", async () => {
+  const { ctx, calls, session } = makeCtx({
+    daemonResponses: [
+      { tree: TREE_WITH_REFS, screenshot: undefined, cssViewport: { w: 1280, h: 720 } },
+    ],
+  });
+  updateSnapshotParams(ctx.session, { tabId: 3, ...STD_PARAMS });
+  session.lastLeasedTab = 3;
+
+  await replaySnapshot(ctx);
+  assert.notEqual(
+    calls[0].command.includeCrossOriginFrames,
+    true,
+    "descent must stay off unless the agent explicitly opted in",
+  );
+});
+
 test("replaySnapshot never persists save_to_path — even after a save'd snapshot", async () => {
   // The unified-capture orchestrator is called with save_to_path:false from
   // replaySnapshot regardless of any session state. This guards against the

@@ -15,6 +15,9 @@ export interface SnapshotParams {
   // each call; defaults to JPEG when no save is requested.
   quality: number;
   maxWidth?: number;
+  // Phase 4b: opt-in cross-origin OOPIF descent. Replayed by auto-snapshots so
+  // an agent that opted in stays OOPIF-aware across actions until it flips off.
+  includeCrossOriginFrames?: boolean;
 }
 
 export const DEFAULT_SNAPSHOT_PARAMS: SnapshotParams = {

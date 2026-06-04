@@ -97,6 +97,15 @@ export function registerObserveTools(
           "Downscale the screenshot to at most this width (preserves aspect ratio).",
         ),
       save_to_path: saveToPathSchema,
+      includeCrossOriginFrames: z
+        .preprocess(coerceBoolean, z.boolean().default(false))
+        .describe(
+          "Descend cross-origin iframes (OOPIFs) and splice their content into the tree with " +
+            "`fN:`-namespaced refs (e.g. `f1:5`) you can click/type like any other ref. Default false — " +
+            "a normal snapshot shows a cross-origin frame as a single `[cross-origin frame — not descended]` " +
+            "leaf. Set true for SCORM/embedded-app frames (e.g. a course player hosted on another domain). " +
+            "Costs extra injection per frame; replayed on auto-snapshots until you set it false.",
+        ),
     },
     handler: async ({
       tabId,
@@ -107,6 +116,7 @@ export function registerObserveTools(
       quality,
       maxWidth,
       save_to_path,
+      includeCrossOriginFrames,
     }) => {
       const target = tabId ?? ctx.session.lastLeasedTab;
       if (!target)
@@ -123,6 +133,7 @@ export function registerObserveTools(
         screenshot,
         quality,
         maxWidth,
+        includeCrossOriginFrames,
       });
       return runUnifiedCapture(ctx, target, {
         detail,
@@ -133,6 +144,7 @@ export function registerObserveTools(
         maxWidth,
         save_to_path,
         withTree: true,
+        includeCrossOriginFrames,
       });
     },
   });

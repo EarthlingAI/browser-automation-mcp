@@ -241,6 +241,7 @@ export async function replaySnapshot(ctx: ToolContext): Promise<unknown> {
       screenshot: params.screenshot,
       quality: params.quality,
       maxWidth: params.maxWidth,
+      includeCrossOriginFrames: params.includeCrossOriginFrames,
       save_to_path: false,
       withTree: true,
       // CP5: the auto-snapshot path returns a diff against the prior tree of

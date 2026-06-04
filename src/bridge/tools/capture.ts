@@ -83,6 +83,12 @@ export interface CaptureOpts {
    * returns full. Either way the new tree becomes the next diff baseline.
    */
   allowDiff?: boolean;
+  /**
+   * Phase 4b opt-in: descend cross-origin OOPIFs and splice their subtrees into
+   * the snapshot with `fN:`-namespaced refs. Replayed by the auto-snapshot path
+   * (invariant #8) so an agent that opted in stays OOPIF-aware per action.
+   */
+  includeCrossOriginFrames?: boolean;
 }
 
 export interface CaptureResult {
@@ -150,6 +156,7 @@ export async function runUnifiedCapture(
     format,
     quality: opts.quality,
     maxWidth: opts.maxWidth,
+    includeCrossOriginFrames: opts.includeCrossOriginFrames,
   })) as SnapshotCaptureResponse;
 
   const payload: Record<string, unknown> = {};

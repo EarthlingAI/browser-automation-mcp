@@ -115,3 +115,37 @@ test("cross-origin frame leaf renders a loud not-descended boundary marker", () 
     '- iframe "https://cc.sans.org/dispatch" [ref=12] [cross-origin frame — not descended]',
   );
 });
+
+test("descended cross-origin frame (Phase 4b) renders the descended marker, not the recovery hint", () => {
+  const out = serializeTree({
+    ref: "12",
+    role: "iframe",
+    name: "https://cc.sans.org/dispatch",
+    frameDescended: true,
+    frameUrl: "https://cc.sans.org/dispatch",
+    children: [{ ref: "f1:7", role: "region", name: "Learning Content", children: [] }],
+  });
+  assert.equal(
+    out,
+    '- iframe "https://cc.sans.org/dispatch" [ref=12] [cross-origin frame — descended]\n' +
+      '  - region "Learning Content" [ref=f1:7]',
+  );
+});
+
+test("crossOrigin takes precedence over frameDescended if both are set (mutually exclusive marker)", () => {
+  // The extension clears crossOrigin on successful descent so only one is ever
+  // set; this pins the serializer's else-if so a stale crossOrigin never
+  // produces two markers on one line.
+  const out = serializeTree({
+    ref: "12",
+    role: "iframe",
+    name: "https://cc.sans.org/dispatch",
+    crossOrigin: true,
+    frameDescended: true,
+    children: [],
+  });
+  assert.equal(
+    out,
+    '- iframe "https://cc.sans.org/dispatch" [ref=12] [cross-origin frame — not descended]',
+  );
+});

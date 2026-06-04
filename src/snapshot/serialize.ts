@@ -64,6 +64,8 @@ export function formatNodeFields(node: PrunedNode): string {
   // loud, machine-readable boundary marker so the agent knows content exists
   // here that the default snapshot did not reach.
   if (node.crossOrigin) s += " [cross-origin frame — not descended]";
+  // Phase 4b: descended cross-origin frame — its content follows as `fN:` refs.
+  else if (node.frameDescended) s += " [cross-origin frame — descended]";
   return s;
 }
 

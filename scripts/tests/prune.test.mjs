@@ -577,3 +577,32 @@ test("cross-origin frame leaf passes crossOrigin + frameUrl through to the prune
   assert.equal(leaf.crossOrigin, true);
   assert.equal(leaf.frameUrl, "https://cc.sans.org/dispatch");
 });
+
+test("descended cross-origin frame (Phase 4b) passes frameDescended + frameUrl through, not crossOrigin", () => {
+  // After executeScript splices the OOPIF subtree, the extension clears
+  // crossOrigin and sets frameDescended; the spliced fN: children ride along.
+  const root = node({
+    nodeId: "r",
+    role: "WebArea",
+    name: "Course",
+    children: [
+      node({
+        nodeId: "f",
+        role: "iframe",
+        name: "https://cc.sans.org/dispatch",
+        frameDescended: true,
+        frameUrl: "https://cc.sans.org/dispatch",
+        children: [
+          node({ nodeId: "f1:7", role: "region", name: "Learning Content" }),
+        ],
+      }),
+    ],
+  });
+  const out = prune(root, { limit: 50 });
+  const leaf = findByRef(out, "f");
+  assert.ok(leaf, "descended cross-origin frame is kept");
+  assert.equal(leaf.frameDescended, true);
+  assert.equal(leaf.crossOrigin, undefined, "crossOrigin must not leak onto a descended frame");
+  assert.equal(leaf.frameUrl, "https://cc.sans.org/dispatch");
+  assert.ok(findByRef(out, "f1:7"), "spliced fN: child survives the prune");
+});

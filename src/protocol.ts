@@ -140,6 +140,13 @@ export type ExtCommand =
       format?: "png" | "jpeg";
       quality?: number;
       maxWidth?: number;
+      /**
+       * Phase 4b opt-in: after the main-frame walk, descend cross-origin OOPIFs
+       * (executeScript into each frame's own realm) and splice their subtrees in
+       * with `fN:`-namespaced refs + top-viewport rects. Default off — the base
+       * snapshot never reaches into cross-origin frames (cost + privacy).
+       */
+      includeCrossOriginFrames?: boolean;
     }
   /**
    * Stateless image-in / image-out overlay. The bridge supplies the bitmap,
