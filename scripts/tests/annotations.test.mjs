@@ -186,6 +186,12 @@ const EXPECTED = {
     idempotent: true,
     openWorld: true,
   },
+  browser_clipboard: {
+    readOnly: false,
+    destructive: false,
+    idempotent: false,
+    openWorld: true,
+  },
 };
 
 function collectRegisteredTools() {

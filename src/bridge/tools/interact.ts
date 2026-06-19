@@ -3,6 +3,7 @@ import { basename, extname } from "node:path";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
+  registerTool,
   registerActionTool,
   ToolContext,
   execOnLeasedTab,
@@ -558,6 +559,48 @@ export function registerInteractTools(
     },
     handler: async ({ expression, tabId, timeout }) =>
       execOnLeasedTab(ctx, tabId, { kind: "evaluate", expression, timeout }),
+  });
+
+  registerTool(server, ctx, {
+    name: "browser_clipboard",
+    title: "Read or write the OS clipboard",
+    description:
+      "Move structured data on/off the OS clipboard — the content channel for canvas-based spreadsheet/document/slide apps whose grid or document is painted to a <canvas> and so exposes nothing to browser_snapshot. " +
+      'To READ a selection out: select it in the app (e.g. trusted browser_press_key Ctrl+A then Ctrl+C), then call op:"read" → returns { text, html } (text is plain/TSV, html the rich flavour). ' +
+      'To WRITE data in: call op:"write" with text (and optional html — e.g. a <table> for a multi-cell paste), then paste it with a trusted browser_press_key Ctrl+V. ' +
+      "Reading needs no page permission grant (it runs in the extension's own privileged context, never granting the page clipboard access); both ops assert focus-emulation first, so no window is raised. Note the OS clipboard is shared with the user — a write/copy overwrites whatever they had on it.",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    schema: {
+      op: z
+        .enum(["read", "write"])
+        .describe(
+          'read = paste the current clipboard out as { text, html }; write = put text (+optional html) onto the clipboard.',
+        ),
+      text: z
+        .string()
+        .optional()
+        .describe("Plain-text payload to write. Required when op is write."),
+      html: z
+        .string()
+        .optional()
+        .describe(
+          'Optional rich-HTML payload for op:"write" (e.g. "<table>…</table>" so a paste lands as multiple cells). Ignored for read.',
+        ),
+      tabId: z.coerce.number().int().optional(),
+    },
+    handler: async ({ op, text, html, tabId }) => {
+      if (op === "write") {
+        if (text === undefined)
+          throw new Error('browser_clipboard op:"write" requires text');
+        return execOnLeasedTab(ctx, tabId, { kind: "clipboard", op, text, html });
+      }
+      return execOnLeasedTab(ctx, tabId, { kind: "clipboard", op: "read" });
+    },
   });
 
   registerActionTool(server, ctx, {

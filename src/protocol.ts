@@ -334,6 +334,31 @@ export type ExtCommand =
    */
   | { kind: "evaluate"; expression: string; timeout?: number }
   /**
+   * Read or write the OS clipboard as structured data — the content channel for
+   * canvas-based spreadsheet/document/slide apps whose grid or document lives in a
+   * `<canvas>`, not the DOM. The agent puts the selection on the clipboard with a
+   * trusted Ctrl+C (`op:"read"`) or pastes written data with a trusted Ctrl+V
+   * (`op:"write"`), and this command moves the structured payload across.
+   *
+   *  - read  → `execCommand('paste')` in the extension's ISOLATED content-script
+   *    world, gated by the manifest `clipboardRead` permission (NOT the page's
+   *    `clipboard-read`, which Chrome leaves at `prompt` for backgrounded tabs and
+   *    silently returns empty for). Returns `{ text, html }` — `text` is the
+   *    plain-text/TSV flavour (hidden `<textarea>`), `html` the rich flavour
+   *    (hidden `contenteditable`), either possibly empty.
+   *  - write → `navigator.clipboard.write([ClipboardItem])` in the page's MAIN
+   *    world (clipboard-WRITE is granted for a focused secure context, so no
+   *    manifest permission is needed). Writes `text/plain` always and `text/html`
+   *    when `html` is supplied. Returns `{ written: true }`.
+   *
+   * Both ops first assert focus-emulation (the tab must read as focused for either
+   * to succeed) — no window raise. The page itself never gains clipboard-read: the
+   * privileged read runs only in the extension's own content-script context on the
+   * agent-leased tab.
+   */
+  | { kind: "clipboard"; op: "read" }
+  | { kind: "clipboard"; op: "write"; text: string; html?: string }
+  /**
    * Read-only liveness probe for a single ref. Runs `__mcpResolveRef` in the
    * page and returns `{name, role, tag, rect}` while the ref's element is still
    * attached to the DOM, or `null` once it's gone. Used by the bridge's

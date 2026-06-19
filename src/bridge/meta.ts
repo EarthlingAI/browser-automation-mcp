@@ -79,6 +79,26 @@ coordinate is rejected with the current viewport size. Cost vs synthetic: it att
 the backgrounded tab hit-tests faithfully — still no window raise. Prefer ref-based synthetic actions;
 reach for trusted only when synthetic doesn't land.
 
+Clipboard (canvas data apps): a spreadsheet / document / slide grid painted to <canvas> exposes
+nothing to browser_snapshot, but the clipboard does. browser_clipboard moves STRUCTURED data across.
+Read it out: select in the app (trusted browser_press_key Ctrl+A then Ctrl+C), then browser_clipboard
+op:"read" → { text, html } (text is plain/TSV, html the rich flavour). Write it in: browser_clipboard
+op:"write" with text (and optional html — e.g. a <table> so a paste lands as multiple cells), then
+paste with a trusted browser_press_key Ctrl+V. Reading runs in the extension's own privileged context
+(the page is never granted clipboard access) and both ops assert focus-emulation — no window raise. The
+OS clipboard is shared with the user: a copy/write overwrites whatever they had on it.
+
+Escalation ladder: when an action won't land, climb ONE rung at a time and no higher than needed —
+each rung is more capable but more intrusive. (1) ref-based SYNTHETIC actions (browser_click /
+browser_type) — the default, covers almost everything, no debugger; (2) TRUSTED CDP input
+(trusted:true, browser_click_xy / browser_draw) — for isTrusted-gated widgets or coordinate/<canvas>
+targets with no ref; costs the debugger infobar; (3) EXTENSION-privileged paths (browser_clipboard for
+canvas content, includeCrossOriginFrames to reach into another domain's frame) — when the page realm
+is blocked but the extension's own context can do it; (4) FOREGROUND (browser_activate_tab
+level:"foreground") — the only focus-steal, reserved for native :focus / file-picker / clipboard-paste
+gates. If the blocker is the browser CHROME itself — its settings pages, the extension's own UI, an OS
+file dialog — that's beyond this server's reach: fall back to OS-level desktop automation or the shell.
+
 Native dialogs: alert / confirm / prompt / beforeunload block the page until answered. The bridge
 safe-defaults to AUTO-DISMISS so no tool can block on an unhandled dialog — Page.* is enabled on
 every debugger-attached tab and a global listener answers Page.javascriptDialogOpening with

@@ -479,6 +479,8 @@ async function dispatchInner(req) {
         : runHelper(tabId, "press_key", c);
     case "evaluate":
       return runEvaluate(tabId, c.expression, c.timeout);
+    case "clipboard":
+      return runClipboard(tabId, c);
     case "resolve_ref":
       return runResolveRef(tabId, c.ref);
     case "set_focus_emulation":
@@ -1410,17 +1412,20 @@ function printableCode(ch) {
 // Build the shared key-event fields (key/code/text/virtual-key-code) for a
 // key name. Special keys come from CDP_KEY_DEFS; a single printable char is
 // derived generically; an unknown multi-char name falls back to `key`-only.
+/**
+ * @param {string} key
+ * @returns {{ key: string, text?: string, code?: string, windowsVirtualKeyCode?: number, nativeVirtualKeyCode?: number }}
+ */
 function keyEventFields(key) {
   const def = CDP_KEY_DEFS[key];
   if (def) {
-    const f = {
+    return {
       key,
       code: def.code,
       windowsVirtualKeyCode: def.keyCode,
       nativeVirtualKeyCode: def.keyCode,
+      ...(def.text ? { text: def.text } : {}),
     };
-    if (def.text) f.text = def.text;
-    return f;
   }
   if ([...key].length === 1) {
     // VK code coincides with the ASCII code point for A–Z / 0–9 (correct); for
@@ -1440,25 +1445,26 @@ function keyEventFields(key) {
   return { key };
 }
 
-// Auto-assert focus-emulation before a trusted dispatch so an occluded
-// background tab composites + hit-tests at the dispatched coordinates — without
-// raising the window. Idempotent: flag the tab in `focusEmulated` so the
-// attach hook keeps re-asserting it for the lease, and the lease-release detach
-// (applyIndicatorState) owns teardown. Only attaches + asserts once per tab.
-async function ensureFocusForTrustedInput(tabId) {
-  if (tabId == null) throw new Error("trusted input requires a tabId");
+// Auto-assert focus-emulation so an occluded background tab reads as focused —
+// needed before a trusted coordinate/key dispatch (composite + hit-test at the
+// point) AND before a clipboard op (read/write both require document focus) —
+// all without raising the window. Idempotent: flag the tab in `focusEmulated` so
+// the attach hook keeps re-asserting it for the lease, and the lease-release
+// detach (applyIndicatorState) owns teardown. Only attaches + asserts once per tab.
+async function ensureFocusEmulated(tabId) {
+  if (tabId == null) throw new Error("focus-emulation requires a tabId");
   await debuggerAttach(tabId);
   if (!focusEmulated.has(tabId)) {
     await assertFocusEmulation(tabId, true);
     focusEmulated.add(tabId);
   }
-  // Keep the debugger held for the lease — each trusted dispatch resets the
-  // idle backstop, same model as runEvaluate/setFocusEmulation.
+  // Keep the debugger held for the lease — each call resets the idle backstop,
+  // same model as runEvaluate/setFocusEmulation.
   debuggerDetachLater(tabId);
 }
 
 async function dispatchTrustedClick(tabId, x, y, opts) {
-  await ensureFocusForTrustedInput(tabId);
+  await ensureFocusEmulated(tabId);
   const button = opts?.button || "left";
   const clickCount = opts?.clickCount || 1;
   const modifiers = cdpModifierBits(opts?.modifiers);
@@ -1499,7 +1505,7 @@ async function dispatchTrustedClick(tabId, x, y, opts) {
 }
 
 async function dispatchTrustedKey(tabId, key, modifierNames) {
-  await ensureFocusForTrustedInput(tabId);
+  await ensureFocusEmulated(tabId);
   const mods = (modifierNames || []).map((m) => String(m).toLowerCase());
   const modBits = cdpModifierBits(mods);
   const modKeys = mods.map((m) => CDP_MODIFIER_KEYS[m]).filter(Boolean);
@@ -1551,7 +1557,7 @@ async function dispatchTrustedKey(tabId, key, modifierNames) {
 async function dispatchTrustedStroke(tabId, points, opts) {
   if (!Array.isArray(points) || points.length < 2)
     throw new Error("draw requires at least 2 points");
-  await ensureFocusForTrustedInput(tabId);
+  await ensureFocusEmulated(tabId);
   const button = opts?.button || "left";
   const buttons = CDP_BUTTON_BITS[button] || 1;
   const p0 = points[0];
@@ -1978,6 +1984,116 @@ async function runWaitForCondition(tabId, c) {
   } finally {
     debuggerDetachLater(tabId);
   }
+}
+
+// ─── clipboard data channel (invariant #38) ─────────────────────────
+//
+// Canvas-based spreadsheet/document/slide apps keep their content in a <canvas>,
+// not the DOM, so the a11y walk sees nothing — but the clipboard does. The agent uses a
+// trusted Ctrl+C/Ctrl+V to move the selection on/off the OS clipboard; these two
+// helpers carry the STRUCTURED payload across.
+//
+// READ runs in the extension's ISOLATED content-script world, where
+// `execCommand('paste')` is gated by the manifest `clipboardRead` permission — NOT
+// the page's `clipboard-read`, which Chrome leaves at `prompt` for a backgrounded
+// tab and silently resolves empty for (so page-realm `navigator.clipboard.read`
+// is useless here). The page is never granted clipboard-read; the privileged read
+// lives only in our own content script on the leased tab.
+//
+// WRITE runs `navigator.clipboard.write` in the page's MAIN world via the
+// debugger's Runtime.evaluate — NOT chrome.scripting.executeScript. The async
+// Clipboard write API requires TRANSIENT USER ACTIVATION; without it the promise
+// never settles (it hangs forever on a backgrounded tab — no rejection), and
+// executeScript has no way to supply a gesture. Runtime.evaluate's
+// `userGesture:true` is the only injection path that grants activation. The
+// debugger is already attached by ensureFocusEmulated, so this adds no new
+// surface. The payload travels as JSON literals embedded in the expression — the
+// sanctioned safe serialization (JSON.stringify escapes everything, plus a
+// U+2028/U+2029 guard for the two chars that are valid in JSON but are raw line
+// terminators inside a JS string literal). clipboard-WRITE needs no manifest
+// permission (it is granted for a focused secure context).
+//
+// Both first assert focus-emulation: a backgrounded tab must read as focused for
+// either op to succeed (the no-window-raise rendering aid, invariant #27).
+
+async function clipboardRead(tabId) {
+  const [{ result } = {}] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => {
+      function pasteInto(el) {
+        el.style.position = "fixed";
+        el.style.left = "-9999px";
+        el.style.opacity = "0";
+        document.body.appendChild(el);
+        el.focus();
+        try {
+          document.execCommand("paste");
+        } catch (e) {}
+      }
+      const ta = document.createElement("textarea");
+      pasteInto(ta);
+      const text = ta.value;
+      ta.remove();
+      const ce = document.createElement("div");
+      ce.contentEditable = "true";
+      pasteInto(ce);
+      const html = ce.innerHTML;
+      ce.remove();
+      return { text, html };
+    },
+  });
+  return result ?? { text: "", html: "" };
+}
+
+// Embed a value as a JS string/JSON literal safe for an `expression` string.
+// JSON.stringify handles all escaping except U+2028/U+2029, which are legal in
+// JSON but are raw line terminators inside a JS string literal (syntax error).
+function jsLiteral(value) {
+  return JSON.stringify(value)
+    .replace(new RegExp(String.fromCharCode(0x2028), "g"), "\\u" + "2028")
+    .replace(new RegExp(String.fromCharCode(0x2029), "g"), "\\u" + "2029");
+}
+
+async function clipboardWrite(tabId, text, html) {
+  const expression = `(async () => {
+    const text = ${jsLiteral(text)};
+    const html = ${jsLiteral(html ?? null)};
+    const parts = { "text/plain": new Blob([text], { type: "text/plain" }) };
+    if (html != null) parts["text/html"] = new Blob([html], { type: "text/html" });
+    await navigator.clipboard.write([new ClipboardItem(parts)]);
+    return true;
+  })()`;
+  const r = await new Promise((resolve, reject) => {
+    chrome.debugger.sendCommand(
+      { tabId },
+      "Runtime.evaluate",
+      {
+        expression,
+        awaitPromise: true,
+        returnByValue: true,
+        userGesture: true,
+        timeout: 5000,
+      },
+      (res) => {
+        if (chrome.runtime.lastError)
+          reject(new Error(chrome.runtime.lastError.message));
+        else resolve(res);
+      },
+    );
+  });
+  if (r?.exceptionDetails) {
+    const ex = r.exceptionDetails;
+    throw new Error(
+      `clipboard write failed: ${ex.exception?.description || ex.text || "unknown error"}`,
+    );
+  }
+  return { written: r?.result?.value === true };
+}
+
+async function runClipboard(tabId, c) {
+  await ensureFocusEmulated(tabId);
+  if (c.op === "write") return clipboardWrite(tabId, c.text, c.html);
+  return clipboardRead(tabId);
 }
 
 async function runEvaluate(tabId, expression, timeout) {
