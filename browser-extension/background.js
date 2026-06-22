@@ -41,7 +41,7 @@ const frameRegistry = new Map();
 const frameNumbers = new Map();
 const indicatorState = new Map(); // tabId → {state, agentLabel}
 const indicatorInjected = new Set(); // tabIds where inject/indicator.js has been pushed
-const tabGroupRegistry = new Map(); // windowId → Map<agentLabel, groupId>
+const tabGroupRegistry = new Map(); // windowId → Map<groupTitle, groupId>
 
 // `ACTION_KINDS` gates `runWithSettle` wrapping in `dispatch` so DOM-mutating
 // actions return only after the page shows a state delta (or after the settle
@@ -282,9 +282,11 @@ function watchNetworkSettle(tabId, timeout) {
     // "blocking" in extraInfoSpec), so a void listener is safe at runtime.
     // The cast at the declaration site covers all three references below
     // (removeListener + two addListener overloads).
-    const onReq = /** @type {any} */ ((details) => {
-      if (details.tabId === tabId) finalize("network");
-    });
+    const onReq = /** @type {any} */ (
+      (details) => {
+        if (details.tabId === tabId) finalize("network");
+      }
+    );
     try {
       chrome.webRequest.onBeforeRequest.addListener(onReq, {
         urls: ["<all_urls>"],
@@ -325,16 +327,20 @@ function runWaitForNetworkIdle(tabId, c) {
 
     // Cast to `any` so TS's chrome.webRequest typings don't insist on a
     // BlockingResponse return — we never opt into blocking mode.
-    const onStart = /** @type {any} */ ((details) => {
-      if (details.tabId !== tabId) return;
-      inFlight++;
-      lastActivityAt = Date.now();
-    });
-    const onEnd = /** @type {any} */ ((details) => {
-      if (details.tabId !== tabId) return;
-      if (inFlight > 0) inFlight--;
-      lastActivityAt = Date.now();
-    });
+    const onStart = /** @type {any} */ (
+      (details) => {
+        if (details.tabId !== tabId) return;
+        inFlight++;
+        lastActivityAt = Date.now();
+      }
+    );
+    const onEnd = /** @type {any} */ (
+      (details) => {
+        if (details.tabId !== tabId) return;
+        if (inFlight > 0) inFlight--;
+        lastActivityAt = Date.now();
+      }
+    );
 
     const addFilter = (event, cb) => {
       try {
@@ -577,7 +583,9 @@ function urlsLookLikeMatch(requested, landed) {
     if (a.origin !== b.origin) return false;
     // Path-prefix match handles trailing-slash normalisation, hash-only diffs
     // and most SPA routers' catch-all behaviours.
-    return b.pathname.startsWith(a.pathname) || a.pathname.startsWith(b.pathname);
+    return (
+      b.pathname.startsWith(a.pathname) || a.pathname.startsWith(b.pathname)
+    );
   } catch {
     return false;
   }
@@ -607,7 +615,10 @@ async function navigate(tabId, url, waitUntil, _settle) {
     // Uniform settle shape across all action tools (README/CLAUDE.md claim
     // this universally) — the "via" here is the load-complete event, not the
     // generic in-page settle observer used by click/type/etc.
-    settled: { via: waitUntil === "load" ? "load" : "domcontentloaded", elapsedMs: Date.now() - t0 },
+    settled: {
+      via: waitUntil === "load" ? "load" : "domcontentloaded",
+      elapsedMs: Date.now() - t0,
+    },
   };
 }
 
@@ -758,7 +769,11 @@ function allocFrameNumber(tabId, frameId) {
 // Find the first not-yet-descended cross-origin leaf whose frameUrl matches.
 function findCrossOriginLeaf(node, url) {
   if (!node || typeof node !== "object") return null;
-  if (node.crossOrigin && !node.frameDescended && frameUrlMatches(node.frameUrl, url))
+  if (
+    node.crossOrigin &&
+    !node.frameDescended &&
+    frameUrlMatches(node.frameUrl, url)
+  )
     return node;
   if (Array.isArray(node.children)) {
     for (const c of node.children) {
@@ -790,7 +805,9 @@ async function descendCrossOriginFrames(tabId, mainTree) {
     return;
   }
   if (!frames || !frames.length) return;
-  const mainOrigin = originOfUrl(frames.find((f) => f.frameId === 0)?.url || "");
+  const mainOrigin = originOfUrl(
+    frames.find((f) => f.frameId === 0)?.url || "",
+  );
   // Candidate frames to descend: every non-main frame whose origin differs from
   // the top document (same-origin frames are already inline from the main walk).
   const pending = frames.filter(
@@ -851,7 +868,9 @@ async function descendCrossOriginFrames(tabId, mainTree) {
       // `frameDescended`) and reconcile the meta.frames log entry to reality.
       leaf.frameDescended = true;
       delete leaf.crossOrigin;
-      const logEntry = mainTree.frames.find((e) => frameUrlMatches(e.url, f.url));
+      const logEntry = mainTree.frames.find((e) =>
+        frameUrlMatches(e.url, f.url),
+      );
       if (logEntry) logEntry.descended = true;
       else mainTree.frames.push({ url: f.url, descended: true });
     }
@@ -899,9 +918,7 @@ async function setCaptureAttribute(tabId, on) {
 // cross-origin descent), else the main frame. `frameIds` and `allFrames` are
 // mutually exclusive in the chrome.scripting API, so we pick one.
 function scriptTarget(tabId, frameId) {
-  return frameId
-    ? { tabId, frameIds: [frameId] }
-    : { tabId, allFrames: false };
+  return frameId ? { tabId, frameIds: [frameId] } : { tabId, allFrames: false };
 }
 
 // Ref grammar (mirrors src/snapshot/ref.ts, kept tiny + dependency-free here).
@@ -1074,8 +1091,7 @@ async function doAnnotateImage(c) {
   // layer from crashing if the helpers ever return a synthetic root (no
   // document.body) or the bridge sends an empty fallback. Logs once per call
   // so the failure path leaves a breadcrumb instead of silently mis-scaling.
-  const haveCss =
-    c.cssViewport && c.cssViewport.w > 0 && c.cssViewport.h > 0;
+  const haveCss = c.cssViewport && c.cssViewport.w > 0 && c.cssViewport.h > 0;
   if (!haveCss) {
     console.error(
       "[browser-bg] annotate_image: cssViewport missing or zero; falling back to identity scale (badges may land near origin). Check helpers.js injection.",
@@ -1233,8 +1249,10 @@ function debuggerAttach(tabId) {
         const reasserts = [
           sendDebuggerCommand(tabId, "Page.enable").catch(() => {}),
         ];
-        if (focusEmulated.has(tabId)) reasserts.push(assertFocusEmulation(tabId, true));
-        if (deviceMetrics.has(tabId)) reasserts.push(assertDeviceMetrics(tabId));
+        if (focusEmulated.has(tabId))
+          reasserts.push(assertFocusEmulation(tabId, true));
+        if (deviceMetrics.has(tabId))
+          reasserts.push(assertDeviceMetrics(tabId));
         Promise.all(reasserts).then(
           () => resolve(),
           () => resolve(),
@@ -1397,7 +1415,8 @@ const CDP_KEY_DEFS = {
 
 function cdpModifierBits(names) {
   let m = 0;
-  for (const n of names || []) m |= CDP_MODIFIER_BITS[String(n).toLowerCase()] || 0;
+  for (const n of names || [])
+    m |= CDP_MODIFIER_BITS[String(n).toLowerCase()] || 0;
   return m;
 }
 
@@ -1686,7 +1705,9 @@ async function setDialogHandler(tabId, params) {
   return {
     dialogHandler: {
       disposition: params.disposition,
-      ...(params.promptText !== undefined ? { promptText: params.promptText } : {}),
+      ...(params.promptText !== undefined
+        ? { promptText: params.promptText }
+        : {}),
       lifetime,
     },
   };
@@ -1716,21 +1737,25 @@ chrome.debugger.onEvent.addListener((source, method, params) => {
   const accept = arm ? arm.disposition === "accept" : false;
   // promptText only meaningful when accepting a `prompt` dialog. Pass it only
   // on accept so a dismiss never carries text the page might still inspect.
-  const handleParams = arm && accept && arm.promptText !== undefined
-    ? { accept, promptText: arm.promptText }
-    : { accept };
+  const handleParams =
+    arm && accept && arm.promptText !== undefined
+      ? { accept, promptText: arm.promptText }
+      : { accept };
   if (arm && arm.lifetime === "one_shot") {
     // Remove BEFORE issuing handle so a back-to-back dialog from the same tab
     // doesn't get auto-answered by a stale disposition.
     dialogDispositions.delete(tabId);
   }
-  void sendDebuggerCommand(tabId, "Page.handleJavaScriptDialog", handleParams)
-    .catch((e) =>
-      console.error(
-        "[browser-bg] Page.handleJavaScriptDialog failed:",
-        e?.message ?? e,
-      ),
-    );
+  void sendDebuggerCommand(
+    tabId,
+    "Page.handleJavaScriptDialog",
+    handleParams,
+  ).catch((e) =>
+    console.error(
+      "[browser-bg] Page.handleJavaScriptDialog failed:",
+      e?.message ?? e,
+    ),
+  );
 });
 
 /**
@@ -1881,41 +1906,47 @@ async function updateTabGroup(tabId, state) {
   try {
     const tab = await chrome.tabs.get(tabId);
     const label = state.agentLabel || "";
-    const groupKey = label || "_default";
-    const groupId = await ensureGroup(tab.windowId, groupKey, tabId);
     // Brand prefix is host-controlled via `BROWSER_EXTENSION_TAB_GROUP_LABEL`
     // env var on the daemon. The daemon stamps it onto every IndicatorState.
     // Defaults to "Automation" for the generic MCP build; Earthling sets it to
     // "Earthling" so the user-visible group title reads "Earthling — <agent>".
     const brand = state.tabGroupBrand || "Automation";
     const title = label ? `${brand} — ${label}` : brand;
+    const groupId = await ensureGroup(tab.windowId, title, tabId);
     await chrome.tabGroups.update(groupId, { title, color: GROUP_COLOR });
   } catch (e) {
     console.error("[browser] updateTabGroup failed:", e?.message ?? e);
   }
 }
 
-async function ensureGroup(windowId, label, tabId) {
+async function ensureGroup(windowId, title, tabId) {
   let perWindow = tabGroupRegistry.get(windowId);
   if (!perWindow) {
     perWindow = new Map();
     tabGroupRegistry.set(windowId, perWindow);
   }
-  let groupId = perWindow.get(label);
+  let groupId = perWindow.get(title);
   if (groupId != null) {
     try {
       await chrome.tabGroups.get(groupId);
       await chrome.tabs.group({ groupId, tabIds: [tabId] });
       return groupId;
     } catch {
-      perWindow.delete(label);
+      perWindow.delete(title);
     }
+  }
+  const existing = await chrome.tabGroups.query({ windowId, title });
+  if (existing.length) {
+    groupId = existing[0].id;
+    await chrome.tabs.group({ groupId, tabIds: [tabId] });
+    perWindow.set(title, groupId);
+    return groupId;
   }
   groupId = await chrome.tabs.group({
     tabIds: [tabId],
     createProperties: { windowId },
   });
-  perWindow.set(label, groupId);
+  perWindow.set(title, groupId);
   return groupId;
 }
 
@@ -1946,7 +1977,12 @@ async function runWaitForCondition(tabId, c) {
           chrome.debugger.sendCommand(
             { tabId },
             "Runtime.evaluate",
-            { expression, returnByValue: true, awaitPromise: true, userGesture: false },
+            {
+              expression,
+              returnByValue: true,
+              awaitPromise: true,
+              userGesture: false,
+            },
             (r) => {
               if (chrome.runtime.lastError)
                 reject(new Error(chrome.runtime.lastError.message));
@@ -1956,7 +1992,9 @@ async function runWaitForCondition(tabId, c) {
         });
         if (result?.exceptionDetails) {
           const ex = result.exceptionDetails;
-          throw new Error(ex.exception?.description || ex.text || "evaluation failed");
+          throw new Error(
+            ex.exception?.description || ex.text || "evaluation failed",
+          );
         }
         const v = result?.result?.value;
         lastValue = v;
@@ -2182,18 +2220,16 @@ function paginate(buf, limit, cursor) {
   // Newest-first slice
   const items = pool.slice(-limit);
   const truncated = pool.length > items.length;
-  const next_cursor = truncated && items.length > 0 ? String(items[0].seq) : undefined;
+  const next_cursor =
+    truncated && items.length > 0 ? String(items[0].seq) : undefined;
   return { items, truncated, next_cursor };
 }
 
-const DEFAULT_NETWORK_TYPES = new Set([
-  "xmlhttprequest",
-  "fetch",
-  "document",
-]);
+const DEFAULT_NETWORK_TYPES = new Set(["xmlhttprequest", "fetch", "document"]);
 
 function filterNetwork(buf, opts) {
-  const typeFilter = opts.type && opts.type.length ? new Set(opts.type) : DEFAULT_NETWORK_TYPES;
+  const typeFilter =
+    opts.type && opts.type.length ? new Set(opts.type) : DEFAULT_NETWORK_TYPES;
   const methodFilter =
     opts.methodIn && opts.methodIn.length ? new Set(opts.methodIn) : null;
   let urlMatcher = null;

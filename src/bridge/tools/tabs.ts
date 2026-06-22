@@ -103,7 +103,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
     name: "browser_switch_tab",
     title: "Claim a tab lease",
     description:
-      "Claim the lease on an existing tab so this session can act on it. Errors with leasedBy if held; pass force:true with a reason to revoke. Returns the previously-active tab so the agent can restore focus later if desired.",
+      "Claim the lease on an existing tab so this session can act on it. Errors with leasedBy if held; pass force:true with a reason to revoke. Returns the previously-active tab so the agent can restore focus later if desired. Call browser_release_tab when you finish controlling the tab so other sessions can claim it.",
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
