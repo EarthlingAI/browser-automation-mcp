@@ -244,7 +244,8 @@ export type ExtCommand =
     }
   | {
       kind: "upload";
-      ref: string;
+      ref?: string;
+      selector?: string;
       files: Array<{ name: string; mimeType: string; dataBase64: string }>;
       settle?: SettleOptions;
     }

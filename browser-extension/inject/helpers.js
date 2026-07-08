@@ -19,7 +19,7 @@
   // loaded — preserves the in-page ref maps so refs stay stable and resolvable
   // across an action sequence. Bump the integer when changing the in-page
   // contract (new act kind, return-shape change, ref-identity scheme).
-  const HELPERS_VERSION = 9;
+  const HELPERS_VERSION = 10;
   if (globalThis.__mcpHelpersVersion === HELPERS_VERSION) return;
   globalThis.__mcpHelpersVersion = HELPERS_VERSION;
   globalThis.__mcpHelpersLoaded = true;
@@ -315,7 +315,8 @@
     }
     // Child frame: descend if same-origin (mutates `node` in place — marks a
     // cross-origin boundary as a leaf, or splices the frame document's subtree).
-    if (isFrame) descendFrame(el, node, depth, offset, absLeft, absTop, role, name);
+    if (isFrame)
+      descendFrame(el, node, depth, offset, absLeft, absTop, role, name);
     if (node.children.length === 0 && !role && name) node.role = "text";
     return node;
   }
@@ -416,13 +417,15 @@
     // Reset the per-walk frame log; walkA11y/descendFrame append to it as the
     // tree is built across same-origin frames and cross-origin boundaries.
     frameLog = [];
-    const root = walkA11y(document.body, 0) || {
-      role: "WebArea",
-      name: document.title,
-      depth: 0,
-      children: [],
-      inViewport: true,
-    };
+    const root = /** @type {any} */ (
+      walkA11y(document.body, 0) || {
+        role: "WebArea",
+        name: document.title,
+        depth: 0,
+        children: [],
+        inViewport: true,
+      }
+    );
     root.role = "WebArea";
     root.name = document.title;
     // Surface the frame summary so the bridge can build `meta.frames` (which
@@ -597,7 +600,9 @@
       const evalOnce = () => {
         try {
           // eslint-disable-next-line no-new-func
-          const fn = new Function(`return (function(){ return (${opts.condition}); })();`);
+          const fn = new Function(
+            `return (function(){ return (${opts.condition}); })();`,
+          );
           const v = fn();
           lastValue = v;
           return v;
@@ -627,19 +632,35 @@
       };
     }
     await new Promise((r) => setTimeout(r, opts.timeout || 100));
-    return { met: true, waited: opts.timeout, elapsedMs: Date.now() - startedAt };
+    return {
+      met: true,
+      waited: opts.timeout,
+      elapsedMs: Date.now() - startedAt,
+    };
   }
 
   function actUpload(opts) {
-    const raw = findByRef(opts.ref);
-    if (!raw) return { error: `ref ${opts.ref} not found` };
-    let el = raw;
+    // Two targeting modes: a snapshot `ref`, or a CSS `selector` resolved in
+    // place (for hidden or portal-mounted inputs that never receive a ref).
+    // The selector element is never moved — relocating it detaches it from the
+    // host UI's event wiring and stalls the flow.
+    let el;
+    if (opts.selector) {
+      el = document.querySelector(opts.selector);
+      if (!el) return { error: `selector ${opts.selector} matched no element` };
+    } else {
+      const raw = findByRef(opts.ref);
+      if (!raw) return { error: `ref ${opts.ref} not found` };
+      el = raw;
+    }
     if (!(el instanceof HTMLInputElement) || el.type !== "file") {
       const inner = el.querySelector?.('input[type="file"]');
       if (inner) el = inner;
     }
     if (!(el instanceof HTMLInputElement) || el.type !== "file")
-      return { error: `ref ${opts.ref} is not a file input` };
+      return {
+        error: `${opts.selector ? `selector ${opts.selector}` : `ref ${opts.ref}`} is not a file input`,
+      };
     const dt = new DataTransfer();
     for (const f of opts.files) {
       const bin = atob(f.dataBase64);
@@ -746,7 +767,8 @@
     const mechanism =
       opts.mechanism && opts.mechanism !== "auto"
         ? opts.mechanism
-        : src.draggable === true || src.getAttribute?.("draggable") === "true"
+        : /** @type {HTMLElement} */ (src).draggable === true ||
+            src.getAttribute?.("draggable") === "true"
           ? "native"
           : "pointer";
     const s = centerOf(src);

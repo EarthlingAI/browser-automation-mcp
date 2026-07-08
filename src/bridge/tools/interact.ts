@@ -426,20 +426,36 @@ export function registerInteractTools(
   registerActionTool(server, ctx, {
     name: "browser_upload",
     title: "Upload files to a file input",
-    description: "Upload local files to a file input by `ref`.",
+    description:
+      "Upload local files to a file input, targeted by `ref` (from browser_snapshot) or by CSS `selector`. Use `selector` for a hidden or portal-mounted file input that never receives a ref: it is resolved in place with document.querySelector and the files are set on it without moving the node. Provide exactly one of `ref` or `selector`.",
     annotations: ACTION_WRITE,
     schema: {
-      ref: z.string(),
+      ref: z
+        .string()
+        .optional()
+        .describe("Element ref of the file input (from browser_snapshot)."),
+      selector: z
+        .string()
+        .optional()
+        .describe(
+          "CSS selector for the file input, resolved page-side in place. Use for hidden or portal-mounted inputs that never receive a ref.",
+        ),
       files: z
         .preprocess(coerceToArray, z.array(z.string()).min(1))
         .describe("Absolute paths to local files."),
       tabId: z.coerce.number().int().optional(),
     },
-    handler: async ({ ref, files, tabId }) => {
+    handler: async ({ ref, selector, files, tabId }) => {
+      // Exactly one target. MCP tool schemas are a flat ZodRawShape with no
+      // cross-field validator, so fail fast here rather than silently letting
+      // the page side guess a target (or no-op on neither).
+      if ((ref === undefined) === (selector === undefined))
+        throw new Error("provide exactly one of `ref` or `selector`");
       const payloads = readUploadPayloads(files);
       return execOnLeasedTab(ctx, tabId, {
         kind: "upload",
         ref,
+        selector,
         files: payloads,
       });
     },

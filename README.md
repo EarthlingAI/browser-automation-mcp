@@ -302,13 +302,14 @@ Scroll the page or a specific scrollable element by deltas (positive = down/righ
 
 #### `browser_upload`
 
-Upload local files to a file input by `ref`.
+Upload local files to a file input, targeted by `ref` or by CSS `selector`. Provide **exactly one** of the two. Use `selector` for a hidden or portal-mounted file input that never receives a ref (e.g. a create-post dialog whose `<input type=file>` lives outside the pruned a11y tree): it is resolved page-side with `document.querySelector` and the files are set on it **in place** — the node is never moved (relocating it detaches it from the host UI's event wiring and can stall the dialog).
 
-| Parameter | Type     | Default | Description                                |
-| --------- | -------- | ------- | ------------------------------------------ |
-| `ref`     | string   | —       | Element ref to a file input.               |
-| `files`   | string[] | —       | Absolute paths to local files (1+).        |
-| `tabId`   | int      | last    | Tab to act on.                             |
+| Parameter  | Type     | Default | Description                                            |
+| ---------- | -------- | ------- | ----------------------------------------------------- |
+| `ref`      | string   | —       | Element ref to a file input (from `browser_snapshot`). |
+| `selector` | string   | —       | CSS selector for a file input, resolved in place.      |
+| `files`    | string[] | —       | Absolute paths to local files (1+).                    |
+| `tabId`    | int      | last    | Tab to act on.                                         |
 
 Max 10 files, 25 MB per file, 50 MB total.
 
