@@ -19,7 +19,7 @@
   // loaded — preserves the in-page ref maps so refs stay stable and resolvable
   // across an action sequence. Bump the integer when changing the in-page
   // contract (new act kind, return-shape change, ref-identity scheme).
-  const HELPERS_VERSION = 10;
+  const HELPERS_VERSION = 11;
   if (globalThis.__mcpHelpersVersion === HELPERS_VERSION) return;
   globalThis.__mcpHelpersVersion = HELPERS_VERSION;
   globalThis.__mcpHelpersLoaded = true;
@@ -511,6 +511,58 @@
     return { typed: opts.text };
   }
 
+  // Focus a ref's editable target (walking into an inner editable, like actType)
+  // and position the selection for a subsequent TRUSTED insert dispatched from
+  // the background via CDP Input.insertText. This is the prep step for
+  // browser_type's trusted path: a synthetic execCommand/value-set never reaches
+  // the internal model of a controlled contenteditable (DraftJS, Slate), so its
+  // send affordances never arm — only a real browser input event does. Here we
+  // only focus + select; the background fires the trusted insertText that
+  // replaces the selection (clear when !append) or appends at the caret.
+  function actFocusRef(opts) {
+    const raw = findByRef(opts.ref);
+    if (!raw) return { error: `ref ${opts.ref} not found` };
+    let el =
+      /** @type {HTMLElement & { value?: string; select?: () => void; setSelectionRange?: (start: number, end: number) => void }} */ (
+        raw
+      );
+    if (
+      !el.isContentEditable &&
+      !("value" in el && typeof el.value === "string")
+    ) {
+      const inner = el.querySelector?.(
+        '[contenteditable="true"], [contenteditable=""], textarea, input:not([type=button]):not([type=submit]):not([type=reset]):not([type=checkbox]):not([type=radio])',
+      );
+      if (inner)
+        el =
+          /** @type {HTMLElement & { value?: string; select?: () => void; setSelectionRange?: (start: number, end: number) => void }} */ (
+            inner
+          );
+    }
+    const hasValue = "value" in el && typeof el.value === "string";
+    const editable = el.isContentEditable;
+    if (!hasValue && !editable)
+      return {
+        error: `ref ${opts.ref} is not a text input (and no editable descendant)`,
+      };
+    el.focus?.();
+    if (hasValue) {
+      // Select-all clears on insert (!append); caret-to-end appends.
+      if (opts.append) el.setSelectionRange?.(el.value.length, el.value.length);
+      else el.select?.();
+    } else {
+      const sel = window.getSelection?.();
+      if (sel) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        if (opts.append) range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+    return { focused: true, editable, hasValue };
+  }
+
   function actSelectOption(opts) {
     const el = findByRef(opts.ref);
     if (!(el instanceof HTMLSelectElement))
@@ -826,6 +878,8 @@
         return actClick(opts);
       case "type":
         return actType(opts);
+      case "focus_ref":
+        return actFocusRef(opts);
       case "select_option":
         return actSelectOption(opts);
       case "hover":

@@ -466,7 +466,9 @@ async function dispatchInner(req) {
     case "draw":
       return dispatchTrustedStroke(tabId, c.points, c);
     case "type":
-      return runHelper(tabId, "type", c);
+      return c.trusted
+        ? dispatchTrustedType(tabId, c)
+        : runHelper(tabId, "type", c);
     case "select_option":
       return runHelper(tabId, "select_option", c);
     case "hover":
@@ -1571,6 +1573,26 @@ async function dispatchTrustedKey(tabId, key, modifierNames) {
     });
   }
   return { pressed: key, trusted: true };
+}
+
+// Trusted text entry for controlled contenteditables (DraftJS, Slate, etc.).
+// A synthetic value-set / execCommand insert (the default browser_type path)
+// lands in the DOM but never reaches the editor's internal model, so its
+// send/submit affordances stay disarmed and the text is inert (can't be
+// edited or sent). CDP Input.insertText dispatches a REAL, trusted input the
+// editor processes exactly like a keystroke — populating its model, arming the
+// send button, and making the content editable/removable. Focus + selection is
+// prepped in the content script (focus_ref); insertText replaces the selection
+// (clear when !append) or inserts at the caret (append).
+async function dispatchTrustedType(tabId, c) {
+  await ensureFocusEmulated(tabId);
+  const focused = await runHelper(tabId, "focus_ref", {
+    ref: c.ref,
+    append: c.append,
+  });
+  if (focused && focused.error) return focused;
+  await sendDebuggerCommand(tabId, "Input.insertText", { text: c.text });
+  return { typed: c.text, trusted: true };
 }
 
 async function dispatchTrustedStroke(tabId, points, opts) {

@@ -226,6 +226,7 @@ export type ExtCommand =
       ref: string;
       text: string;
       append?: boolean;
+      trusted?: boolean;
       settle?: SettleOptions;
     }
   | {

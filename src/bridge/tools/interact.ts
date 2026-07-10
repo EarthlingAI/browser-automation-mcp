@@ -286,16 +286,17 @@ export function registerInteractTools(
     name: "browser_type",
     title: "Type into an element",
     description:
-      "Type text into a textbox by `ref`. Clears existing value unless append:true.",
+      "Type text into a textbox by `ref`. Clears existing value unless append:true. Set trusted:true to enter the text via a real CDP input event (Input.insertText) instead of a synthetic value-set — needed for controlled rich-text editors (DraftJS/Slate, e.g. TikTok/some chat composers) where a synthetic insert lands in the DOM but never reaches the editor's model, leaving the text inert and the send button disarmed. Costs the debugger infobar.",
     annotations: ACTION_WRITE,
     schema: {
       ref: z.string(),
       text: z.string(),
       tabId: z.coerce.number().int().optional(),
       append: z.preprocess(coerceBoolean, z.boolean().default(false)),
+      trusted: z.preprocess(coerceBoolean, z.boolean().default(false)),
     },
-    handler: async ({ ref, text, tabId, append }) =>
-      execOnLeasedTab(ctx, tabId, { kind: "type", ref, text, append }),
+    handler: async ({ ref, text, tabId, append, trusted }) =>
+      execOnLeasedTab(ctx, tabId, { kind: "type", ref, text, append, trusted }),
   });
 
   registerActionTool(server, ctx, {
