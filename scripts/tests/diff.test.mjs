@@ -54,6 +54,13 @@ test("changed (multi-field): name + checked transitions are semicolon-joined", (
   );
 });
 
+test("changed (occlusion): occluded false → true reports a layer covering the element", () => {
+  const prev = tree([btn("7", "Submit")]);
+  const next = tree([btn("7", "Submit", { occluded: true })]);
+  const out = serializeDiff(prev, next);
+  assert.equal(out, 'Δ 0 added, 0 removed, 1 changed\n~ button "Submit" [ref=7] occluded: false → true');
+});
+
 test("changed (state-only): disabled flips with no name/value change", () => {
   const prev = tree([btn("7", "Submit", { disabled: false })]);
   const next = tree([btn("7", "Submit", { disabled: true })]);

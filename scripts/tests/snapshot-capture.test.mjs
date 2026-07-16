@@ -351,28 +351,157 @@ test("screenshot:\"raw\" → 1 hop only, image carries the raw capture bytes (no
   assert.ok(out.payload.tree, "tree still returns alongside the raw image");
 });
 
-// CP3 — the pruner's recovery notice (set on a cap/fallback) must be inlined as
-// the outline's first line, prefixed "NOTE: ". detail:"full" at limit<1000 trips
-// the full-mode floor (limit_adjusted) → a deterministic notice with no real page.
-test("meta.notice is inlined as the outline's first line (NOTE: prefix)", async () => {
-  const { ctx } = makeCtx([
-    { tree: TREE_ONE_BUTTON, screenshot: undefined, cssViewport: { w: 1024, h: 768 } },
-  ]);
-  ctx.session.lastLeasedTab = 5;
-  const out = await runUnifiedCapture(ctx, 5, {
-    detail: "full",
+// ── scope (per-call subtree drill-down) ──────────────────────────────────────
+
+const TREE_NESTED = {
+  nodeId: "root",
+  role: "WebArea",
+  name: "T",
+  depth: 0,
+  cssViewport: { w: 1024, h: 768 },
+  children: [
+    {
+      nodeId: "10",
+      role: "region",
+      name: "Sidebar",
+      depth: 1,
+      inViewport: true,
+      children: [
+        { nodeId: "11", role: "button", name: "Menu", depth: 2, inViewport: true, children: [] },
+      ],
+    },
+    {
+      nodeId: "20",
+      role: "region",
+      name: "Main",
+      depth: 1,
+      inViewport: true,
+      children: [
+        { nodeId: "21", role: "button", name: "Go", depth: 2, inViewport: true, children: [] },
+        { nodeId: "f1:5", role: "button", name: "InFrame", depth: 2, inViewport: true, children: [] },
+      ],
+    },
+  ],
+};
+
+function treeOpts(extra = {}) {
+  return {
+    detail: "standard",
     limit: 500,
     viewportOnly: false,
     screenshot: "off",
     quality: 70,
     save_to_path: false,
     withTree: true,
+    ...extra,
+  };
+}
+
+test("scope selects the raw subtree: out-of-scope refs absent, meta.scope surfaced", async () => {
+  const { ctx } = makeCtx([{ tree: TREE_NESTED, screenshot: undefined, cssViewport: { w: 1024, h: 768 } }]);
+  ctx.session.lastLeasedTab = 7;
+  ctx.session.lastSnapshotTabId = 7; // scope requires a prior snapshot of the SAME tab
+  const out = await runUnifiedCapture(ctx, 7, treeOpts({ scope: "20" }));
+  assert.match(out.payload.tree, /\[ref=21\]/, "in-scope child present");
+  assert.ok(!out.payload.tree.includes("[ref=11]"), "out-of-scope node must be absent");
+  assert.ok(!out.payload.tree.includes("Sidebar"), "out-of-scope region must be absent");
+  assert.equal(out.payload.meta.scope, "20");
+  // lastSnapshotRefs is scope-only (the annotation-hop rect source).
+  assert.ok(ctx.session.lastSnapshotRefs.has("21"));
+  assert.ok(!ctx.session.lastSnapshotRefs.has("11"));
+});
+
+test("scope accepts an fN: ref (cross-origin splice)", async () => {
+  const { ctx } = makeCtx([{ tree: TREE_NESTED, screenshot: undefined, cssViewport: { w: 1024, h: 768 } }]);
+  ctx.session.lastLeasedTab = 7;
+  ctx.session.lastSnapshotTabId = 7;
+  const out = await runUnifiedCapture(ctx, 7, treeOpts({ scope: "f1:5", includeCrossOriginFrames: true }));
+  assert.match(out.payload.tree, /InFrame/);
+  assert.equal(out.payload.meta.scope, "f1:5");
+});
+
+test("a scoped snapshot does NOT update the diff baseline (lastPrunedTree)", async () => {
+  const { ctx } = makeCtx([
+    { tree: TREE_NESTED, screenshot: undefined, cssViewport: { w: 1024, h: 768 } },
+    { tree: TREE_NESTED, screenshot: undefined, cssViewport: { w: 1024, h: 768 } },
+  ]);
+  ctx.session.lastLeasedTab = 7;
+  // Full snapshot establishes the baseline…
+  await runUnifiedCapture(ctx, 7, treeOpts());
+  const baseline = ctx.session.lastPrunedTree;
+  assert.ok(baseline, "full snapshot must set the baseline");
+  // …a scoped snapshot must leave it untouched.
+  await runUnifiedCapture(ctx, 7, treeOpts({ scope: "20" }));
+  assert.equal(ctx.session.lastPrunedTree, baseline, "scoped snapshot must not replace the baseline");
+  assert.equal(ctx.session.lastPrunedTreeTabId, 7);
+});
+
+test("scope not found → actionable error naming the recovery paths", async () => {
+  const { ctx } = makeCtx([{ tree: TREE_NESTED, screenshot: undefined, cssViewport: { w: 1024, h: 768 } }]);
+  ctx.session.lastLeasedTab = 7;
+  ctx.session.lastSnapshotTabId = 7;
+  await assert.rejects(
+    runUnifiedCapture(ctx, 7, treeOpts({ scope: "999" })),
+    (err) => {
+      assert.match(err.message, /scope ref 999 not found/);
+      assert.match(err.message, /removed/);
+      assert.match(err.message, /includeCrossOriginFrames/);
+      assert.match(err.message, /without 'scope'/);
+      return true;
+    },
+  );
+});
+
+// Cross-tab guard: page-side ids are per-tab and collide across tabs, so a
+// scope ref from another tab (or with no prior snapshot at all) must error
+// loudly instead of silently scoping to the wrong element.
+test("scope on a tab that was not last-snapshotted → cross-tab error, no silent wrong subtree", async () => {
+  const { ctx } = makeCtx([{ tree: TREE_NESTED, screenshot: undefined, cssViewport: { w: 1024, h: 768 } }]);
+  ctx.session.lastLeasedTab = 7;
+  ctx.session.lastSnapshotTabId = 3; // ref "20" was minted on tab 3
+  await assert.rejects(
+    runUnifiedCapture(ctx, 7, treeOpts({ scope: "20" })),
+    (err) => {
+      assert.match(err.message, /tab 3/);
+      assert.match(err.message, /browser_snapshot on tab 7 first/);
+      return true;
+    },
+  );
+});
+
+test("scope with no prior snapshot at all → actionable error", async () => {
+  const { ctx } = makeCtx([{ tree: TREE_NESTED, screenshot: undefined, cssViewport: { w: 1024, h: 768 } }]);
+  ctx.session.lastLeasedTab = 7;
+  await assert.rejects(
+    runUnifiedCapture(ctx, 7, treeOpts({ scope: "20" })),
+    /no tab/,
+  );
+});
+
+// CP3 — the pruner's recovery notice (set on any cap-ladder reduction) must be
+// inlined as the outline's first line, prefixed "NOTE: ". limit:1 on a 2-node
+// tree trips the ladder deterministically with no real page.
+test("meta.notice is inlined as the outline's first line (NOTE: prefix)", async () => {
+  const { ctx } = makeCtx([
+    { tree: TREE_ONE_BUTTON, screenshot: undefined, cssViewport: { w: 1024, h: 768 } },
+  ]);
+  ctx.session.lastLeasedTab = 5;
+  const out = await runUnifiedCapture(ctx, 5, {
+    detail: "standard",
+    limit: 1,
+    viewportOnly: false,
+    screenshot: "off",
+    quality: 70,
+    save_to_path: false,
+    withTree: true,
   });
-  assert.equal(out.payload.meta.limit_adjusted, 1000, "full-mode floor raised the limit");
-  assert.match(out.payload.meta.notice, /limit raised to 1000/i, "meta carries the recovery notice");
+  assert.ok(out.payload.meta.truncated, "prefix cut surfaces meta.truncated");
+  assert.equal(out.payload.meta.truncated.shown, 1);
+  assert.equal(out.payload.meta.truncated.total, 2);
+  assert.match(out.payload.meta.notice, /first omitted/i, "meta carries the recovery notice");
   assert.ok(
     out.payload.tree.startsWith("NOTE: "),
     `outline must lead with the NOTE: line, got: ${out.payload.tree.slice(0, 40)}`,
   );
-  assert.match(out.payload.tree.split("\n")[0], /limit raised to 1000/i, "NOTE: line carries the notice text");
+  assert.match(out.payload.tree.split("\n")[0], /first omitted/i, "NOTE: line carries the notice text");
 });

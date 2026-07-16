@@ -18,6 +18,10 @@ export interface SnapshotParams {
   // Phase 4b: opt-in cross-origin OOPIF descent. Replayed by auto-snapshots so
   // an agent that opted in stays OOPIF-aware across actions until it flips off.
   includeCrossOriginFrames?: boolean;
+  // NO `scope` and NO `save_tree_to_path` here — both are structurally
+  // per-call-only (invariant #39): a scoped or tree-offloading auto-snapshot
+  // replay would silently narrow every subsequent action's view / fill the
+  // disk. runUnifiedCapture receives them per call.
 }
 
 export const DEFAULT_SNAPSHOT_PARAMS: SnapshotParams = {
@@ -26,9 +30,9 @@ export const DEFAULT_SNAPSHOT_PARAMS: SnapshotParams = {
   // is what an action's auto-snapshot replays before any explicit snapshot has
   // set the session params.
   limit: 1500,
-  // Round 7 default flip: viewportOnly is now false. The pruner ranks across
-  // the WHOLE page (capped at `limit`) and auto-falls-back to viewport-only
-  // only when the page exceeds 3 × effectiveLimit candidates.
+  // Round 7 default flip: viewportOnly is now false. The tree spans the WHOLE
+  // page in document order; when it exceeds `limit` the cap ladder retries
+  // viewport-scoped before the document-order prefix cut (invariant #41).
   viewportOnly: false,
   screenshot: "off",
   quality: 70,
@@ -88,11 +92,13 @@ export class BridgeSession {
   lastSnapshotTabId?: TabId;
   /**
    * The pruned tree from the most recent snapshot — the baseline the next
-   * auto-snapshot diffs against (CP5). Refreshed by `runUnifiedCapture` on EVERY
-   * snapshot (explicit OR auto): an explicit `browser_snapshot` returns the full
-   * tree but still updates this baseline; an action's auto-snapshot diffs against
-   * it then replaces it, so each action's diff reflects only what THAT action
-   * changed since the prior snapshot.
+   * auto-snapshot diffs against (CP5). Refreshed by `runUnifiedCapture` on every
+   * snapshot (explicit OR auto) EXCEPT a `scope`d one (a subtree must not
+   * masquerade as a full-page prior — invariant #39): an explicit
+   * `browser_snapshot` returns the full tree but still updates this baseline;
+   * an action's auto-snapshot diffs against it then replaces it, so each
+   * action's diff reflects only what THAT action changed since the prior
+   * snapshot.
    */
   lastPrunedTree?: PrunedNode;
   /**

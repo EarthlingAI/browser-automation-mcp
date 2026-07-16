@@ -54,6 +54,19 @@ test("selected + level both render, in field order", () => {
   assert.equal(out, '- heading "H" [ref=9] [selected] [level=2]');
 });
 
+test("occluded renders [occluded] after [disabled], before [level]", () => {
+  const out = serializeTree({
+    ref: "4",
+    role: "button",
+    name: "Ghost",
+    disabled: true,
+    occluded: true,
+    level: 3,
+    children: [],
+  });
+  assert.equal(out, '- button "Ghost" [ref=4] [disabled] [occluded] [level=3]');
+});
+
 test("values[] collapse renders joined, quoted, on one line", () => {
   const out = serializeTree({
     ref: "288",
@@ -62,6 +75,29 @@ test("values[] collapse renders joined, quoted, on one line", () => {
     children: [],
   });
   assert.equal(out, '- row [ref=288] values: "Machine learning", "Symbolic", "Deep learning"');
+});
+
+test("rowsShown renders '(showing X of Y rows)' on the table line", () => {
+  const out = serializeTree({
+    ref: "40",
+    role: "table",
+    rowsShown: { shown: 6, total: 20 },
+    children: [{ ref: "41", role: "row", values: ["a", "b"], children: [] }],
+  });
+  assert.equal(
+    out,
+    '- table [ref=40] (showing 6 of 20 rows)\n  - row [ref=41] values: "a", "b"',
+  );
+});
+
+test("an empty-cell value renders as an empty quoted slot (column alignment)", () => {
+  const out = serializeTree({
+    ref: "41",
+    role: "row",
+    values: ["China", "", "17.5%"],
+    children: [],
+  });
+  assert.equal(out, '- row [ref=41] values: "China", "", "17.5%"');
 });
 
 test("a node without a name omits the quoted segment", () => {

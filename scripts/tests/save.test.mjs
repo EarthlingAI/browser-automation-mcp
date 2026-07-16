@@ -336,3 +336,143 @@ async function withEnvAsync(overrides, fn) {
     }
   }
 }
+
+// ── save_tree_to_path (tree offload) ─────────────────────────────────────────
+
+import {
+  resolveTreeSavePath,
+  saveTreeToPathSchema,
+  mergeRefsIntoRegistry,
+  TREE_EXTS,
+} from "../../dist/test-exports.mjs";
+
+test("resolveTreeSavePath: true → auto-named tree_<tab>_<ms>.txt in outputs dir", () => {
+  withEnv({ BROWSER_AUTOMATION_MCP_OUTPUTS_DIR: path.join(os.tmpdir(), "ba-tree-out") }, () => {
+    const p = resolveTreeSavePath(true, 42);
+    assert.match(path.basename(p), /^tree_42_\d+\.txt$/);
+    assert.ok(p.startsWith(path.join(os.tmpdir(), "ba-tree-out")));
+  });
+});
+
+test("resolveTreeSavePath: relative .md resolves under outputs dir; absolute passes through", () => {
+  withEnv({ BROWSER_AUTOMATION_MCP_OUTPUTS_DIR: path.join(os.tmpdir(), "ba-tree-out") }, () => {
+    const rel = resolveTreeSavePath("notes/tree.md", 1);
+    assert.ok(rel.startsWith(path.join(os.tmpdir(), "ba-tree-out")));
+    const absIn = path.join(os.tmpdir(), "elsewhere", "t.txt");
+    assert.equal(resolveTreeSavePath(absIn, 1), absIn);
+  });
+});
+
+test("resolveTreeSavePath: '..' segment and bad extension are rejected", () => {
+  assert.throws(() => resolveTreeSavePath("../t.txt", 1), /\.\./);
+  assert.throws(() => resolveTreeSavePath("t.html", 1), /unsupported extension/);
+  assert.throws(() => resolveTreeSavePath("t", 1), /unsupported extension/);
+});
+
+test("saveTreeToPathSchema: coerces stringified booleans, gates extension at schema time", () => {
+  assert.equal(saveTreeToPathSchema.parse("true"), true);
+  assert.equal(saveTreeToPathSchema.parse("false"), false);
+  assert.equal(saveTreeToPathSchema.parse(undefined), false);
+  assert.equal(saveTreeToPathSchema.parse("out.txt"), "out.txt");
+  assert.equal(saveTreeToPathSchema.parse("out.md"), "out.md");
+  assert.throws(() => saveTreeToPathSchema.parse("out.html"));
+  for (const ext of TREE_EXTS) assert.ok([".txt", ".md"].includes(ext));
+});
+
+test("runUnifiedCapture: save_tree_to_path writes the UNCAPPED outline; refs merge into refRegistry only", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ba-tree-"));
+  await withEnvAsync({ BROWSER_AUTOMATION_MCP_OUTPUTS_DIR: dir }, async () => {
+    // 30 buttons; inline limit 5 caps the outline, but the offload must carry all 30.
+    const tree = {
+      nodeId: "root",
+      role: "WebArea",
+      name: "T",
+      depth: 0,
+      cssViewport: { w: 1024, h: 768 },
+      children: Array.from({ length: 30 }, (_, i) => ({
+        nodeId: String(i + 1),
+        role: "button",
+        name: `Btn ${i}`,
+        depth: 1,
+        rect: { x: 10, y: 10 + i * 20, w: 100, h: 18 },
+        inViewport: true,
+        children: [],
+      })),
+    };
+    const ctx = {
+      daemon: {
+        sessionId: "t",
+        async exec() {
+          return { tree, screenshot: undefined, cssViewport: { w: 1024, h: 768 } };
+        },
+      },
+      session: new BridgeSession(),
+    };
+    ctx.session.lastLeasedTab = 3;
+    const out = await runUnifiedCapture(ctx, 3, {
+      detail: "standard",
+      limit: 5,
+      viewportOnly: false,
+      screenshot: "off",
+      quality: 70,
+      save_to_path: false,
+      save_tree_to_path: true,
+      withTree: true,
+    });
+    // Inline outline is capped…
+    assert.ok(out.payload.meta.truncated, "inline outline must be capped at limit 5");
+    assert.ok(!out.payload.tree.includes('"Btn 29"'), "capped outline must not include the tail");
+    // …the offloaded file is not.
+    assert.ok(out.payload.treeSavedTo, "treeSavedTo missing");
+    const fileText = fs.readFileSync(out.payload.treeSavedTo, "utf8");
+    assert.match(fileText, /Btn 29/, "offloaded outline must be uncapped");
+    // Ref merge: file-only refs resolve via refRegistry but are NOT "current".
+    assert.ok(ctx.session.refRegistry.has("30"), "file-sourced ref must be in refRegistry");
+    assert.ok(!ctx.session.lastSnapshotRefs.has("30"), "file-sourced ref must NOT be in lastSnapshotRefs");
+    // The inline snapshot's own refs are in both.
+    assert.ok(ctx.session.lastSnapshotRefs.has("1"));
+  });
+});
+
+test("runUnifiedCapture: tree-offload write failure is non-fatal (treeSaveError)", async () => {
+  const tree = {
+    nodeId: "root",
+    role: "WebArea",
+    name: "T",
+    depth: 0,
+    cssViewport: { w: 1024, h: 768 },
+    children: [
+      { nodeId: "1", role: "button", name: "B", depth: 1, rect: { x: 0, y: 0, w: 10, h: 10 }, inViewport: true, children: [] },
+    ],
+  };
+  const ctx = {
+    daemon: {
+      sessionId: "t",
+      async exec() {
+        return { tree, screenshot: undefined, cssViewport: { w: 1024, h: 768 } };
+      },
+    },
+    session: new BridgeSession(),
+  };
+  ctx.session.lastLeasedTab = 3;
+  const out = await runUnifiedCapture(ctx, 3, {
+    detail: "standard",
+    limit: 500,
+    viewportOnly: false,
+    screenshot: "off",
+    quality: 70,
+    save_to_path: false,
+    save_tree_to_path: "../escape.txt",
+    withTree: true,
+  });
+  assert.ok(out.payload.tree, "snapshot must still return");
+  assert.match(out.payload.treeSaveError, /\.\./);
+  assert.equal(out.payload.treeSavedTo, undefined);
+});
+
+test("mergeRefsIntoRegistry: no-op for a different tab (registry is per-tab)", () => {
+  const session = new BridgeSession();
+  session.lastSnapshotTabId = 1;
+  mergeRefsIntoRegistry(session, { ref: "9", role: "button", name: "X" }, undefined, 2);
+  assert.equal(session.refRegistry.size, 0);
+});

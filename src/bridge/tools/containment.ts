@@ -3,7 +3,7 @@
  * parent suppression.
  *
  * Why this exists: when the annotated-screenshot pipeline draws bounding
- * boxes for EVERY ranked candidate (form, navigation, dialog, WebArea root,
+ * boxes for EVERY kept candidate (form, navigation, dialog, WebArea root,
  * etc.), nested wrappers stroke a giant border around their entire subtree
  * — the worst offender being the WebArea root, which strokes the whole
  * viewport. Visually noisy, info-poor: the parent's stroke adds nothing

@@ -24,14 +24,21 @@ for OS file pickers, clipboard-paste prompts, drag-drop, and native :focus-gated
 
 Observe-act loop: browser_snapshot returns the pruned a11y tree as a compact indented outline
 (payload.tree) — one line per node, two spaces per depth: '- {role} "{name}" [ref={N}]' plus
-inline state ([checked]/[selected]/[disabled]/[level=N]), an input's = "value", and a collapsed
-row's values: "a", "b". Pass the [ref=N] number to browser_click / browser_type / etc. By default a
-snapshot spans the WHOLE page's semantic tree (landmarks + interactive + content, not just the
-viewport), ranked by salience and capped at 'limit'. Structured counts live in payload.meta
-(total_candidates is always there); if the pruner deferred a ranked tail or auto-scoped a huge page
-to the viewport, a 'NOTE: …' recovery hint leads the outline telling you what was hidden and how to
-reach it (raise 'limit', scroll, or scope to a region). The snapshot spans SAME-ORIGIN iframes and
-open shadow DOM automatically (refs inside them work like any other); a CROSS-ORIGIN iframe shows as
+inline state ([checked]/[selected]/[disabled]/[occluded]/[level=N]), an input's = "value", and a
+collapsed table row's values: "a", "b" (empty cells hold their "" slot, so values align with the
+header row's values by position; a partial table says '(showing X of Y rows)' on its own line).
+[occluded] means another layer covers the element at its centre — it's still in the DOM but likely
+not what the user sees. Pass the [ref=N] number to browser_click / browser_type / etc. By default a
+snapshot spans the WHOLE page's semantic tree in DOCUMENT ORDER (landmarks + interactive + content +
+tables, not just the viewport), losslessly compacted — nothing is ranked, scored, or silently
+dropped. When the tree exceeds 'limit' the snapshot first retries scoped to the viewport
+(meta.viewport_fallback), then cuts at the limit in document order (meta.truncated names the first
+omitted ref); every reduction leads the outline with a 'NOTE: …' naming the recovery levers: raise
+'limit', re-snapshot with scope:"<ref>" to drill into one subtree, viewportOnly:true, or
+save_tree_to_path:true to write the FULL uncapped outline to a file (its refs are actable like any
+other; treeSavedTo carries the path). scope and save_tree_to_path are per-call — they never carry
+into auto-snapshots. Structured counts live in payload.meta (total_candidates is always there — the
+full page's node count). The snapshot spans SAME-ORIGIN iframes and open shadow DOM automatically (refs inside them work like any other); a CROSS-ORIGIN iframe shows as
 a single '- iframe "<url>" [cross-origin frame — not descended]' leaf, and payload.meta.frames lists
 every child frame with whether it was descended. To reach inside a cross-origin frame (e.g. a SCORM
 course or embedded app hosted on another domain), call browser_snapshot(includeCrossOriginFrames:true):
@@ -42,9 +49,11 @@ injection per frame) and replayed on auto-snapshots until you set it false.
 Diff snapshots: action tools auto-snapshot after acting, and that auto-snapshot returns a DIFF — only
 what changed since the previous snapshot of the tab — led by a 'Δ {A} added, {R} removed, {K} changed'
 header, then '+ {node}' / '- {node}' / '~ {node} field: old → new' lines keyed by the stable ref (or
-'Δ no changes'). It falls back to the full outline when there's no prior snapshot of the tab or the
-page turned over completely. An explicit browser_snapshot is ALWAYS the full tree. payload.meta.mode
-('diff' | 'full') tells you which you got; re-call browser_snapshot any time you want the whole tree.
+'Δ no changes'). '~ … occluded: false → true' means a layer slid over that element. It falls back to
+the full outline when there's no prior snapshot of the tab or the page turned over completely. An
+explicit browser_snapshot is ALWAYS the full tree (and a scoped one never disturbs the diff
+baseline). payload.meta.mode ('diff' | 'full') tells you which you got; re-call browser_snapshot any
+time you want the whole tree.
 
 Settle protocol: action tools observe the page for a state delta (DOM mutation, network
 request, or named selector) before returning, so a same-tick re-fire is safe to skip. Tune

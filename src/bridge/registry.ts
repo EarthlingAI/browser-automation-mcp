@@ -291,6 +291,48 @@ export function populateRefs(
   session.lastSnapshotRefs = new Map();
   session.lastSnapshotTabId = tabId;
   session.isStale = false;
+  // Merge into the cumulative registry — refs that fell out of this snapshot
+  // keep their last-known meta so non-evicting resolution + nearby-refs
+  // listings still find them.
+  forEachRefMeta(pruned, raw, tabId, (ref, meta) => {
+    session.lastSnapshotRefs.set(ref, meta);
+    session.refRegistry.set(ref, meta);
+  });
+}
+
+/**
+ * Merge a pruned tree's refs into the cumulative `refRegistry` ONLY — without
+ * touching `lastSnapshotRefs`, `isStale`, or the per-tab reset. Used by the
+ * `save_tree_to_path` offload: refs the agent reads from the offloaded file
+ * must resolve (else "never minted" errors), but they are NOT part of the
+ * inline snapshot — they take the carried-forward path (liveness probe before
+ * acting, invariant #10). No-op for a tab other than the current snapshot's
+ * (the registry is per-tab).
+ */
+export function mergeRefsIntoRegistry(
+  session: BridgeSession,
+  pruned: PrunedNode,
+  raw: RawNode | undefined,
+  tabId: TabId,
+): void {
+  if (session.lastSnapshotTabId !== tabId) return;
+  forEachRefMeta(pruned, raw, tabId, (ref, meta) =>
+    session.refRegistry.set(ref, meta),
+  );
+}
+
+/**
+ * Shared RefMeta construction for `populateRefs` / `mergeRefsIntoRegistry`:
+ * index the raw tree by nodeId (rect source), walk the pruned tree, and emit
+ * one `(ref, meta)` pair per real node. Single edit point for the RefMeta
+ * shape.
+ */
+function forEachRefMeta(
+  pruned: PrunedNode,
+  raw: RawNode | undefined,
+  tabId: TabId,
+  emit: (ref: string, meta: RefMeta) => void,
+): void {
   const rawByNodeId = new Map<string, RawNode>();
   if (raw) walkRaw(raw, rawByNodeId);
   const now = Date.now();
@@ -300,19 +342,13 @@ export function populateRefs(
     // which pre-increments the persistent counter so node IDs start at "1" and
     // never collide with the sentinel.
     if (!node.ref || node.ref === "0") return;
-    const rawMatch = rawByNodeId.get(node.ref);
-    const meta: RefMeta = {
+    emit(node.ref, {
       role: node.role,
       name: node.name,
-      rect: rawMatch?.rect,
+      rect: rawByNodeId.get(node.ref)?.rect,
       tabId,
       snapshotAt: now,
-    };
-    session.lastSnapshotRefs.set(node.ref, meta);
-    // Merge into the cumulative registry — refs that fell out of this snapshot
-    // keep their last-known meta so non-evicting resolution + nearby-refs
-    // listings still find them.
-    session.refRegistry.set(node.ref, meta);
+    });
   });
 }
 
@@ -358,7 +394,10 @@ export function resolveRef(session: BridgeSession, ref: string): RefMeta {
 /**
  * Build an actionable "ref not found" error listing nearby refs (by numeric
  * proximity) from the cumulative registry, so the agent can spot a typo
- * (e.g. "12" → "21") or recover after the element genuinely vanished.
+ * (e.g. "12" → "21") or recover after the element genuinely vanished. Note the
+ * registry may also hold offload-sourced refs (merged by the
+ * `save_tree_to_path` pipeline via `mergeRefsIntoRegistry`) that never appeared
+ * in an inline outline.
  */
 export function nearbyRefsError(
   session: BridgeSession,

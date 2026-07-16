@@ -8,7 +8,7 @@ import {
 } from "../registry";
 import { coerceToArray, coerceBoolean } from "./coerce";
 import { runUnifiedCapture } from "./capture";
-import { saveToPathSchema } from "./save";
+import { saveToPathSchema, saveTreeToPathSchema } from "./save";
 
 export function registerObserveTools(
   server: McpServer,
@@ -41,7 +41,8 @@ export function registerObserveTools(
         .enum(["standard", "full"])
         .default("standard")
         .describe(
-          "standard = interactive elements only; full = entire a11y tree.",
+          "standard (default) = the semantic tree — interactive/nav/data/table nodes plus every " +
+            "named node; full = the entire a11y tree including unnamed structural wrappers.",
         ),
       limit: z
         .coerce.number()
@@ -50,18 +51,18 @@ export function registerObserveTools(
         .max(5000)
         .default(1500)
         .describe(
-          "Max nodes returned. The pruner includes the whole page's semantic " +
-            "tree (landmarks + interactive + content), ranks by salience, and " +
-            "caps at this limit — a loud meta.notice fires if any ranked node " +
-            "was deferred. Raise it to pull a dense page in fully.",
+          "Max nodes returned. The tree is kept in document order and losslessly compacted; " +
+            "when it still exceeds this limit the snapshot first retries scoped to the viewport " +
+            "(meta.viewport_fallback), then cuts at the limit in document order (meta.truncated " +
+            "names the first omitted ref). Every reduction is loud — a NOTE line lists the exact " +
+            "recovery levers (raise limit / scope / viewportOnly / save_tree_to_path).",
         ),
       viewportOnly: z
         .preprocess(coerceBoolean, z.boolean().default(false))
         .describe(
-          "Restrict snapshot to the visible viewport. Default false — return the whole page's " +
-            "intelligently-pruned tree (ranked + capped at `limit`). When the page exceeds 3 × `limit` " +
-            "candidate nodes the snapshot auto-falls-back to viewport-only and surfaces " +
-            "`meta.viewport_fallback`. Pass `true` to force viewport-only unconditionally.",
+          "Restrict the snapshot to the visible viewport. Default false — the tree spans the whole " +
+            "page (auto-falling back to the viewport only when the page exceeds `limit`, surfaced as " +
+            "`meta.viewport_fallback`). Pass `true` to force viewport-only unconditionally.",
         ),
       screenshot: z
         .enum(["off", "annotated", "raw"])
@@ -96,7 +97,19 @@ export function registerObserveTools(
         .describe(
           "Downscale the screenshot to at most this width (preserves aspect ratio).",
         ),
+      scope: z
+        .string()
+        .min(1)
+        .optional()
+        .describe(
+          "Snapshot only the subtree rooted at this ref (from a prior snapshot of the SAME tab) — " +
+            "the drill-down lever when a page is too large or you only care about one region/table/row. " +
+            "limit and viewportOnly apply within the scope. Per-call only: never carried into " +
+            "auto-snapshots, and a scoped snapshot does not disturb the action-diff baseline. " +
+            "For an fN: ref inside a cross-origin frame, pass includeCrossOriginFrames:true on the same call.",
+        ),
       save_to_path: saveToPathSchema,
+      save_tree_to_path: saveTreeToPathSchema,
       includeCrossOriginFrames: z
         .preprocess(coerceBoolean, z.boolean().default(false))
         .describe(
@@ -115,7 +128,9 @@ export function registerObserveTools(
       screenshot,
       quality,
       maxWidth,
+      scope,
       save_to_path,
+      save_tree_to_path,
       includeCrossOriginFrames,
     }) => {
       const target = tabId ?? ctx.session.lastLeasedTab;
@@ -123,8 +138,10 @@ export function registerObserveTools(
         throw new Error(
           "no leased tab; call browser_switch_tab or browser_open_tab first",
         );
-      // Persist params for replaySnapshot's auto-snap pipeline. save_to_path
-      // is NEVER persisted — saving is per-call opt-in, never a session mode.
+      // Persist params for replaySnapshot's auto-snap pipeline. `scope` and
+      // `save_tree_to_path` are NEVER persisted (invariant #39), nor is
+      // `save_to_path` (invariant #8) — scoping is a per-call drill-down and
+      // saving a per-call opt-in, never session modes.
       updateSnapshotParams(ctx.session, {
         tabId: target,
         detail,
@@ -142,7 +159,9 @@ export function registerObserveTools(
         screenshot,
         quality,
         maxWidth,
+        scope,
         save_to_path,
+        save_tree_to_path,
         withTree: true,
         includeCrossOriginFrames,
       });

@@ -66,10 +66,12 @@ function fmtValues(v?: string[]): string {
 /**
  * Field-level transitions between two nodes sharing a ref. Compares the same
  * fields the serializer renders (role, name, value, checked, selected, disabled,
- * level, values). selected/disabled are normalized to booleans so an
- * undefined↔false jitter isn't reported as a change; checked keeps its raw
- * tri-state ("mixed" is meaningful). Structural change (gained/lost children)
- * surfaces as the children's own added/removed lines, not here.
+ * occluded, level, values). selected/disabled/occluded are normalized to
+ * booleans so an undefined↔false jitter isn't reported as a change; checked
+ * keeps its raw tri-state ("mixed" is meaningful). Structural change (gained/lost children)
+ * surfaces as the children's own added/removed lines, not here. `rowsShown` is
+ * deliberately NOT diff-tracked — it's a rendering annotation of the cap
+ * ladder, and row add/remove lines already convey row churn.
  */
 function describeChanges(prev: PrunedNode, next: PrunedNode): string[] {
   const out: string[] = [];
@@ -84,6 +86,10 @@ function describeChanges(prev: PrunedNode, next: PrunedNode): string[] {
     out.push(`selected: ${Boolean(prev.selected)} → ${Boolean(next.selected)}`);
   if (Boolean(prev.disabled) !== Boolean(next.disabled))
     out.push(`disabled: ${Boolean(prev.disabled)} → ${Boolean(next.disabled)}`);
+  // occluded false→true is a real event: a layer now covers this element at its
+  // own centre (a modal/overlay slid over the agent's button).
+  if (Boolean(prev.occluded) !== Boolean(next.occluded))
+    out.push(`occluded: ${Boolean(prev.occluded)} → ${Boolean(next.occluded)}`);
   if (prev.level !== next.level)
     out.push(`level: ${fmtFlag(prev.level)} → ${fmtFlag(next.level)}`);
   if (!valuesEqual(prev.values, next.values))

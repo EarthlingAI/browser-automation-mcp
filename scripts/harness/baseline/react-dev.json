@@ -10,7 +10,7 @@
   "meta": {
     "total_candidates": 165
   },
-  "jsonSize": 10441,
+  "jsonSize": 10603,
   "inventory": [
     {
       "ref": "1",
@@ -20,9 +20,23 @@
       "flags": ""
     },
     {
-      "ref": "74",
-      "role": "heading",
-      "name": "Create user interfaces from components",
+      "ref": "4",
+      "role": "navigation",
+      "name": "Reactv19.2Search⌘CtrlKLearnReferenceCommunityBlog",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "10",
+      "role": "link",
+      "name": "React",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "19",
+      "role": "link",
+      "name": "v19.2",
       "value": "",
       "flags": ""
     },
@@ -34,79 +48,9 @@
       "flags": ""
     },
     {
-      "ref": "66",
-      "role": "heading",
-      "name": "React",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "70",
+      "ref": "30",
       "role": "link",
-      "name": "API Reference",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "69",
-      "role": "link",
-      "name": "Learn React",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "468",
-      "role": "form",
-      "name": "Search",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "474",
-      "role": "textbox",
-      "name": "Search",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "469",
-      "role": "text",
-      "name": "Search",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "717",
-      "role": "form",
-      "name": "Search",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "723",
-      "role": "textbox",
-      "name": "Search",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "718",
-      "role": "text",
-      "name": "Search",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "712",
-      "role": "combobox",
-      "name": "Event",
-      "value": "react-conf-2021",
-      "flags": ""
-    },
-    {
-      "ref": "34",
-      "role": "link",
-      "name": "Community",
+      "name": "Learn",
       "value": "",
       "flags": ""
     },
@@ -118,9 +62,9 @@
       "flags": ""
     },
     {
-      "ref": "30",
+      "ref": "34",
       "role": "link",
-      "name": "Learn",
+      "name": "Community",
       "value": "",
       "flags": ""
     },
@@ -153,177 +97,30 @@
       "flags": ""
     },
     {
-      "ref": "10",
-      "role": "link",
+      "ref": "66",
+      "role": "heading",
       "name": "React",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "19",
+      "ref": "69",
       "role": "link",
-      "name": "v19.2",
+      "name": "Learn React",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1299",
+      "ref": "70",
       "role": "link",
-      "name": "The React Foundation: A New Home for React Hosted by the Linux FoundationFebruary 24, 2026",
+      "name": "API Reference",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1302",
+      "ref": "74",
       "role": "heading",
-      "name": "The React Foundation: A New Home for React Hosted by the Linux Foundation",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "188",
-      "role": "heading",
-      "name": "Write components with code and markup",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "347",
-      "role": "heading",
-      "name": "Add interactivity wherever you need it",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "544",
-      "role": "heading",
-      "name": "Go full-stack with a framework",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1126",
-      "role": "heading",
-      "name": "Use the best from every platform",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1339",
-      "role": "heading",
-      "name": "Join a community of millions",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1317",
-      "role": "link",
-      "name": "Vulnerability in React Server ComponentsDecember 3, 2025",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1320",
-      "role": "heading",
-      "name": "Vulnerability in React Server Components",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1402",
-      "role": "heading",
-      "name": "Welcome to the React community",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1308",
-      "role": "link",
-      "name": "Additional Vulnerabilities in RSCDecember 11, 2025",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1311",
-      "role": "heading",
-      "name": "Additional Vulnerabilities in RSC",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1281",
-      "role": "heading",
-      "name": "Upgrade when the future is ready",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1114",
-      "role": "link",
-      "name": "Get started with a framework",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1326",
-      "role": "link",
-      "name": "React Conf 2025 RecapOctober 16, 2025",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1329",
-      "role": "heading",
-      "name": "React Conf 2025 Recap",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1266",
-      "role": "link",
-      "name": "Build for native platforms",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "531",
-      "role": "link",
-      "name": "Add React to your page",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1257",
-      "role": "heading",
-      "name": "Go truly native",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1403",
-      "role": "link",
-      "name": "Take the Tutorial",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "464",
-      "role": "heading",
-      "name": "React Videos",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1063",
-      "role": "link",
-      "name": "Accessible Japanese Form Components with ReactTafu Nakazaki",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1064",
-      "role": "heading",
-      "name": "Accessible Japanese Form Components with React",
+      "name": "Create user interfaces from components",
       "value": "",
       "flags": ""
     },
@@ -331,76 +128,6 @@
       "ref": "85",
       "role": "heading",
       "name": "Video.js",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "198",
-      "role": "heading",
-      "name": "VideoList.js",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "355",
-      "role": "heading",
-      "name": "SearchableVideoList.js",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "554",
-      "role": "heading",
-      "name": "confs/[slug].js",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "304",
-      "role": "heading",
-      "name": "3 Videos",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "476",
-      "role": "heading",
-      "name": "5 Videos",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "725",
-      "role": "heading",
-      "name": "19 Videos",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1489",
-      "role": "link",
-      "name": "Acknowledgements",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1474",
-      "role": "link",
-      "name": "API Reference",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1487",
-      "role": "link",
-      "name": "Docs Contributors",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "547",
-      "role": "link",
-      "name": "React Router",
       "value": "",
       "flags": ""
     },
@@ -419,6 +146,41 @@
       "flags": ""
     },
     {
+      "ref": "178",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "188",
+      "role": "heading",
+      "name": "Write components with code and markup",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "198",
+      "role": "heading",
+      "name": "VideoList.js",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "303",
+      "role": "region",
+      "name": "3 VideosFirst videoVideo descriptionSecond videoVideo descriptionThird videoVideo description",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "304",
+      "role": "heading",
+      "name": "3 Videos",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "310",
       "role": "link",
       "name": "First videoVideo description",
@@ -429,6 +191,13 @@
       "ref": "311",
       "role": "heading",
       "name": "First video",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "313",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
@@ -447,6 +216,13 @@
       "flags": ""
     },
     {
+      "ref": "325",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "334",
       "role": "link",
       "name": "Third videoVideo description",
@@ -457,6 +233,55 @@
       "ref": "335",
       "role": "heading",
       "name": "Third video",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "337",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "347",
+      "role": "heading",
+      "name": "Add interactivity wherever you need it",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "355",
+      "role": "heading",
+      "name": "SearchableVideoList.js",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "464",
+      "role": "heading",
+      "name": "React Videos",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "468",
+      "role": "form",
+      "name": "Search",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "474",
+      "role": "textbox",
+      "name": "Search",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "476",
+      "role": "heading",
+      "name": "5 Videos",
       "value": "",
       "flags": ""
     },
@@ -475,6 +300,13 @@
       "flags": ""
     },
     {
+      "ref": "483",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "490",
       "role": "link",
       "name": "Rethinking Best PracticesPete Hunt (2013)",
@@ -485,6 +317,13 @@
       "ref": "491",
       "role": "heading",
       "name": "Rethinking Best Practices",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "493",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
@@ -503,6 +342,13 @@
       "flags": ""
     },
     {
+      "ref": "503",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "510",
       "role": "link",
       "name": "Introducing React HooksSophie Alpert and Dan Abramov (2018)",
@@ -513,6 +359,13 @@
       "ref": "511",
       "role": "heading",
       "name": "Introducing React Hooks",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "513",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
@@ -531,6 +384,83 @@
       "flags": ""
     },
     {
+      "ref": "523",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "531",
+      "role": "link",
+      "name": "Add React to your page",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "544",
+      "role": "heading",
+      "name": "Go full-stack with a framework",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "546",
+      "role": "link",
+      "name": "Next.js",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "547",
+      "role": "link",
+      "name": "React Router",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "554",
+      "role": "heading",
+      "name": "confs/[slug].js",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "702",
+      "role": "button",
+      "name": "Reload",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "712",
+      "role": "combobox",
+      "name": "Event",
+      "value": "react-conf-2021",
+      "flags": ""
+    },
+    {
+      "ref": "717",
+      "role": "form",
+      "name": "Search",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "723",
+      "role": "textbox",
+      "name": "Search",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "725",
+      "role": "heading",
+      "name": "19 Videos",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "742",
       "role": "link",
       "name": "React 18 KeynoteThe React Team",
@@ -541,6 +471,13 @@
       "ref": "743",
       "role": "heading",
       "name": "React 18 Keynote",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "745",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
@@ -559,6 +496,13 @@
       "flags": ""
     },
     {
+      "ref": "765",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "782",
       "role": "link",
       "name": "Streaming Server Rendering with SuspenseShaundai Person",
@@ -569,6 +513,13 @@
       "ref": "783",
       "role": "heading",
       "name": "Streaming Server Rendering with Suspense",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "785",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
@@ -587,6 +538,13 @@
       "flags": ""
     },
     {
+      "ref": "805",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "822",
       "role": "link",
       "name": "React Developer ToolingBrian Vaughn",
@@ -597,6 +555,13 @@
       "ref": "823",
       "role": "heading",
       "name": "React Developer Tooling",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "825",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
@@ -615,6 +580,13 @@
       "flags": ""
     },
     {
+      "ref": "845",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "862",
       "role": "link",
       "name": "React Docs KeynoteRachel Nabors",
@@ -625,6 +597,13 @@
       "ref": "863",
       "role": "heading",
       "name": "React Docs Keynote",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "865",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
@@ -643,6 +622,13 @@
       "flags": ""
     },
     {
+      "ref": "885",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "902",
       "role": "link",
       "name": "Learning in the BrowserSarah Rainsberger",
@@ -653,6 +639,13 @@
       "ref": "903",
       "role": "heading",
       "name": "Learning in the Browser",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "905",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
@@ -671,6 +664,13 @@
       "flags": ""
     },
     {
+      "ref": "925",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "942",
       "role": "link",
       "name": "Interactive Playgrounds with ReactDelba de Oliveira",
@@ -681,6 +681,13 @@
       "ref": "943",
       "role": "heading",
       "name": "Interactive Playgrounds with React",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "945",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
@@ -699,6 +706,13 @@
       "flags": ""
     },
     {
+      "ref": "965",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "983",
       "role": "link",
       "name": "React Native DesktopEric Rozell and Steven Moyes",
@@ -709,6 +723,13 @@
       "ref": "984",
       "role": "heading",
       "name": "React Native Desktop",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "986",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
@@ -727,6 +748,13 @@
       "flags": ""
     },
     {
+      "ref": "1006",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1023",
       "role": "link",
       "name": "React 18 for External Store LibrariesDaishi Kato",
@@ -737,6 +765,13 @@
       "ref": "1024",
       "role": "heading",
       "name": "React 18 for External Store Libraries",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1026",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
@@ -755,6 +790,34 @@
       "flags": ""
     },
     {
+      "ref": "1046",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1063",
+      "role": "link",
+      "name": "Accessible Japanese Form Components with ReactTafu Nakazaki",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1064",
+      "role": "heading",
+      "name": "Accessible Japanese Form Components with React",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1066",
+      "role": "button",
+      "name": "Save",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1083",
       "role": "link",
       "name": "UI Tools for ArtistsLyle Troxell",
@@ -765,6 +828,13 @@
       "ref": "1084",
       "role": "heading",
       "name": "UI Tools for Artists",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1086",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
@@ -783,30 +853,23 @@
       "flags": ""
     },
     {
-      "ref": "1259",
-      "role": "link",
-      "name": "React Native",
+      "ref": "1106",
+      "role": "button",
+      "name": "Save",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1483",
+      "ref": "1114",
       "role": "link",
-      "name": "Code of Conduct",
+      "name": "Get started with a framework",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1478",
-      "role": "link",
-      "name": "React DOM APIs",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1286",
-      "role": "link",
-      "name": "Read more React news",
+      "ref": "1126",
+      "role": "heading",
+      "name": "Use the best from every platform",
       "value": "",
       "flags": ""
     },
@@ -818,30 +881,121 @@
       "flags": ""
     },
     {
-      "ref": "1481",
-      "role": "link",
-      "name": "Community",
+      "ref": "1257",
+      "role": "heading",
+      "name": "Go truly native",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1485",
+      "ref": "1259",
       "role": "link",
-      "name": "Meet the Team",
+      "name": "React Native",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1476",
+      "ref": "1260",
       "role": "link",
-      "name": "React APIs",
+      "name": "Expo",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "546",
+      "ref": "1266",
       "role": "link",
-      "name": "Next.js",
+      "name": "Build for native platforms",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1281",
+      "role": "heading",
+      "name": "Upgrade when the future is ready",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1286",
+      "role": "link",
+      "name": "Read more React news",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1299",
+      "role": "link",
+      "name": "The React Foundation: A New Home for React Hosted by the Linux FoundationFebruary 24, 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1302",
+      "role": "heading",
+      "name": "The React Foundation: A New Home for React Hosted by the Linux Foundation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1308",
+      "role": "link",
+      "name": "Additional Vulnerabilities in RSCDecember 11, 2025",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1311",
+      "role": "heading",
+      "name": "Additional Vulnerabilities in RSC",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1317",
+      "role": "link",
+      "name": "Vulnerability in React Server ComponentsDecember 3, 2025",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1320",
+      "role": "heading",
+      "name": "Vulnerability in React Server Components",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1326",
+      "role": "link",
+      "name": "React Conf 2025 RecapOctober 16, 2025",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1329",
+      "role": "heading",
+      "name": "React Conf 2025 Recap",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1339",
+      "role": "heading",
+      "name": "Join a community of millions",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1402",
+      "role": "heading",
+      "name": "Welcome to the React community",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1403",
+      "role": "link",
+      "name": "Take the Tutorial",
       "value": "",
       "flags": ""
     },
@@ -853,44 +1007,9 @@
       "flags": ""
     },
     {
-      "ref": "1467",
-      "role": "link",
-      "name": "Adding Interactivity",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1465",
-      "role": "link",
-      "name": "Describing the UI",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1471",
-      "role": "link",
-      "name": "Escape Hatches",
-      "value": "",
-      "flags": ""
-    },
-    {
       "ref": "1459",
       "role": "link",
       "name": "Learn React",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1469",
-      "role": "link",
-      "name": "Managing State",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1495",
-      "role": "link",
-      "name": "React Native",
       "value": "",
       "flags": ""
     },
@@ -909,219 +1028,86 @@
       "flags": ""
     },
     {
-      "ref": "178",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "313",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "325",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "337",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "483",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "493",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "503",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "513",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "523",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "745",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "765",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "785",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "805",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "825",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "845",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "865",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "885",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "905",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "925",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "945",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "965",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "986",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1006",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1026",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1046",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1066",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1086",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1106",
-      "role": "button",
-      "name": "Save",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1497",
+      "ref": "1465",
       "role": "link",
-      "name": "Privacy",
+      "name": "Describing the UI",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1260",
+      "ref": "1467",
       "role": "link",
-      "name": "Expo",
+      "name": "Adding Interactivity",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1499",
+      "ref": "1469",
       "role": "link",
-      "name": "Terms",
+      "name": "Managing State",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1471",
+      "role": "link",
+      "name": "Escape Hatches",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1474",
+      "role": "link",
+      "name": "API Reference",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1476",
+      "role": "link",
+      "name": "React APIs",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1478",
+      "role": "link",
+      "name": "React DOM APIs",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1481",
+      "role": "link",
+      "name": "Community",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1483",
+      "role": "link",
+      "name": "Code of Conduct",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1485",
+      "role": "link",
+      "name": "Meet the Team",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1487",
+      "role": "link",
+      "name": "Docs Contributors",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1489",
+      "role": "link",
+      "name": "Acknowledgements",
       "value": "",
       "flags": ""
     },
@@ -1133,16 +1119,23 @@
       "flags": ""
     },
     {
-      "ref": "702",
-      "role": "button",
-      "name": "Reload",
+      "ref": "1495",
+      "role": "link",
+      "name": "React Native",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1512",
+      "ref": "1497",
       "role": "link",
-      "name": "React on Github",
+      "name": "Privacy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1499",
+      "role": "link",
+      "name": "Terms",
       "value": "",
       "flags": ""
     },
@@ -1164,6 +1157,13 @@
       "ref": "1509",
       "role": "link",
       "name": "React on Bluesky",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1512",
+      "role": "link",
+      "name": "React on Github",
       "value": "",
       "flags": ""
     }

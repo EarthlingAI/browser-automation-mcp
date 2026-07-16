@@ -8,20 +8,49 @@
     }
   },
   "meta": {
-    "total_candidates": 5161,
+    "total_candidates": 5226,
     "viewport_fallback": {
       "active": true,
       "reason": "page_too_large",
       "threshold": 1500,
-      "total_candidates": 5161
-    }
+      "total_candidates": 5226
+    },
+    "notice": "This page is large — 5226 nodes after pruning, over 'limit' (1500) — so the snapshot is scoped to the in-viewport subset. To reach the rest: scroll and re-snapshot, raise 'limit', scope to a subtree with scope:\"<ref>\", or write the full tree to a file with save_tree_to_path:true."
   },
-  "jsonSize": 10713,
+  "jsonSize": 11624,
   "inventory": [
     {
       "ref": "1",
       "role": "WebArea",
       "name": "Artificial intelligence - Wikipedia",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "6",
+      "role": "navigation",
+      "name": "Site",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "11",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "13",
+      "role": "image",
+      "name": "Wikipedia",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "14",
+      "role": "image",
+      "name": "The Free Encyclopedia",
       "value": "",
       "flags": ""
     },
@@ -54,842 +83,16 @@
       "flags": ""
     },
     {
-      "ref": "51",
-      "role": "button",
-      "name": "hide",
+      "ref": "25",
+      "role": "navigation",
+      "name": "Personal tools",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "180",
-      "role": "button",
-      "name": "hide",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "314",
-      "role": "link",
-      "name": "Artificial general intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "343",
-      "role": "link",
-      "name": "Deep learning",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "135",
-      "role": "heading",
-      "name": "Artificial intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "275",
-      "role": "link",
-      "name": "Virtual assistant",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "257",
-      "role": "link",
-      "name": "Problem-solving",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "193",
-      "role": "note",
-      "name": "\"AI\" redirects here. For other uses, see AI (disambiguation) and Artificial intelligence (disambiguation).",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "195",
-      "role": "link",
-      "name": "Artificial intelligence (disambiguation)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "194",
-      "role": "link",
-      "name": "AI (disambiguation)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "283",
-      "role": "link",
-      "name": "Knowledge representation",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "285",
-      "role": "link",
-      "name": "Natural language processing",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "293",
-      "role": "link",
-      "name": "Mathematical optimization",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "342",
-      "role": "link",
-      "name": "Graphics processing unit",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "253",
-      "role": "link",
-      "name": "Computer",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "163",
-      "role": "listitem",
-      "name": "View source",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "164",
-      "role": "link",
-      "name": "This page is protected.\nYou can view its source [e]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "273",
-      "role": "link",
-      "name": "Web search engine",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "297",
-      "role": "link",
-      "name": "Operations research",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "292",
-      "role": "link",
-      "name": "State space search",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "209",
-      "role": "row",
-      "name": "Approaches\nMachine learning\nSymbolic\nDeep learning\nBayesian networks\nEvolutionary algorithms\nHybrid intelligent systems\nSystems integration\nOpen-source\nAI data centers",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "210",
-      "role": "cell",
-      "name": "Approaches\nMachine learning\nSymbolic\nDeep learning\nBayesian networks\nEvolutionary algorithms\nHybrid intelligent systems\nSystems integration\nOpen-source\nAI data centers",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "213",
-      "role": "row",
-      "name": "Applications\nBioinformatics\nDeepfake\nEarth sciences\n Finance \nGenerative AI\nArt\nAudio\nMusic\nGovernment\nHealthcare\nIndustry\nSoftware development\nTranslation\n Military \nPhysics\nProjects",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "214",
-      "role": "cell",
-      "name": "Applications\nBioinformatics\nDeepfake\nEarth sciences\n Finance \nGenerative AI\nArt\nAudio\nMusic\nGovernment\nHealthcare\nIndustry\nSoftware development\nTranslation\n Military \nPhysics\nProjects",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "217",
-      "role": "link",
-      "name": "Applications of artificial intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "218",
-      "role": "row",
-      "name": "Philosophy\nAI alignment\nArtificial consciousness\nThe bitter lesson\nChinese room\nFriendly AI\nEthics\nExistential risk\nTuring test\nUncanny valley\nHuman–AI interaction",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "219",
-      "role": "cell",
-      "name": "Philosophy\nAI alignment\nArtificial consciousness\nThe bitter lesson\nChinese room\nFriendly AI\nEthics\nExistential risk\nTuring test\nUncanny valley\nHuman–AI interaction",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "222",
-      "role": "link",
-      "name": "Philosophy of artificial intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "223",
-      "role": "row",
-      "name": "History\nTimeline\nProgress\nAI winter\nAI boom\nAI bubble",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "224",
-      "role": "cell",
-      "name": "History\nTimeline\nProgress\nAI winter\nAI boom\nAI bubble",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "227",
-      "role": "link",
-      "name": "History of artificial intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "233",
-      "role": "row",
-      "name": "Glossary\nGlossary",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "234",
-      "role": "cell",
-      "name": "Glossary\nGlossary",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "312",
-      "role": "link",
-      "name": "Google DeepMind",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "201",
-      "role": "row",
-      "name": "Artificial intelligence (AI)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "202",
-      "role": "columnheader",
-      "name": "Artificial intelligence (AI)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "203",
-      "role": "link",
-      "name": "Artificial intelligence (AI)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "260",
-      "role": "link",
-      "name": "Field of research",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "277",
-      "role": "link",
-      "name": "Strategy game",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "198",
-      "role": "row",
-      "name": "Part of a series on",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "199",
-      "role": "cell",
-      "name": "Part of a series on",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "200",
-      "role": "link",
-      "name": "Category:Artificial intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "261",
-      "role": "link",
-      "name": "Engineering",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "294",
-      "role": "link",
-      "name": "Formal logic",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "266",
-      "role": "link",
-      "name": "Intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "303",
-      "role": "link",
-      "name": "Psychology",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "298",
-      "role": "link",
-      "name": "Economics",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "286",
-      "role": "link",
-      "name": "Machine perception",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "53",
-      "role": "listitem",
-      "name": "(Top)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "54",
-      "role": "link",
-      "name": "(Top)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "88",
-      "role": "listitem",
-      "name": "5\n\t\t\t\tHistory",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "89",
-      "role": "link",
-      "name": "5\n\t\t\t\tHistory",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "100",
-      "role": "listitem",
-      "name": "7\n\t\t\t\tFuture\n\t\t\t\n\t\t\n\t\t\n\t\t\t\n\t\t\t\t\n\t\t\t\tToggle Future subsection\n\t\t\t\n\t\t\n\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\t\t\t\t\t7.1\n\t\t\t\t\tSuperintelligence and the singularity\n\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\n\t\t\t\n\t\t\t\t\n\t\t\t\t\t7.2\n\t\t\t\t\tTranshumanism",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "101",
-      "role": "link",
-      "name": "7\n\t\t\t\tFuture",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "104",
-      "role": "button",
-      "name": "Toggle Future subsection",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "108",
-      "role": "listitem",
-      "name": "8\n\t\t\t\tIn fiction",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "109",
-      "role": "link",
-      "name": "8\n\t\t\t\tIn fiction",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "112",
-      "role": "listitem",
-      "name": "9\n\t\t\t\tSee also",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "113",
-      "role": "link",
-      "name": "9\n\t\t\t\tSee also",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "116",
-      "role": "listitem",
-      "name": "10\n\t\t\t\tExplanatory notes",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "117",
-      "role": "link",
-      "name": "10\n\t\t\t\tExplanatory notes",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "128",
-      "role": "listitem",
-      "name": "12\n\t\t\t\tExternal links",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "129",
-      "role": "link",
-      "name": "12\n\t\t\t\tExternal links",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "256",
-      "role": "link",
-      "name": "Reason",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "282",
-      "role": "link",
-      "name": "Automated reasoning",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "333",
-      "role": "link",
-      "name": "AI winter",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "160",
-      "role": "listitem",
-      "name": "Read",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "161",
-      "role": "link",
-      "name": "Read",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "274",
-      "role": "link",
-      "name": "Chatbot",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "264",
-      "role": "link",
-      "name": "Software",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "255",
-      "role": "link",
-      "name": "Learning",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "265",
-      "role": "link",
-      "name": "Machine learning",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "287",
-      "role": "link",
-      "name": "Robotics",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "311",
-      "role": "link",
-      "name": "OpenAI",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "295",
-      "role": "link",
-      "name": "Artificial neural network",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "278",
-      "role": "link",
-      "name": "Chess",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "166",
-      "role": "listitem",
-      "name": "View history",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "167",
-      "role": "link",
-      "name": "Past revisions of this page [h]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "11",
-      "role": "link",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "13",
-      "role": "image",
-      "name": "Wikipedia",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "14",
-      "role": "image",
-      "name": "The Free Encyclopedia",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "276",
-      "role": "link",
-      "name": "Autonomous vehicles",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "313",
-      "role": "link",
-      "name": "Meta Platforms",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "254",
-      "role": "link",
-      "name": "Human intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "263",
-      "role": "link",
-      "name": "Computer science",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "272",
-      "role": "link",
-      "name": "Applications of artificial intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "259",
-      "role": "link",
-      "name": "Decision-making",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "306",
-      "role": "link",
-      "name": "Neuroscience",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "280",
-      "role": "link",
-      "name": "Generative AI",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "262",
-      "role": "link",
-      "name": "Mathematics",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "33",
-      "role": "listitem",
-      "name": "Create account",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "34",
-      "role": "link",
-      "name": "You are encouraged to create an account and log in; however, it is not mandatory",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "149",
-      "role": "listitem",
-      "name": "Article",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "150",
-      "role": "link",
-      "name": "View the content page [c]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "50",
-      "role": "heading",
-      "name": "Contents",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "305",
-      "role": "link",
-      "name": "Philosophy of artificial intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "258",
-      "role": "link",
-      "name": "Perception",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "304",
-      "role": "link",
-      "name": "Linguistics",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "324",
-      "role": "link",
-      "name": "History of artificial intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "204",
-      "role": "row",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "208",
-      "role": "link",
-      "name": "Major goals",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "228",
-      "role": "row",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "232",
-      "role": "link",
-      "name": "Artificial intelligence controversies",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "296",
-      "role": "link",
-      "name": "Statistics",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "284",
-      "role": "link",
-      "name": "Automated planning and scheduling",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "237",
-      "role": "row",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "241",
-      "role": "listitem",
-      "name": "v",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "242",
-      "role": "link",
-      "name": "Template:Artificial intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "244",
-      "role": "listitem",
-      "name": "t",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "245",
-      "role": "link",
-      "name": "Template talk:Artificial intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "247",
-      "role": "listitem",
-      "name": "e",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "248",
-      "role": "link",
-      "name": "Special:EditPage/Template:Artificial intelligence",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "152",
-      "role": "listitem",
-      "name": "Talk",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "153",
-      "role": "link",
-      "name": "Discuss improvements to the content page [t]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "268",
-      "role": "link",
-      "name": "[1]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "289",
-      "role": "link",
-      "name": "[a]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "300",
-      "role": "link",
-      "name": "[b]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "316",
-      "role": "link",
-      "name": "[3]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "321",
-      "role": "link",
-      "name": "[4]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "335",
-      "role": "link",
-      "name": "[7]",
+      "ref": "29",
+      "role": "list",
+      "name": "Donate\n\nCreate account\n\nLog in",
       "value": "",
       "flags": ""
     },
@@ -908,6 +111,20 @@
       "flags": ""
     },
     {
+      "ref": "33",
+      "role": "listitem",
+      "name": "Create account",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "34",
+      "role": "link",
+      "name": "You are encouraged to create an account and log in; however, it is not mandatory",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "36",
       "role": "listitem",
       "name": "Log in",
@@ -918,6 +135,41 @@
       "ref": "37",
       "role": "link",
       "name": "You're encouraged to log in; however, it's not mandatory. [o]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "46",
+      "role": "navigation",
+      "name": "Contents",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "50",
+      "role": "heading",
+      "name": "Contents",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "51",
+      "role": "button",
+      "name": "hide",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "53",
+      "role": "listitem",
+      "name": "(Top)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "54",
+      "role": "link",
+      "name": "(Top)",
       "value": "",
       "flags": ""
     },
@@ -1006,6 +258,20 @@
       "flags": ""
     },
     {
+      "ref": "88",
+      "role": "listitem",
+      "name": "5\n\t\t\t\tHistory",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "89",
+      "role": "link",
+      "name": "5\n\t\t\t\tHistory",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "92",
       "role": "listitem",
       "name": "",
@@ -1023,6 +289,76 @@
       "ref": "96",
       "role": "button",
       "name": "Toggle Philosophy subsection",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "100",
+      "role": "listitem",
+      "name": "7\n\t\t\t\tFuture\n\t\t\t\n\t\t\n\t\t\n\t\t\t\n\t\t\t\t\n\t\t\t\tToggle Future subsection\n\t\t\t\n\t\t\n\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\t\t\t\t\t7.1\n\t\t\t\t\tSuperintelligence and the singularity\n\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\n\t\t\t\n\t\t\t\t\n\t\t\t\t\t7.2\n\t\t\t\t\tTranshumanism",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "101",
+      "role": "link",
+      "name": "7\n\t\t\t\tFuture",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "104",
+      "role": "button",
+      "name": "Toggle Future subsection",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "107",
+      "role": "list",
+      "name": "7.1\n\t\t\t\t\tSuperintelligence and the singularity\n\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\n\t\t\t\n\t\t\t\t\n\t\t\t\t\t7.2\n\t\t\t\t\tTranshumanism",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "108",
+      "role": "listitem",
+      "name": "8\n\t\t\t\tIn fiction",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "109",
+      "role": "link",
+      "name": "8\n\t\t\t\tIn fiction",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "112",
+      "role": "listitem",
+      "name": "9\n\t\t\t\tSee also",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "113",
+      "role": "link",
+      "name": "9\n\t\t\t\tSee also",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "116",
+      "role": "listitem",
+      "name": "10\n\t\t\t\tExplanatory notes",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "117",
+      "role": "link",
+      "name": "10\n\t\t\t\tExplanatory notes",
       "value": "",
       "flags": ""
     },
@@ -1048,9 +384,149 @@
       "flags": ""
     },
     {
-      "ref": "279",
+      "ref": "127",
+      "role": "list",
+      "name": "11.1\n\t\t\t\t\tTextbooks\n\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\n\t\t\t\n\t\t\t\t\n\t\t\t\t\t11.2\n\t\t\t\t\tHistory of AI\n\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\n\t\t\t\n\t\t\t\t\n\t\t\t\t\t11.3\n\t\t\t\t\tOther sources",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "128",
+      "role": "listitem",
+      "name": "12\n\t\t\t\tExternal links",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "129",
       "role": "link",
-      "name": "Go (game)",
+      "name": "12\n\t\t\t\tExternal links",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "135",
+      "role": "heading",
+      "name": "Artificial intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "145",
+      "role": "navigation",
+      "name": "Namespaces",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "148",
+      "role": "list",
+      "name": "ArticleTalk",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "149",
+      "role": "listitem",
+      "name": "Article",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "150",
+      "role": "link",
+      "name": "View the content page [c]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "152",
+      "role": "listitem",
+      "name": "Talk",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "153",
+      "role": "link",
+      "name": "Discuss improvements to the content page [t]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "156",
+      "role": "navigation",
+      "name": "Views",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "159",
+      "role": "list",
+      "name": "ReadView sourceView history",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "160",
+      "role": "listitem",
+      "name": "Read",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "161",
+      "role": "link",
+      "name": "Read",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "163",
+      "role": "listitem",
+      "name": "View source",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "164",
+      "role": "link",
+      "name": "This page is protected.\nYou can view its source [e]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "166",
+      "role": "listitem",
+      "name": "View history",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "167",
+      "role": "link",
+      "name": "Past revisions of this page [h]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "169",
+      "role": "navigation",
+      "name": "Page tools",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "175",
+      "role": "navigation",
+      "name": "Appearance",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "180",
+      "role": "button",
+      "name": "hide",
       "value": "",
       "flags": ""
     },
@@ -1069,9 +545,583 @@
       "flags": ""
     },
     {
+      "ref": "193",
+      "role": "note",
+      "name": "\"AI\" redirects here. For other uses, see AI (disambiguation) and Artificial intelligence (disambiguation).",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "194",
+      "role": "link",
+      "name": "AI (disambiguation)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "195",
+      "role": "link",
+      "name": "Artificial intelligence (disambiguation)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "198",
+      "role": "row",
+      "name": "Part of a series on",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "199",
+      "role": "cell",
+      "name": "Part of a series on",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "200",
+      "role": "link",
+      "name": "Category:Artificial intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "201",
+      "role": "row",
+      "name": "Artificial intelligence (AI)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "202",
+      "role": "columnheader",
+      "name": "Artificial intelligence (AI)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "203",
+      "role": "link",
+      "name": "Artificial intelligence (AI)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "204",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "208",
+      "role": "link",
+      "name": "Major goals",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "209",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": "values=1"
+    },
+    {
+      "ref": "213",
+      "role": "row",
+      "name": "Applications\nBioinformatics\nDeepfake\nEarth sciences\n Finance \nGenerative AI\nArt\nAudio\nMusic\nGovernment\nHealthcare\nIndustry\nSoftware development\nTranslation\n Military \nPhysics\nProjects",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "214",
+      "role": "cell",
+      "name": "Applications\nBioinformatics\nDeepfake\nEarth sciences\n Finance \nGenerative AI\nArt\nAudio\nMusic\nGovernment\nHealthcare\nIndustry\nSoftware development\nTranslation\n Military \nPhysics\nProjects",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "217",
+      "role": "link",
+      "name": "Applications of artificial intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "218",
+      "role": "row",
+      "name": "Philosophy\nAI alignment\nArtificial consciousness\nThe bitter lesson\nChinese room\nFriendly AI\nEthics\nExistential risk\nTuring test\nUncanny valley\nHuman–AI interaction",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "219",
+      "role": "cell",
+      "name": "Philosophy\nAI alignment\nArtificial consciousness\nThe bitter lesson\nChinese room\nFriendly AI\nEthics\nExistential risk\nTuring test\nUncanny valley\nHuman–AI interaction",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "222",
+      "role": "link",
+      "name": "Philosophy of artificial intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "223",
+      "role": "row",
+      "name": "History\nTimeline\nProgress\nAI winter\nAI boom\nAI bubble",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "224",
+      "role": "cell",
+      "name": "History\nTimeline\nProgress\nAI winter\nAI boom\nAI bubble",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "227",
+      "role": "link",
+      "name": "History of artificial intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "228",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "232",
+      "role": "link",
+      "name": "Artificial intelligence controversies",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "233",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": "values=1"
+    },
+    {
+      "ref": "237",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "240",
+      "role": "list",
+      "name": "vte",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "241",
+      "role": "listitem",
+      "name": "v",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "242",
+      "role": "link",
+      "name": "Template:Artificial intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "244",
+      "role": "listitem",
+      "name": "t",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "245",
+      "role": "link",
+      "name": "Template talk:Artificial intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "247",
+      "role": "listitem",
+      "name": "e",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "248",
+      "role": "link",
+      "name": "Special:EditPage/Template:Artificial intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "253",
+      "role": "link",
+      "name": "Computer",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "254",
+      "role": "link",
+      "name": "Human intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "255",
+      "role": "link",
+      "name": "Learning",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "256",
+      "role": "link",
+      "name": "Reason",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "257",
+      "role": "link",
+      "name": "Problem-solving",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "258",
+      "role": "link",
+      "name": "Perception",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "259",
+      "role": "link",
+      "name": "Decision-making",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "260",
+      "role": "link",
+      "name": "Field of research",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "261",
+      "role": "link",
+      "name": "Engineering",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "262",
+      "role": "link",
+      "name": "Mathematics",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "263",
+      "role": "link",
+      "name": "Computer science",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "264",
+      "role": "link",
+      "name": "Software",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "265",
+      "role": "link",
+      "name": "Machine learning",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "266",
+      "role": "link",
+      "name": "Intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "268",
+      "role": "link",
+      "name": "[1]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "272",
+      "role": "link",
+      "name": "Applications of artificial intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "273",
+      "role": "link",
+      "name": "Web search engine",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "274",
+      "role": "link",
+      "name": "Chatbot",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "275",
+      "role": "link",
+      "name": "Virtual assistant",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "276",
+      "role": "link",
+      "name": "Autonomous vehicles",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "277",
+      "role": "link",
+      "name": "Strategy game",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "278",
+      "role": "link",
+      "name": "Chess",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "279",
+      "role": "link",
+      "name": "Go (game)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "280",
+      "role": "link",
+      "name": "Generative AI",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "282",
+      "role": "link",
+      "name": "Automated reasoning",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "283",
+      "role": "link",
+      "name": "Knowledge representation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "284",
+      "role": "link",
+      "name": "Automated planning and scheduling",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "285",
+      "role": "link",
+      "name": "Natural language processing",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "286",
+      "role": "link",
+      "name": "Machine perception",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "287",
+      "role": "link",
+      "name": "Robotics",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "289",
+      "role": "link",
+      "name": "[a]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "292",
+      "role": "link",
+      "name": "State space search",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "293",
+      "role": "link",
+      "name": "Mathematical optimization",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "294",
+      "role": "link",
+      "name": "Formal logic",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "295",
+      "role": "link",
+      "name": "Artificial neural network",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "296",
+      "role": "link",
+      "name": "Statistics",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "297",
+      "role": "link",
+      "name": "Operations research",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "298",
+      "role": "link",
+      "name": "Economics",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "300",
+      "role": "link",
+      "name": "[b]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "303",
+      "role": "link",
+      "name": "Psychology",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "304",
+      "role": "link",
+      "name": "Linguistics",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "305",
+      "role": "link",
+      "name": "Philosophy of artificial intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "306",
+      "role": "link",
+      "name": "Neuroscience",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "308",
       "role": "link",
       "name": "[2]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "311",
+      "role": "link",
+      "name": "OpenAI",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "312",
+      "role": "link",
+      "name": "Google DeepMind",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "313",
+      "role": "link",
+      "name": "Meta Platforms",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "314",
+      "role": "link",
+      "name": "Artificial general intelligence",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "316",
+      "role": "link",
+      "name": "[3]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "321",
+      "role": "link",
+      "name": "[4]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "324",
+      "role": "link",
+      "name": "History of artificial intelligence",
       "value": "",
       "flags": ""
     },
@@ -1090,9 +1140,37 @@
       "flags": ""
     },
     {
+      "ref": "333",
+      "role": "link",
+      "name": "AI winter",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "335",
+      "role": "link",
+      "name": "[7]",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "339",
       "role": "link",
       "name": "[8]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "342",
+      "role": "link",
+      "name": "Graphics processing unit",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "343",
+      "role": "link",
+      "name": "Deep learning",
       "value": "",
       "flags": ""
     },

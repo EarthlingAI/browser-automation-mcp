@@ -40,11 +40,17 @@ import { serializeDiff } from "../../snapshot/diff";
 import type { TabId } from "../../protocol";
 import {
   type ImagePayload,
+  mergeRefsIntoRegistry,
   populateRefs,
   type ToolContext,
 } from "../registry";
 import { computeDrawStroke } from "./containment";
-import { resolveSavePath, writeImage } from "./save";
+import {
+  resolveSavePath,
+  resolveTreeSavePath,
+  writeImage,
+  writeText,
+} from "./save";
 import { VISUAL_CONSTANTS } from "./visual";
 
 /**
@@ -73,6 +79,14 @@ export interface CaptureOpts {
   maxWidth?: number;
   /** false → no save (default). true → auto-named in outputs_dir. String → explicit path. */
   save_to_path: boolean | string;
+  /**
+   * Offload the FULL UNCAPPED outline (no limit, no viewport filter; honours
+   * `scope`) to a .txt/.md file. PER-CALL ONLY (invariant #39). The uncapped
+   * tree's refs merge into `refRegistry` only — never `lastSnapshotRefs` — so
+   * refs the agent reads from the file resolve via the standard
+   * carried-forward path. Write failures are non-fatal (`treeSaveError`).
+   */
+  save_tree_to_path?: boolean | string;
   /** False for `browser_snapshot(screenshot:"raw", withTree:false)` paths — skip the tree walk entirely. */
   withTree: boolean;
   /**
@@ -89,6 +103,15 @@ export interface CaptureOpts {
    * (invariant #8) so an agent that opted in stays OOPIF-aware per action.
    */
   includeCrossOriginFrames?: boolean;
+  /**
+   * Scope the snapshot to the subtree rooted at this ref (a raw-tree nodeId,
+   * including `fN:` refs when the same call descends cross-origin frames).
+   * PER-CALL ONLY — never enters SnapshotParams, never replayed (invariant
+   * #39). A scoped snapshot does NOT update the diff baseline
+   * (`lastPrunedTree`): the baseline stays "last full-tree observation" so the
+   * next action's auto-diff doesn't report every out-of-scope node as added.
+   */
+  scope?: string;
 }
 
 export interface CaptureResult {
@@ -108,6 +131,16 @@ interface SnapshotCaptureResponse {
   /** Set only when `withTree:true`; the annotation hop reads it. The
    * `withTree:false` standalone path doesn't need it — no rect scaling. */
   cssViewport?: { w: number; h: number };
+}
+
+/** Locate the raw node whose nodeId equals the agent-visible ref. */
+function findRawByNodeId(node: RawNode, nodeId: string): RawNode | undefined {
+  if (node.nodeId === nodeId) return node;
+  for (const child of node.children) {
+    const match = findRawByNodeId(child, nodeId);
+    if (match) return match;
+  }
+  return undefined;
 }
 
 interface AnnotateImageResponse {
@@ -167,7 +200,36 @@ export async function runUnifiedCapture(
   let justPopulated = false;
 
   if (opts.withTree && captureResp.tree) {
-    const prunedTree = prune(captureResp.tree, {
+    // Scope: select the raw subtree BEFORE pruning, so limit/viewport/distill
+    // all operate within the scoped region. Raw-tree nodeIds ARE the refs the
+    // agent saw (including rebased fN: ids after cross-origin descent).
+    let pruneRoot = captureResp.tree;
+    if (opts.scope) {
+      // Cross-tab guard: page-side node ids are per-tab and both start at 1,
+      // so a ref minted on another tab would usually COLLIDE with a real node
+      // here and silently scope to the wrong element — fail loud instead
+      // (mirrors resolveRef's cross-tab error for action refs).
+      if (ctx.session.lastSnapshotTabId !== tabId) {
+        throw new Error(
+          `scope ref ${opts.scope} cannot be resolved on tab ${tabId} — the last snapshot was of ` +
+            (ctx.session.lastSnapshotTabId !== undefined
+              ? `tab ${ctx.session.lastSnapshotTabId}`
+              : `no tab`) +
+            `, and refs are per-tab. Call browser_snapshot on tab ${tabId} first, then scope to a ref from that snapshot.`,
+        );
+      }
+      const scoped = findRawByNodeId(captureResp.tree, opts.scope);
+      if (!scoped) {
+        throw new Error(
+          `scope ref ${opts.scope} not found on tab ${tabId} — the element may have been removed, ` +
+            `the ref may be from another tab or an older page state, or it may live inside a ` +
+            `cross-origin frame (pass includeCrossOriginFrames:true on the SAME call and scope to its fN: ref). ` +
+            `Retry without 'scope' to see the whole page.`,
+        );
+      }
+      pruneRoot = scoped;
+    }
+    const prunedTree = prune(pruneRoot, {
       limit: opts.limit,
       viewportOnly: opts.viewportOnly,
       detail: opts.detail,
@@ -191,11 +253,17 @@ export async function runUnifiedCapture(
     // turns over every ref, so the delta is all-removed + all-added). An
     // explicit browser_snapshot leaves allowDiff false → always full. `meta.mode`
     // records what was actually returned so the agent can tell at a glance.
+    // A scoped snapshot never diffs (the prior baseline is a full tree — the
+    // delta would be all out-of-scope refs "removed") and never REPLACES the
+    // baseline (see CaptureOpts.scope). In practice scope is per-call-only and
+    // allowDiff comes from the replay path, so the two never co-occur — the
+    // guard is belt-and-braces.
     const prior =
-      opts.allowDiff && ctx.session.lastPrunedTreeTabId === tabId
+      !opts.scope && opts.allowDiff && ctx.session.lastPrunedTreeTabId === tabId
         ? ctx.session.lastPrunedTree
         : undefined;
     const snapMeta: PruneMeta = { ...(meta ?? {}) };
+    if (opts.scope) snapMeta.scope = opts.scope;
     // Surface the child-frame summary from the raw tree root (helpers.js logs
     // every frame the walk saw). Loud cross-origin boundaries (invariant #20):
     // a frame with `descended:false` was not traversed by the default snapshot.
@@ -219,10 +287,44 @@ export async function runUnifiedCapture(
     }
     payload.tree = meta?.notice ? `NOTE: ${meta.notice}\n${body}` : body;
     payload.meta = snapMeta;
-    // Refresh the baseline for the NEXT auto-snapshot diff (CP5).
-    ctx.session.lastPrunedTree = newTree;
-    ctx.session.lastPrunedTreeTabId = tabId;
+    // Refresh the baseline for the NEXT auto-snapshot diff (CP5) — except on a
+    // scoped snapshot, whose subtree must not masquerade as a full-page prior.
+    if (!opts.scope) {
+      ctx.session.lastPrunedTree = newTree;
+      ctx.session.lastPrunedTreeTabId = tabId;
+    }
     justPopulated = true;
+
+    // Tree offload: a second, UNCAPPED pipeline pass over the same raw tree
+    // (limit ∞, no viewport filter, same scope/detail) written to disk. Its
+    // refs merge into the cumulative registry so a ref the agent reads from
+    // the file is actable; non-fatal like the image save.
+    if (opts.save_tree_to_path) {
+      try {
+        const treePath = resolveTreeSavePath(opts.save_tree_to_path, tabId);
+        const uncapped = prune(pruneRoot, {
+          limit: Number.MAX_SAFE_INTEGER,
+          viewportOnly: false,
+          detail: opts.detail,
+        });
+        const { meta: _uMeta, ...uncappedTree } = uncapped;
+        writeText(treePath, serializeTree(uncappedTree as PrunedNode));
+        mergeRefsIntoRegistry(
+          ctx.session,
+          uncappedTree as PrunedNode,
+          captureResp.tree,
+          tabId,
+        );
+        payload.treeSavedTo = treePath;
+      } catch (err: any) {
+        payload.treeSaveError = err?.message ?? String(err);
+      }
+    }
+  } else if (opts.save_tree_to_path) {
+    // The caller asked for an offload but the capture returned no tree — keep
+    // the "non-fatal but surfaced" contract (like saveError for images).
+    payload.treeSaveError =
+      "the capture returned no tree, so there was nothing to save — re-snapshot and retry";
   }
 
   let imageBase64 = captureResp.screenshot?.dataBase64;

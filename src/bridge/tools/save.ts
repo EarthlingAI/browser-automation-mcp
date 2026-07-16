@@ -110,6 +110,52 @@ export function writeImage(
   writeFileSync(absolutePath, Buffer.from(dataBase64, "base64"));
 }
 
+// ── Tree offload (`save_tree_to_path`) — text-file variants of the image-save
+// contracts above. Same shape: boolean|string, auto-name on `true`, `..`
+// rejection, extension gate, relative-resolves-to-outputs-dir.
+
+/** Extensions accepted for a tree offload target. */
+export const TREE_EXTS = [".txt", ".md"];
+/** Extension chosen for the `save_tree_to_path:true` auto-named file. */
+export const TREE_AUTO_NAME_EXT = ".txt";
+
+/**
+ * Resolve the agent's `save_tree_to_path` arg into an absolute path. Only
+ * called when the arg is truthy (`false`/`undefined` means "no offload" and is
+ * short-circuited by the caller).
+ *
+ *  - `true`   → `<outputs_dir>/tree_<tab>_<ms>.txt`
+ *  - `string` → resolved; `..` segments rejected; extension must be .txt/.md
+ */
+export function resolveTreeSavePath(
+  value: true | string,
+  tabId: number,
+): string {
+  if (value === true) {
+    return resolve(
+      getOutputsDir(),
+      `tree_${tabId}_${Date.now()}${TREE_AUTO_NAME_EXT}`,
+    );
+  }
+  if (value.split(/[/\\]/).some((seg) => seg === "..")) {
+    throw new Error(
+      `save_tree_to_path "${value}" contains ".." which is not allowed`,
+    );
+  }
+  const ext = extname(value).toLowerCase();
+  if (!TREE_EXTS.includes(ext)) {
+    throw new Error(
+      `save_tree_to_path "${value}" has unsupported extension "${ext || "(none)"}" — use one of: ${TREE_EXTS.join(", ")}`,
+    );
+  }
+  return isAbsolute(value) ? value : resolve(getOutputsDir(), value);
+}
+
+export function writeText(absolutePath: string, text: string): void {
+  mkdirSync(dirname(absolutePath), { recursive: true });
+  writeFileSync(absolutePath, text, "utf8");
+}
+
 /**
  * Schema for `save_to_path` — used by `browser_snapshot`. Two-stage validation:
  *
@@ -145,4 +191,38 @@ export const saveToPathSchema = z
       'String — explicit path; extension picks the format (".png" → PNG, ".jpg"/".jpeg" → JPEG). ' +
       "Relative resolves to outputs_dir; absolute allowed; \"..\" segments rejected. " +
       "Save errors are non-fatal: the image still returns; failure surfaces as `saveError` in the text envelope.",
+  );
+
+/**
+ * Schema for `save_tree_to_path` — used by `browser_snapshot`. Same two-stage
+ * validation shape as `saveToPathSchema` (boolean-coerce before the union so
+ * stringified `"true"`/`"false"` don't become literal paths; extension gated
+ * at schema time).
+ */
+export const saveTreeToPathSchema = z
+  .preprocess(
+    (v) => {
+      const coerced = coerceBoolean(v);
+      return typeof coerced === "boolean" ? coerced : v;
+    },
+    z.union([z.string().min(1), z.boolean()]),
+  )
+  .default(false)
+  .refine(
+    (v) => {
+      if (typeof v !== "string") return true;
+      return TREE_EXTS.includes(extname(v).toLowerCase());
+    },
+    {
+      message: `save_tree_to_path string must end in one of: ${TREE_EXTS.join(", ")}`,
+    },
+  )
+  .describe(
+    "Write the FULL UNCAPPED outline of this snapshot to a text file — no 'limit', no viewport " +
+      "scoping (honours 'scope' if passed) — and return its path as `treeSavedTo`. The escape hatch " +
+      "for pages too big to inline: read the file, then act on any [ref=N] it contains (file-sourced " +
+      "refs resolve like any other). false (default) — no file. true — auto-pick " +
+      "<outputs_dir>/tree_<tabId>_<ms>.txt. String — explicit .txt/.md path (relative resolves to " +
+      "outputs_dir; \"..\" rejected). Per-call only, never carried into auto-snapshots. " +
+      "Write errors are non-fatal (`treeSaveError`).",
   );

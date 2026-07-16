@@ -234,6 +234,31 @@ test("replaySnapshot never persists save_to_path — even after a save'd snapsho
   assert.equal(calls[0].command.withScreenshot, false);
 });
 
+test("replaySnapshot never replays scope or save_tree_to_path (invariant #39)", async () => {
+  const { ctx, calls, session } = makeCtx({
+    daemonResponses: [
+      { tree: T1, screenshot: undefined, cssViewport: { w: 1280, h: 720 } },
+    ],
+  });
+  // Even a hostile/buggy caller stuffing `scope` into the params map must not
+  // leak it into the replay pipeline: replaySnapshot builds CaptureOpts from
+  // the KNOWN SnapshotParams fields only.
+  updateSnapshotParams(ctx.session, {
+    tabId: 7,
+    ...STD_PARAMS,
+    scope: "20",
+    save_tree_to_path: true,
+  });
+  session.lastLeasedTab = 7;
+  const out = await replaySnapshot(ctx);
+  assert.ok(out.payload.tree, "capture ran");
+  assert.equal(out.payload.meta.scope, undefined, "scope must not reach the replay capture");
+  assert.equal(out.payload.treeSavedTo, undefined, "save_tree_to_path must not reach the replay capture");
+  // Full-page prune: the root and its child both present.
+  assert.match(out.payload.tree, /\[ref=1\]/);
+  assert.equal(calls[0].command.kind, "snapshot_capture");
+});
+
 test("runUnifiedCapture skips annotation hop when there are no refs", async () => {
   // Edge case: empty tree → no refs → no rects → annotate_image would be a
   // no-op round trip. Verify it's not even called.

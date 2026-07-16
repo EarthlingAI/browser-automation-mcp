@@ -8,6 +8,7 @@
  */
 
 export { prune, type RawNode, type PrunedNode } from "./snapshot/prune";
+export { distill } from "./snapshot/distill";
 export { serializeTree } from "./snapshot/serialize";
 export { serializeDiff } from "./snapshot/diff";
 export { parseRef, formatRef, compareRefs } from "./snapshot/ref";
@@ -16,6 +17,7 @@ export {
   toolResult,
   toolError,
   populateRefs,
+  mergeRefsIntoRegistry,
   resolveRef,
   refNeedsVerification,
   nearbyRefsError,
@@ -30,8 +32,12 @@ export { registerInteractTools } from "./bridge/tools/interact";
 export { coerceToArray, coerceLiteralNumber, coerceBoolean } from "./bridge/tools/coerce";
 export {
   resolveSavePath,
+  resolveTreeSavePath,
   getOutputsDir,
   saveToPathSchema,
+  saveTreeToPathSchema,
+  writeText,
+  TREE_EXTS,
 } from "./bridge/tools/save";
 export { VISUAL_CONSTANTS } from "./bridge/tools/visual";
 export { computeDrawStroke } from "./bridge/tools/containment";

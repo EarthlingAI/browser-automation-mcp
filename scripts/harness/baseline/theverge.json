@@ -8,9 +8,9 @@
     }
   },
   "meta": {
-    "total_candidates": 445
+    "total_candidates": 452
   },
-  "jsonSize": 32628,
+  "jsonSize": 33373,
   "inventory": [
     {
       "ref": "1",
@@ -20,1556 +20,37 @@
       "flags": ""
     },
     {
-      "ref": "68",
-      "role": "img",
-      "name": "The VergeThe Verge logo.",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "752",
-      "role": "tablist",
-      "name": "LatestFollowing",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "754",
-      "role": "tab",
-      "name": "Following",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "753",
-      "role": "tab",
-      "name": "Latest",
-      "value": "",
-      "flags": "selected"
-    },
-    {
-      "ref": "756",
-      "role": "tabpanel",
-      "name": "Latest",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "768",
-      "role": "link",
-      "name": "You can buy two of Anker’s Qi2 wireless chargers for under $25",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "762",
-      "role": "image",
-      "name": "You can buy two of Anker’s Qi2 wireless chargers for under $25",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "788",
-      "role": "image",
-      "name": "Andrew J. Hawkins",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "778",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble1",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "863",
-      "role": "image",
-      "name": "What would you be willing to put in your body?",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "886",
-      "role": "image",
-      "name": "How Ferrari bungled the design of its first EV",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1071",
-      "role": "image",
-      "name": "Backrooms is at the forefront of horror’s YouTube wave",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1144",
-      "role": "image",
-      "name": "Hundreds of prolific Wikipedia editors are threatening to go on strike",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1252",
-      "role": "image",
-      "name": "Adobe’s conversational AI agent is a mediocre design intern",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1151",
-      "role": "link",
-      "name": "Hundreds of prolific Wikipedia editors are threatening to go on strike",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1259",
-      "role": "link",
-      "name": "Adobe’s conversational AI agent is a mediocre design intern",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "893",
-      "role": "link",
-      "name": "How Ferrari bungled the design of its first EV",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "870",
-      "role": "link",
-      "name": "What would you be willing to put in your body?",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1078",
-      "role": "link",
-      "name": "Backrooms is at the forefront of horror’s YouTube wave",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1389",
-      "role": "link",
-      "name": "Blue Origin explosion is a major setback for NASA’s Moon plans and Amazon’s Starlink competitor",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "985",
-      "role": "listitem",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "986",
-      "role": "listitem",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "987",
-      "role": "listitem",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2057",
-      "role": "link",
-      "name": "More Control, Faster Playlist Editing, and Other Updates for Everyday Listening on Spotify — Spotify",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1054",
-      "role": "link",
-      "name": "Acer’s answer to the MacBook Neo is a $699 laptop with Intel chips and 8GB of RAM",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1708",
-      "role": "link",
-      "name": "Amazon’s last-gen Paperwhite is on sale for less than the entry-level Kindle",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1173",
-      "role": "link",
-      "name": "This AI startup will clean your home for free to train future robots",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1685",
-      "role": "link",
-      "name": "Microsoft 365 Copilot gets a speed boost and cleaner design",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1359",
-      "role": "listitem",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1360",
-      "role": "listitem",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1361",
-      "role": "listitem",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1362",
-      "role": "listitem",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1100",
-      "role": "link",
-      "name": "Trump Mobile’s website still says the T1 Phone is ‘American-made’",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1289",
-      "role": "link",
-      "name": "designed for glass doors",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "960",
-      "role": "link",
-      "name": "Missile Command battlefield recreated on its face",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1560",
-      "role": "link",
-      "name": "big gaming events",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1559",
-      "role": "link",
-      "name": "Thinky Direct 2026",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1523",
-      "role": "link",
-      "name": "the Financial Times reports",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1456",
-      "role": "link",
-      "name": "FCC’s demand for the premature license renewal",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1739",
-      "role": "link",
-      "name": "Deadline reports",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1592",
-      "role": "link",
-      "name": "plans to sign",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1818",
-      "role": "link",
-      "name": "recently-updated Google Workspace icons",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2050",
-      "role": "link",
-      "name": "earlier this year",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1630",
-      "role": "link",
-      "name": "Disney has already started doing",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "833",
-      "role": "link",
-      "name": "new Google Workspace feature",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1420",
-      "role": "link",
-      "name": "just after 9PM ET",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2053",
-      "role": "link",
-      "name": "in Spotify’s blog post",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1022",
-      "role": "link",
-      "name": "numbers aren’t even right",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1488",
-      "role": "link",
-      "name": "case seeking to block it",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1863",
-      "role": "link",
-      "name": "The DOJ Wants to Know Who on Reddit and X Is Criticizing ICE's Tactics",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1638",
-      "role": "link",
-      "name": "Disney is preparing for a world without the Hulu app",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2020",
-      "role": "link",
-      "name": "Toyota halts development of next-gen Lexus EV model",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1020",
-      "role": "link",
-      "name": "great replacement talking points",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1900",
-      "role": "link",
-      "name": "I Want My CRT: The 'Insane' Demand for Giant Old-School TVs, Explained - Racket",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1858",
-      "role": "link",
-      "name": "according to Bloomberg",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1961",
-      "role": "link",
-      "name": "Anthropic raises $65B in Series H funding at $965B post-money valuation",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1599",
-      "role": "link",
-      "name": "Illinois Legislature passes historic AI bill that would require third-party safety audits",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1196",
-      "role": "link",
-      "name": "This is MSI’s new Claw 8 EX AI Plus gaming handheld",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1924",
-      "role": "link",
-      "name": "Motorola’s last-gen Razr Ultra is almost half off",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1662",
-      "role": "link",
-      "name": "Nintendo’s newest WarioWare is a weirdo smartphone app",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1985",
-      "role": "link",
-      "name": "The line between games and movies keeps getting blurrier",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1493",
-      "role": "link",
-      "name": "Fifth Circuit Lifts Block on Texas Age Requirements for Apps",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1331",
-      "role": "link",
-      "name": "shared photos of iPhone 18 dummy units",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1048",
-      "role": "image",
-      "name": "Acer’s answer to the MacBook Neo is a $699 laptop with Intel chips and 8GB of RAM",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1094",
-      "role": "image",
-      "name": "Trump Mobile’s website still says the T1 Phone is ‘American-made’",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1121",
-      "role": "image",
-      "name": "Jony Ive’s funky Ferrari",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1167",
-      "role": "image",
-      "name": "This AI startup will clean your home for free to train future robots",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1190",
-      "role": "image",
-      "name": "This is MSI’s new Claw 8 EX AI Plus gaming handheld",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1383",
-      "role": "image",
-      "name": "Blue Origin explosion is a major setback for NASA’s Moon plans and Amazon’s Starlink competitor",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1656",
-      "role": "image",
-      "name": "Nintendo’s newest WarioWare is a weirdo smartphone app",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1679",
-      "role": "image",
-      "name": "Microsoft 365 Copilot gets a speed boost and cleaner design",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1702",
-      "role": "image",
-      "name": "Amazon’s last-gen Paperwhite is on sale for less than the entry-level Kindle",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1918",
-      "role": "image",
-      "name": "Motorola’s last-gen Razr Ultra is almost half off",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1979",
-      "role": "image",
-      "name": "The line between games and movies keeps getting blurrier",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1530",
-      "role": "link",
-      "name": "computing becomes more expensive",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2074",
-      "role": "link",
-      "name": "More Stories",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1953",
-      "role": "link",
-      "name": "according to The New York Times",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1744",
-      "role": "link",
-      "name": "Lionsgate Joins Movies Anywhere",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "975",
-      "role": "button",
-      "name": "Previous",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "979",
-      "role": "button",
-      "name": "Next",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1349",
-      "role": "button",
-      "name": "Previous",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1353",
-      "role": "button",
-      "name": "Next",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1127",
-      "role": "link",
-      "name": "Jony Ive’s funky Ferrari",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1894",
-      "role": "link",
-      "name": "Minnesota parking lot deals",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1333",
-      "role": "link",
-      "name": "last year’s iPhone 17 colors",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "958",
-      "role": "link",
-      "name": "Asteroids-themed watch",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "921",
-      "role": "link",
-      "name": "Blue Origin has warned",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "922",
-      "role": "link",
-      "name": "recent hotfire anomaly",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "797",
-      "role": "link",
-      "name": "a Reuters investigation",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1332",
-      "role": "link",
-      "name": "launching next spring",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1774",
-      "role": "link",
-      "name": "standard.site schema",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1893",
-      "role": "link",
-      "name": "restoration struggles",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1815",
-      "role": "link",
-      "name": "Android Authority",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2016",
-      "role": "link",
-      "name": "LF-ZC concept EV",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1489",
-      "role": "link",
-      "name": "test of a method",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1234",
-      "role": "link",
-      "name": "The Verge Daily",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1817",
-      "role": "link",
-      "name": "getting updated",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1957",
-      "role": "link",
-      "name": "Anthropic says",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1895",
-      "role": "link",
-      "name": "global capers",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1775",
-      "role": "link",
-      "name": "will include",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2014",
-      "role": "link",
-      "name": "Nikkei Asia",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1868",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble16",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1966",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble16",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1370",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble12",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1534",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble17",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1631",
-      "role": "link",
-      "name": "to the unif",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1594",
-      "role": "link",
-      "name": "California",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1288",
-      "role": "link",
-      "name": "Gate Lock",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1225",
-      "role": "link",
-      "name": "Alphafold",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1419",
-      "role": "link",
-      "name": "exploding",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1428",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble11",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1418",
-      "role": "link",
-      "name": "grounded",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1593",
-      "role": "link",
-      "name": "New York",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1287",
-      "role": "link",
-      "name": "Rim Lock",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1604",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble4",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1643",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble4",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1905",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble4",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1453",
-      "role": "link",
-      "name": "Deadline",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "808",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble3",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "850",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble0",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "929",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble3",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "995",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble3",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1239",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble0",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1498",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble0",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1567",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble0",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1833",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble5",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2062",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble5",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1110",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble9",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1749",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble2",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1463",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble7",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1035",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble1",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1306",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble1",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1790",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble1",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2025",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble1",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "824",
-      "role": "image",
-      "name": "Stevie Bonifield",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "912",
-      "role": "image",
-      "name": "Jess Weatherbed",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "949",
-      "role": "image",
-      "name": "Andrew Liszewski",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1011",
-      "role": "image",
-      "name": "Gaby Del Valle",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1216",
-      "role": "image",
-      "name": "Dominic Preston",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1278",
-      "role": "image",
-      "name": "Jess Weatherbed",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1322",
-      "role": "image",
-      "name": "Dominic Preston",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1409",
-      "role": "image",
-      "name": "Richard Lawler",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1444",
-      "role": "image",
-      "name": "Stevie Bonifield",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1479",
-      "role": "image",
-      "name": "Lauren Feiner",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1514",
-      "role": "image",
-      "name": "Emma Roth",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1550",
-      "role": "image",
-      "name": "Jay Peters",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1583",
-      "role": "image",
-      "name": "Lauren Feiner",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1620",
-      "role": "image",
-      "name": "Emma Roth",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1728",
-      "role": "image",
-      "name": "Jay Peters",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1765",
-      "role": "image",
-      "name": "Jay Peters",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1806",
-      "role": "image",
-      "name": "Stevie Bonifield",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1849",
-      "role": "image",
-      "name": "Jay Peters",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1884",
-      "role": "image",
-      "name": "John Higgins",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1944",
-      "role": "image",
-      "name": "Jay Peters",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2005",
-      "role": "image",
-      "name": "Stevie Bonifield",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2041",
-      "role": "image",
-      "name": "Jay Peters",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "834",
-      "role": "link",
-      "name": "Neowin",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1633",
-      "role": "link",
-      "name": "ed app",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1455",
-      "role": "link",
-      "name": "filed",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1421",
-      "role": "link",
-      "name": "said",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "902",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble46",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1268",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble23",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1160",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble14",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1064",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble10",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1695",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble15",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1399",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble11",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1206",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble4",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1995",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble4",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1183",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble6",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1087",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble3",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1137",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble2",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1672",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble2",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1718",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble2",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1934",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble1",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "879",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble1",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "816",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "858",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "937",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1003",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1043",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1247",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1314",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1378",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1436",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1471",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1506",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1542",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1575",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1612",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1651",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1757",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1798",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1841",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1876",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1913",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1974",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2033",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2070",
-      "role": "button",
-      "name": "Copy link",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1632",
-      "role": "link",
-      "name": "i",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "843",
-      "role": "link",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "844",
-      "role": "image",
-      "name": "A screenshot of the Google Drive sharing window in Gemini",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "969",
-      "role": "link",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "972",
-      "role": "link",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "974",
-      "role": "link",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1030",
-      "role": "link",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1297",
-      "role": "link",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1298",
-      "role": "image",
-      "name": "Aqara Smart Glass Door Lock U500",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1341",
-      "role": "link",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1342",
-      "role": "image",
-      "name": "Photo of four iPhone 18 series dummies in blue, black, white, and cherry",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1344",
-      "role": "link",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1346",
-      "role": "link",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1348",
+      "ref": "4",
       "role": "link",
-      "name": "",
+      "name": "Skip to main content",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1783",
+      "ref": "19",
       "role": "link",
-      "name": "",
+      "name": "Subscribe",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1784",
-      "role": "image",
-      "name": "A promotional image for expanded link cards in Bluesky for links from sites using the standard.site protocol.",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1826",
+      "ref": "20",
       "role": "link",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1827",
-      "role": "image",
-      "name": "The redesigned Pixel Buds app icon",
+      "name": "Sign In",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "71",
-      "role": "image",
-      "name": "How Ferrari bungled the design of its first EV",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "390",
-      "role": "heading",
-      "name": "Most Popular",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "688",
-      "role": "heading",
-      "name": "Most Discussed",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "39",
-      "role": "listitem",
-      "name": "Entertainment",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "40",
-      "role": "link",
-      "name": "Entertainment",
+      "ref": "24",
+      "role": "navigation",
+      "name": "Top Navigation",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2076",
-      "role": "tabpanel",
-      "name": "Following",
+      "ref": "25",
+      "role": "list",
+      "name": "The VergeThe Verge logo.TechReviewsScienceEntertainmentAIPolicyNotificationsNotificationsHamburger Navigation Button",
       "value": "",
       "flags": ""
     },
@@ -1584,6 +65,20 @@
       "ref": "28",
       "role": "img",
       "name": "The VergeThe Verge logo.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "30",
+      "role": "listitem",
+      "name": "Tech",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "31",
+      "role": "link",
+      "name": "Tech",
       "value": "",
       "flags": ""
     },
@@ -1616,233 +111,16 @@
       "flags": ""
     },
     {
-      "ref": "30",
+      "ref": "39",
       "role": "listitem",
-      "name": "Tech",
+      "name": "Entertainment",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "31",
+      "ref": "40",
       "role": "link",
-      "name": "Tech",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "585",
-      "role": "banner",
-      "name": "Review roulette / Catch up on some of our latest reviews, from games to gadgets.",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "587",
-      "role": "heading",
-      "name": "Review roulette / Catch up on some of our latest reviews, from games to gadgets.",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2084",
-      "role": "banner",
-      "name": "Latest from TechMore",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2086",
-      "role": "heading",
-      "name": "Latest from Tech",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2088",
-      "role": "link",
-      "name": "More",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2158",
-      "role": "banner",
-      "name": "Latest from ReviewsMore",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2160",
-      "role": "heading",
-      "name": "Latest from Reviews",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2162",
-      "role": "link",
-      "name": "More",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2248",
-      "role": "banner",
-      "name": "Latest from AIMore",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2250",
-      "role": "heading",
-      "name": "Latest from AI",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2252",
-      "role": "link",
-      "name": "More",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2322",
-      "role": "banner",
-      "name": "Latest from PolicyMore",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2324",
-      "role": "heading",
-      "name": "Latest from Policy",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2326",
-      "role": "link",
-      "name": "More",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2409",
-      "role": "banner",
-      "name": "Latest from ScienceMore",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2411",
-      "role": "heading",
-      "name": "Latest from Science",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2413",
-      "role": "link",
-      "name": "More",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2495",
-      "role": "banner",
-      "name": "Latest from EntertainmentMore",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2497",
-      "role": "heading",
-      "name": "Latest from Entertainment",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2499",
-      "role": "link",
-      "name": "More",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "45",
-      "role": "listitem",
-      "name": "Policy",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "46",
-      "role": "link",
-      "name": "Policy",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "181",
-      "role": "banner",
-      "name": "Now optimizing... / Where wellness hype and the tech world combine.",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "183",
-      "role": "heading",
-      "name": "Now optimizing... / Where wellness hype and the tech world combine.",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "284",
-      "role": "banner",
-      "name": "Staff picks / Our favorite stories you don’t want to miss.",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "286",
-      "role": "heading",
-      "name": "Staff picks / Our favorite stories you don’t want to miss.",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "473",
-      "role": "banner",
-      "name": "Screen time / Just look at these screens.",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "475",
-      "role": "heading",
-      "name": "Screen time / Just look at these screens.",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "19",
-      "role": "link",
-      "name": "Subscribe",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "55",
-      "role": "listitem",
-      "name": "Hamburger Navigation Button",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "56",
-      "role": "button",
-      "name": "Hamburger Navigation Button",
+      "name": "Entertainment",
       "value": "",
       "flags": ""
     },
@@ -1861,9 +139,16 @@
       "flags": ""
     },
     {
-      "ref": "20",
+      "ref": "45",
+      "role": "listitem",
+      "name": "Policy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "46",
       "role": "link",
-      "name": "Sign In",
+      "name": "Policy",
       "value": "",
       "flags": ""
     },
@@ -1882,9 +167,331 @@
       "flags": ""
     },
     {
+      "ref": "55",
+      "role": "listitem",
+      "name": "Hamburger Navigation Button",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "56",
+      "role": "button",
+      "name": "Hamburger Navigation Button",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "68",
+      "role": "img",
+      "name": "The VergeThe Verge logo.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "71",
+      "role": "image",
+      "name": "How Ferrari bungled the design of its first EV",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "78",
       "role": "link",
       "name": "How Ferrari bungled the design of its first EV",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "88",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble46",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "98",
+      "role": "image",
+      "name": "What would you be willing to put in your body?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "104",
+      "role": "link",
+      "name": "What would you be willing to put in your body?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "111",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble1",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "119",
+      "role": "image",
+      "name": "Hundreds of prolific Wikipedia editors are threatening to go on strike",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "125",
+      "role": "link",
+      "name": "Hundreds of prolific Wikipedia editors are threatening to go on strike",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "132",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble14",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "140",
+      "role": "image",
+      "name": "Backrooms is at the forefront of horror’s YouTube wave",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "146",
+      "role": "link",
+      "name": "Backrooms is at the forefront of horror’s YouTube wave",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "153",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble3",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "161",
+      "role": "image",
+      "name": "Adobe’s conversational AI agent is a mediocre design intern",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "167",
+      "role": "link",
+      "name": "Adobe’s conversational AI agent is a mediocre design intern",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "174",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble23",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "181",
+      "role": "banner",
+      "name": "Now optimizing... / Where wellness hype and the tech world combine.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "183",
+      "role": "heading",
+      "name": "Now optimizing... / Where wellness hype and the tech world combine.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "193",
+      "role": "image",
+      "name": "Continuous glucose monitoring made me continuously crazy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "200",
+      "role": "link",
+      "name": "Continuous glucose monitoring made me continuously crazy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "208",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble121",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "218",
+      "role": "image",
+      "name": "Influencers are pushing suspicious peptides. How much are you willing to risk?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "224",
+      "role": "link",
+      "name": "Influencers are pushing suspicious peptides. How much are you willing to risk?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "232",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble34",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "241",
+      "role": "image",
+      "name": "Much ado about protein",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "247",
+      "role": "link",
+      "name": "Much ado about protein",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "255",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble107",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "264",
+      "role": "image",
+      "name": "‘Solve all diseases,’ you say?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "270",
+      "role": "link",
+      "name": "‘Solve all diseases,’ you say?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "278",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble64",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "284",
+      "role": "banner",
+      "name": "Staff picks / Our favorite stories you don’t want to miss.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "286",
+      "role": "heading",
+      "name": "Staff picks / Our favorite stories you don’t want to miss.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "296",
+      "role": "image",
+      "name": "AI warfare is already here",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "303",
+      "role": "link",
+      "name": "AI warfare is already here",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "311",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble43",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "321",
+      "role": "image",
+      "name": "Bad, Bad, Bad, Bad Roommate",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "327",
+      "role": "link",
+      "name": "Bad, Bad, Bad, Bad Roommate",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "335",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble176",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "344",
+      "role": "image",
+      "name": "Your feed is overrun with clips — this is the cutthroat community of ‘clippers’ behind it",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "350",
+      "role": "link",
+      "name": "Your feed is overrun with clips — this is the cutthroat community of ‘clippers’ behind it",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "358",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble55",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "367",
+      "role": "image",
+      "name": "AI-generated research papers are getting better, and it’s a big problem for scientists",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "373",
+      "role": "link",
+      "name": "AI-generated research papers are getting better, and it’s a big problem for scientists",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "381",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble40",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "390",
+      "role": "heading",
+      "name": "Most Popular",
       "value": "",
       "flags": ""
     },
@@ -1945,6 +552,223 @@
       "flags": ""
     },
     {
+      "ref": "456",
+      "role": "listitem",
+      "name": "5Valve raises Steam Deck prices by more than $200Jay PetersMay 27",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "464",
+      "role": "link",
+      "name": "Valve raises Steam Deck prices by more than $200",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "473",
+      "role": "banner",
+      "name": "Screen time / Just look at these screens.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "475",
+      "role": "heading",
+      "name": "Screen time / Just look at these screens.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "485",
+      "role": "image",
+      "name": "Sony’s first RGB TV is a statement piece",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "495",
+      "role": "link",
+      "name": "Sony’s first RGB TV is a statement piece",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "503",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble47",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "513",
+      "role": "image",
+      "name": "I bought Alienware’s $350 OLED monitor and I can’t believe how good it is",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "519",
+      "role": "link",
+      "name": "I bought Alienware’s $350 OLED monitor and I can’t believe how good it is",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "527",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble32",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "536",
+      "role": "image",
+      "name": "Inside Google’s Beam Lab, an AI face appears",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "545",
+      "role": "link",
+      "name": "Inside Google’s Beam Lab, an AI face appears",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "553",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble10",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "562",
+      "role": "image",
+      "name": "Behold the crown jewel of outrageous gaming laptops",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "568",
+      "role": "link",
+      "name": "Behold the crown jewel of outrageous gaming laptops",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "576",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble30",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "585",
+      "role": "banner",
+      "name": "Review roulette / Catch up on some of our latest reviews, from games to gadgets.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "587",
+      "role": "heading",
+      "name": "Review roulette / Catch up on some of our latest reviews, from games to gadgets.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "597",
+      "role": "image",
+      "name": "007 First Light is like a James Bond movie in the best way possible",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "604",
+      "role": "link",
+      "name": "007 First Light is like a James Bond movie in the best way possible",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "612",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble21",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "622",
+      "role": "image",
+      "name": "The new Razr Ultra isn’t your average phone — for better and worse",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "628",
+      "role": "link",
+      "name": "The new Razr Ultra isn’t your average phone — for better and worse",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "636",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble20",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "645",
+      "role": "image",
+      "name": "Sony’s sloppy Spider-Man universe gets even messier with Spider-Noir",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "651",
+      "role": "link",
+      "name": "Sony’s sloppy Spider-Man universe gets even messier with Spider-Noir",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "659",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble34",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "668",
+      "role": "image",
+      "name": "Google’s new anything-to-anything AI model is wild",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "674",
+      "role": "link",
+      "name": "Google’s new anything-to-anything AI model is wild",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "682",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble92",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "688",
+      "role": "heading",
+      "name": "Most Discussed",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "690",
       "role": "listitem",
       "name": "1The golden age of handheld gaming is already overMay 28CommentsComment Icon Bubble222",
@@ -2001,20 +825,6 @@
       "flags": ""
     },
     {
-      "ref": "456",
-      "role": "listitem",
-      "name": "5Valve raises Steam Deck prices by more than $200Jay PetersMay 27",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "464",
-      "role": "link",
-      "name": "Valve raises Steam Deck prices by more than $200",
-      "value": "",
-      "flags": ""
-    },
-    {
       "ref": "738",
       "role": "listitem",
       "name": "5A $2,000 AI-generated film will make its debut at TribecaMay 29CommentsComment Icon Bubble45",
@@ -2029,316 +839,1562 @@
       "flags": ""
     },
     {
-      "ref": "193",
-      "role": "image",
-      "name": "Continuous glucose monitoring made me continuously crazy",
+      "ref": "752",
+      "role": "tablist",
+      "name": "LatestFollowing",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "296",
-      "role": "image",
-      "name": "AI warfare is already here",
+      "ref": "753",
+      "role": "tab",
+      "name": "Latest",
+      "value": "",
+      "flags": "selected"
+    },
+    {
+      "ref": "754",
+      "role": "tab",
+      "name": "Following",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "485",
-      "role": "image",
-      "name": "Sony’s first RGB TV is a statement piece",
+      "ref": "756",
+      "role": "tabpanel",
+      "name": "Latest",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "597",
+      "ref": "762",
       "role": "image",
-      "name": "007 First Light is like a James Bond movie in the best way possible",
+      "name": "You can buy two of Anker’s Qi2 wireless chargers for under $25",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2128",
+      "ref": "768",
+      "role": "link",
+      "name": "You can buy two of Anker’s Qi2 wireless chargers for under $25",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "778",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble1",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "788",
+      "role": "image",
+      "name": "Andrew J. Hawkins",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "797",
+      "role": "link",
+      "name": "a Reuters investigation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "808",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble3",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "816",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "824",
+      "role": "image",
+      "name": "Stevie Bonifield",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "833",
+      "role": "link",
+      "name": "new Google Workspace feature",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "834",
+      "role": "link",
+      "name": "Neowin",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "843",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "844",
+      "role": "image",
+      "name": "A screenshot of the Google Drive sharing window in Gemini",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "850",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble0",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "858",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "863",
+      "role": "image",
+      "name": "What would you be willing to put in your body?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "870",
+      "role": "link",
+      "name": "What would you be willing to put in your body?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "879",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble1",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "886",
       "role": "image",
       "name": "How Ferrari bungled the design of its first EV",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2144",
+      "ref": "893",
+      "role": "link",
+      "name": "How Ferrari bungled the design of its first EV",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "902",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble46",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "912",
+      "role": "image",
+      "name": "Jess Weatherbed",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "921",
+      "role": "link",
+      "name": "Blue Origin has warned",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "922",
+      "role": "link",
+      "name": "recent hotfire anomaly",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "929",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble3",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "937",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "949",
+      "role": "image",
+      "name": "Andrew Liszewski",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "958",
+      "role": "link",
+      "name": "Asteroids-themed watch",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "960",
+      "role": "link",
+      "name": "Missile Command battlefield recreated on its face",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "966",
+      "role": "region",
+      "name": "carousel",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "969",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "972",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "974",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "975",
+      "role": "button",
+      "name": "Previous",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "979",
+      "role": "button",
+      "name": "Next",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "985",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "986",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "987",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "995",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble3",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1003",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1011",
+      "role": "image",
+      "name": "Gaby Del Valle",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1020",
+      "role": "link",
+      "name": "great replacement talking points",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1022",
+      "role": "link",
+      "name": "numbers aren’t even right",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1030",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1035",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble1",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1043",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1048",
       "role": "image",
       "name": "Acer’s answer to the MacBook Neo is a $699 laptop with Intel chips and 8GB of RAM",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2205",
-      "role": "image",
-      "name": "This smart bird feeder captures more of my backyard drama",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2230",
-      "role": "image",
-      "name": "The new Razr Ultra isn’t your average phone — for better and worse",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2292",
-      "role": "image",
-      "name": "Adobe’s conversational AI agent is a mediocre design intern",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2308",
-      "role": "image",
-      "name": "Microsoft 365 Copilot gets a speed boost and cleaner design",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2366",
-      "role": "image",
-      "name": "CNN sues Perplexity over ‘verbatim’ copycat articles",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2388",
-      "role": "image",
-      "name": "Temu fined more than $230 million by EU over illegal product sales",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2453",
-      "role": "image",
-      "name": "Roids were all the rage at the Enhanced Games",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2475",
-      "role": "image",
-      "name": "Here’s how Google is responding to Fitbit users who don’t like the new Health app",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2539",
-      "role": "image",
-      "name": "Sony’s sloppy Spider-Man universe gets even messier with Spider-Noir",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2555",
-      "role": "image",
-      "name": "The best part of Mina the Hollower is how it randomizes the Zelda formula",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2151",
+      "ref": "1054",
       "role": "link",
       "name": "Acer’s answer to the MacBook Neo is a $699 laptop with Intel chips and 8GB of RAM",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "350",
+      "ref": "1064",
       "role": "link",
-      "name": "Your feed is overrun with clips — this is the cutthroat community of ‘clippers’ behind it",
+      "name": "CommentsComment Icon Bubble10",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "373",
-      "role": "link",
-      "name": "AI-generated research papers are getting better, and it’s a big problem for scientists",
+      "ref": "1071",
+      "role": "image",
+      "name": "Backrooms is at the forefront of horror’s YouTube wave",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2482",
+      "ref": "1078",
       "role": "link",
-      "name": "Here’s how Google is responding to Fitbit users who don’t like the new Health app",
+      "name": "Backrooms is at the forefront of horror’s YouTube wave",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2315",
+      "ref": "1087",
       "role": "link",
-      "name": "Microsoft 365 Copilot gets a speed boost and cleaner design",
+      "name": "CommentsComment Icon Bubble3",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2546",
-      "role": "link",
-      "name": "Sony’s sloppy Spider-Man universe gets even messier with Spider-Noir",
+      "ref": "1094",
+      "role": "image",
+      "name": "Trump Mobile’s website still says the T1 Phone is ‘American-made’",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2395",
+      "ref": "1100",
       "role": "link",
-      "name": "Temu fined more than $230 million by EU over illegal product sales",
+      "name": "Trump Mobile’s website still says the T1 Phone is ‘American-made’",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "167",
+      "ref": "1110",
       "role": "link",
-      "name": "Adobe’s conversational AI agent is a mediocre design intern",
+      "name": "CommentsComment Icon Bubble9",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "125",
+      "ref": "1121",
+      "role": "image",
+      "name": "Jony Ive’s funky Ferrari",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1127",
+      "role": "link",
+      "name": "Jony Ive’s funky Ferrari",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1137",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble2",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1144",
+      "role": "image",
+      "name": "Hundreds of prolific Wikipedia editors are threatening to go on strike",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1151",
       "role": "link",
       "name": "Hundreds of prolific Wikipedia editors are threatening to go on strike",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2562",
+      "ref": "1160",
       "role": "link",
-      "name": "The best part of Mina the Hollower is how it randomizes the Zelda formula",
+      "name": "CommentsComment Icon Bubble14",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "224",
-      "role": "link",
-      "name": "Influencers are pushing suspicious peptides. How much are you willing to risk?",
+      "ref": "1167",
+      "role": "image",
+      "name": "This AI startup will clean your home for free to train future robots",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2299",
+      "ref": "1173",
+      "role": "link",
+      "name": "This AI startup will clean your home for free to train future robots",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1183",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble6",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1190",
+      "role": "image",
+      "name": "This is MSI’s new Claw 8 EX AI Plus gaming handheld",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1196",
+      "role": "link",
+      "name": "This is MSI’s new Claw 8 EX AI Plus gaming handheld",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1206",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble4",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1216",
+      "role": "image",
+      "name": "Dominic Preston",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1225",
+      "role": "link",
+      "name": "Alphafold",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1234",
+      "role": "link",
+      "name": "The Verge Daily",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1239",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble0",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1247",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1252",
+      "role": "image",
+      "name": "Adobe’s conversational AI agent is a mediocre design intern",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1259",
       "role": "link",
       "name": "Adobe’s conversational AI agent is a mediocre design intern",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2240",
+      "ref": "1268",
       "role": "link",
-      "name": "The new Razr Ultra isn’t your average phone — for better and worse",
+      "name": "CommentsComment Icon Bubble23",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "651",
-      "role": "link",
-      "name": "Sony’s sloppy Spider-Man universe gets even messier with Spider-Noir",
+      "ref": "1278",
+      "role": "image",
+      "name": "Jess Weatherbed",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "519",
+      "ref": "1287",
       "role": "link",
-      "name": "I bought Alienware’s $350 OLED monitor and I can’t believe how good it is",
+      "name": "Rim Lock",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "628",
+      "ref": "1288",
       "role": "link",
-      "name": "The new Razr Ultra isn’t your average phone — for better and worse",
+      "name": "Gate Lock",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2215",
+      "ref": "1289",
       "role": "link",
-      "name": "This smart bird feeder captures more of my backyard drama",
+      "name": "designed for glass doors",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2373",
+      "ref": "1297",
       "role": "link",
-      "name": "CNN sues Perplexity over ‘verbatim’ copycat articles",
+      "name": "",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2135",
-      "role": "link",
-      "name": "How Ferrari bungled the design of its first EV",
+      "ref": "1298",
+      "role": "image",
+      "name": "Aqara Smart Glass Door Lock U500",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2460",
+      "ref": "1306",
       "role": "link",
-      "name": "Roids were all the rage at the Enhanced Games",
+      "name": "CommentsComment Icon Bubble1",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "568",
-      "role": "link",
-      "name": "Behold the crown jewel of outrageous gaming laptops",
+      "ref": "1314",
+      "role": "button",
+      "name": "Copy link",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "674",
-      "role": "link",
-      "name": "Google’s new anything-to-anything AI model is wild",
+      "ref": "1322",
+      "role": "image",
+      "name": "Dominic Preston",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "545",
+      "ref": "1331",
       "role": "link",
-      "name": "Inside Google’s Beam Lab, an AI face appears",
+      "name": "shared photos of iPhone 18 dummy units",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "604",
+      "ref": "1332",
       "role": "link",
-      "name": "007 First Light is like a James Bond movie in the best way possible",
+      "name": "launching next spring",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "4",
+      "ref": "1333",
       "role": "link",
-      "name": "Skip to main content",
+      "name": "last year’s iPhone 17 colors",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "327",
-      "role": "link",
-      "name": "Bad, Bad, Bad, Bad Roommate",
+      "ref": "1338",
+      "role": "region",
+      "name": "carousel",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2625",
+      "ref": "1341",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1342",
+      "role": "image",
+      "name": "Photo of four iPhone 18 series dummies in blue, black, white, and cherry",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1344",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1346",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1348",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1349",
+      "role": "button",
+      "name": "Previous",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1353",
+      "role": "button",
+      "name": "Next",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1359",
       "role": "listitem",
-      "name": "How We Rate and Review Products",
+      "name": "",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2626",
+      "ref": "1360",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1361",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1362",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1370",
       "role": "link",
-      "name": "How We Rate and Review Products",
+      "name": "CommentsComment Icon Bubble12",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1378",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1383",
+      "role": "image",
+      "name": "Blue Origin explosion is a major setback for NASA’s Moon plans and Amazon’s Starlink competitor",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1389",
+      "role": "link",
+      "name": "Blue Origin explosion is a major setback for NASA’s Moon plans and Amazon’s Starlink competitor",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1399",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble11",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1409",
+      "role": "image",
+      "name": "Richard Lawler",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1418",
+      "role": "link",
+      "name": "grounded",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1419",
+      "role": "link",
+      "name": "exploding",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1420",
+      "role": "link",
+      "name": "just after 9PM ET",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1421",
+      "role": "link",
+      "name": "said",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1428",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble11",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1436",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1444",
+      "role": "image",
+      "name": "Stevie Bonifield",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1453",
+      "role": "link",
+      "name": "Deadline",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1455",
+      "role": "link",
+      "name": "filed",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1456",
+      "role": "link",
+      "name": "FCC’s demand for the premature license renewal",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1463",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble7",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1471",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1479",
+      "role": "image",
+      "name": "Lauren Feiner",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1488",
+      "role": "link",
+      "name": "case seeking to block it",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1489",
+      "role": "link",
+      "name": "test of a method",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1493",
+      "role": "link",
+      "name": "Fifth Circuit Lifts Block on Texas Age Requirements for Apps",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1498",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble0",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1506",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1514",
+      "role": "image",
+      "name": "Emma Roth",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1523",
+      "role": "link",
+      "name": "the Financial Times reports",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1530",
+      "role": "link",
+      "name": "computing becomes more expensive",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1534",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble17",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1542",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1550",
+      "role": "image",
+      "name": "Jay Peters",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1559",
+      "role": "link",
+      "name": "Thinky Direct 2026",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1560",
+      "role": "link",
+      "name": "big gaming events",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1567",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble0",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1575",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1583",
+      "role": "image",
+      "name": "Lauren Feiner",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1592",
+      "role": "link",
+      "name": "plans to sign",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1593",
+      "role": "link",
+      "name": "New York",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1594",
+      "role": "link",
+      "name": "California",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1599",
+      "role": "link",
+      "name": "Illinois Legislature passes historic AI bill that would require third-party safety audits",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1604",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble4",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1612",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1620",
+      "role": "image",
+      "name": "Emma Roth",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1630",
+      "role": "link",
+      "name": "Disney has already started doing",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1631",
+      "role": "link",
+      "name": "to the unif",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1632",
+      "role": "link",
+      "name": "i",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1633",
+      "role": "link",
+      "name": "ed app",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1638",
+      "role": "link",
+      "name": "Disney is preparing for a world without the Hulu app",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1643",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble4",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1651",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1656",
+      "role": "image",
+      "name": "Nintendo’s newest WarioWare is a weirdo smartphone app",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1662",
+      "role": "link",
+      "name": "Nintendo’s newest WarioWare is a weirdo smartphone app",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1672",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble2",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1679",
+      "role": "image",
+      "name": "Microsoft 365 Copilot gets a speed boost and cleaner design",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1685",
+      "role": "link",
+      "name": "Microsoft 365 Copilot gets a speed boost and cleaner design",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1695",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble15",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1702",
+      "role": "image",
+      "name": "Amazon’s last-gen Paperwhite is on sale for less than the entry-level Kindle",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1708",
+      "role": "link",
+      "name": "Amazon’s last-gen Paperwhite is on sale for less than the entry-level Kindle",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1718",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble2",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1728",
+      "role": "image",
+      "name": "Jay Peters",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1739",
+      "role": "link",
+      "name": "Deadline reports",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1744",
+      "role": "link",
+      "name": "Lionsgate Joins Movies Anywhere",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1749",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble2",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1757",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1765",
+      "role": "image",
+      "name": "Jay Peters",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1774",
+      "role": "link",
+      "name": "standard.site schema",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1775",
+      "role": "link",
+      "name": "will include",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1783",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1784",
+      "role": "image",
+      "name": "A promotional image for expanded link cards in Bluesky for links from sites using the standard.site protocol.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1790",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble1",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1798",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1806",
+      "role": "image",
+      "name": "Stevie Bonifield",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1815",
+      "role": "link",
+      "name": "Android Authority",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1817",
+      "role": "link",
+      "name": "getting updated",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1818",
+      "role": "link",
+      "name": "recently-updated Google Workspace icons",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1826",
+      "role": "link",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1827",
+      "role": "image",
+      "name": "The redesigned Pixel Buds app icon",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1833",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble5",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1841",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1849",
+      "role": "image",
+      "name": "Jay Peters",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1858",
+      "role": "link",
+      "name": "according to Bloomberg",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1863",
+      "role": "link",
+      "name": "The DOJ Wants to Know Who on Reddit and X Is Criticizing ICE's Tactics",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1868",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble16",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1876",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1884",
+      "role": "image",
+      "name": "John Higgins",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1893",
+      "role": "link",
+      "name": "restoration struggles",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1894",
+      "role": "link",
+      "name": "Minnesota parking lot deals",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1895",
+      "role": "link",
+      "name": "global capers",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1900",
+      "role": "link",
+      "name": "I Want My CRT: The 'Insane' Demand for Giant Old-School TVs, Explained - Racket",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1905",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble4",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1913",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1918",
+      "role": "image",
+      "name": "Motorola’s last-gen Razr Ultra is almost half off",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1924",
+      "role": "link",
+      "name": "Motorola’s last-gen Razr Ultra is almost half off",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1934",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble1",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1944",
+      "role": "image",
+      "name": "Jay Peters",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1953",
+      "role": "link",
+      "name": "according to The New York Times",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1957",
+      "role": "link",
+      "name": "Anthropic says",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1961",
+      "role": "link",
+      "name": "Anthropic raises $65B in Series H funding at $965B post-money valuation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1966",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble16",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1974",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1979",
+      "role": "image",
+      "name": "The line between games and movies keeps getting blurrier",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1985",
+      "role": "link",
+      "name": "The line between games and movies keeps getting blurrier",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1995",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble4",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2005",
+      "role": "image",
+      "name": "Stevie Bonifield",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2014",
+      "role": "link",
+      "name": "Nikkei Asia",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2016",
+      "role": "link",
+      "name": "LF-ZC concept EV",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2020",
+      "role": "link",
+      "name": "Toyota halts development of next-gen Lexus EV model",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2025",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble1",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2033",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2041",
+      "role": "image",
+      "name": "Jay Peters",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2050",
+      "role": "link",
+      "name": "earlier this year",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2053",
+      "role": "link",
+      "name": "in Spotify’s blog post",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2057",
+      "role": "link",
+      "name": "More Control, Faster Playlist Editing, and Other Updates for Everyday Listening on Spotify — Spotify",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2062",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble5",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2070",
+      "role": "button",
+      "name": "Copy link",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2074",
+      "role": "link",
+      "name": "More Stories",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2076",
+      "role": "tabpanel",
+      "name": "Following",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2084",
+      "role": "banner",
+      "name": "Latest from TechMore",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2086",
+      "role": "heading",
+      "name": "Latest from Tech",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2088",
+      "role": "link",
+      "name": "More",
       "value": "",
       "flags": ""
     },
     {
       "ref": "2096",
       "role": "image",
+      "name": "Trump’s mass deportations are impossible without racial profiling",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2103",
+      "role": "link",
       "name": "Trump’s mass deportations are impossible without racial profiling",
       "value": "",
       "flags": ""
@@ -2351,8 +2407,71 @@
       "flags": ""
     },
     {
+      "ref": "2119",
+      "role": "link",
+      "name": "You can buy two of Anker’s Qi2 wireless chargers for under $25",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2128",
+      "role": "image",
+      "name": "How Ferrari bungled the design of its first EV",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2135",
+      "role": "link",
+      "name": "How Ferrari bungled the design of its first EV",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2144",
+      "role": "image",
+      "name": "Acer’s answer to the MacBook Neo is a $699 laptop with Intel chips and 8GB of RAM",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2151",
+      "role": "link",
+      "name": "Acer’s answer to the MacBook Neo is a $699 laptop with Intel chips and 8GB of RAM",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2158",
+      "role": "banner",
+      "name": "Latest from ReviewsMore",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2160",
+      "role": "heading",
+      "name": "Latest from Reviews",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2162",
+      "role": "link",
+      "name": "More",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "2170",
       "role": "image",
+      "name": "They’ve finally made the Oura Ring smaller and lighter",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2177",
+      "role": "link",
       "name": "They’ve finally made the Oura Ring smaller and lighter",
       "value": "",
       "flags": ""
@@ -2365,8 +2484,78 @@
       "flags": ""
     },
     {
+      "ref": "2196",
+      "role": "link",
+      "name": "Sony’s first RGB TV is a statement piece",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2205",
+      "role": "image",
+      "name": "This smart bird feeder captures more of my backyard drama",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2215",
+      "role": "link",
+      "name": "This smart bird feeder captures more of my backyard drama",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2222",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble4",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2230",
+      "role": "image",
+      "name": "The new Razr Ultra isn’t your average phone — for better and worse",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2240",
+      "role": "link",
+      "name": "The new Razr Ultra isn’t your average phone — for better and worse",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2248",
+      "role": "banner",
+      "name": "Latest from AIMore",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2250",
+      "role": "heading",
+      "name": "Latest from AI",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2252",
+      "role": "link",
+      "name": "More",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "2260",
       "role": "image",
+      "name": "Jony Ive’s funky Ferrari",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2267",
+      "role": "link",
       "name": "Jony Ive’s funky Ferrari",
       "value": "",
       "flags": ""
@@ -2379,8 +2568,71 @@
       "flags": ""
     },
     {
+      "ref": "2283",
+      "role": "link",
+      "name": "This AI startup will clean your home for free to train future robots",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2292",
+      "role": "image",
+      "name": "Adobe’s conversational AI agent is a mediocre design intern",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2299",
+      "role": "link",
+      "name": "Adobe’s conversational AI agent is a mediocre design intern",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2308",
+      "role": "image",
+      "name": "Microsoft 365 Copilot gets a speed boost and cleaner design",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2315",
+      "role": "link",
+      "name": "Microsoft 365 Copilot gets a speed boost and cleaner design",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2322",
+      "role": "banner",
+      "name": "Latest from PolicyMore",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2324",
+      "role": "heading",
+      "name": "Latest from Policy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2326",
+      "role": "link",
+      "name": "More",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "2334",
       "role": "image",
+      "name": "Trump’s mass deportations are impossible without racial profiling",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2341",
+      "role": "link",
       "name": "Trump’s mass deportations are impossible without racial profiling",
       "value": "",
       "flags": ""
@@ -2393,8 +2645,85 @@
       "flags": ""
     },
     {
+      "ref": "2357",
+      "role": "link",
+      "name": "Trump Mobile’s website still says the T1 Phone is ‘American-made’",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2366",
+      "role": "image",
+      "name": "CNN sues Perplexity over ‘verbatim’ copycat articles",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2373",
+      "role": "link",
+      "name": "CNN sues Perplexity over ‘verbatim’ copycat articles",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2380",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble11",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2388",
+      "role": "image",
+      "name": "Temu fined more than $230 million by EU over illegal product sales",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2395",
+      "role": "link",
+      "name": "Temu fined more than $230 million by EU over illegal product sales",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2402",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble2",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2409",
+      "role": "banner",
+      "name": "Latest from ScienceMore",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2411",
+      "role": "heading",
+      "name": "Latest from Science",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2413",
+      "role": "link",
+      "name": "More",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "2421",
       "role": "image",
+      "name": "What would you be willing to put in your body?",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2428",
+      "role": "link",
       "name": "What would you be willing to put in your body?",
       "value": "",
       "flags": ""
@@ -2407,8 +2736,85 @@
       "flags": ""
     },
     {
+      "ref": "2444",
+      "role": "link",
+      "name": "Blue Origin explosion is a major setback for NASA’s Moon plans and Amazon’s Starlink competitor",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2453",
+      "role": "image",
+      "name": "Roids were all the rage at the Enhanced Games",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2460",
+      "role": "link",
+      "name": "Roids were all the rage at the Enhanced Games",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2467",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble71",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2475",
+      "role": "image",
+      "name": "Here’s how Google is responding to Fitbit users who don’t like the new Health app",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2482",
+      "role": "link",
+      "name": "Here’s how Google is responding to Fitbit users who don’t like the new Health app",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2489",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble50",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2495",
+      "role": "banner",
+      "name": "Latest from EntertainmentMore",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2497",
+      "role": "heading",
+      "name": "Latest from Entertainment",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2499",
+      "role": "link",
+      "name": "More",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "2507",
       "role": "image",
+      "name": "Backrooms is at the forefront of horror’s YouTube wave",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2514",
+      "role": "link",
       "name": "Backrooms is at the forefront of horror’s YouTube wave",
       "value": "",
       "flags": ""
@@ -2421,121 +2827,44 @@
       "flags": ""
     },
     {
-      "ref": "2444",
+      "ref": "2530",
       "role": "link",
-      "name": "Blue Origin explosion is a major setback for NASA’s Moon plans and Amazon’s Starlink competitor",
+      "name": "007 First Light is like a James Bond movie in the best way possible",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "200",
-      "role": "link",
-      "name": "Continuous glucose monitoring made me continuously crazy",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "119",
-      "role": "image",
-      "name": "Hundreds of prolific Wikipedia editors are threatening to go on strike",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "161",
-      "role": "image",
-      "name": "Adobe’s conversational AI agent is a mediocre design intern",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "218",
-      "role": "image",
-      "name": "Influencers are pushing suspicious peptides. How much are you willing to risk?",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "241",
-      "role": "image",
-      "name": "Much ado about protein",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "264",
-      "role": "image",
-      "name": "‘Solve all diseases,’ you say?",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "321",
-      "role": "image",
-      "name": "Bad, Bad, Bad, Bad Roommate",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "344",
-      "role": "image",
-      "name": "Your feed is overrun with clips — this is the cutthroat community of ‘clippers’ behind it",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "367",
-      "role": "image",
-      "name": "AI-generated research papers are getting better, and it’s a big problem for scientists",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "513",
-      "role": "image",
-      "name": "I bought Alienware’s $350 OLED monitor and I can’t believe how good it is",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "536",
-      "role": "image",
-      "name": "Inside Google’s Beam Lab, an AI face appears",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "562",
-      "role": "image",
-      "name": "Behold the crown jewel of outrageous gaming laptops",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "622",
-      "role": "image",
-      "name": "The new Razr Ultra isn’t your average phone — for better and worse",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "645",
+      "ref": "2539",
       "role": "image",
       "name": "Sony’s sloppy Spider-Man universe gets even messier with Spider-Noir",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "668",
-      "role": "image",
-      "name": "Google’s new anything-to-anything AI model is wild",
+      "ref": "2546",
+      "role": "link",
+      "name": "Sony’s sloppy Spider-Man universe gets even messier with Spider-Noir",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "270",
+      "ref": "2555",
+      "role": "image",
+      "name": "The best part of Mina the Hollower is how it randomizes the Zelda formula",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2562",
       "role": "link",
-      "name": "‘Solve all diseases,’ you say?",
+      "name": "The best part of Mina the Hollower is how it randomizes the Zelda formula",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2569",
+      "role": "link",
+      "name": "CommentsComment Icon Bubble2",
       "value": "",
       "flags": ""
     },
@@ -2554,429 +2883,9 @@
       "flags": ""
     },
     {
-      "ref": "247",
-      "role": "link",
-      "name": "Much ado about protein",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "495",
-      "role": "link",
-      "name": "Sony’s first RGB TV is a statement piece",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2119",
-      "role": "link",
-      "name": "You can buy two of Anker’s Qi2 wireless chargers for under $25",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2283",
-      "role": "link",
-      "name": "This AI startup will clean your home for free to train future robots",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2103",
-      "role": "link",
-      "name": "Trump’s mass deportations are impossible without racial profiling",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2341",
-      "role": "link",
-      "name": "Trump’s mass deportations are impossible without racial profiling",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2530",
-      "role": "link",
-      "name": "007 First Light is like a James Bond movie in the best way possible",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2623",
-      "role": "listitem",
-      "name": "Ethics Statement",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2624",
-      "role": "link",
-      "name": "Ethics Statement",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2357",
-      "role": "link",
-      "name": "Trump Mobile’s website still says the T1 Phone is ‘American-made’",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2428",
-      "role": "link",
-      "name": "What would you be willing to put in your body?",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2177",
-      "role": "link",
-      "name": "They’ve finally made the Oura Ring smaller and lighter",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "146",
-      "role": "link",
-      "name": "Backrooms is at the forefront of horror’s YouTube wave",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2514",
-      "role": "link",
-      "name": "Backrooms is at the forefront of horror’s YouTube wave",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "104",
-      "role": "link",
-      "name": "What would you be willing to put in your body?",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "303",
-      "role": "link",
-      "name": "AI warfare is already here",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2640",
-      "role": "listitem",
-      "name": "Platform Status",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2641",
-      "role": "link",
-      "name": "Platform Status",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2196",
-      "role": "link",
-      "name": "Sony’s first RGB TV is a statement piece",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2632",
-      "role": "listitem",
-      "name": "Privacy Notice",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2633",
-      "role": "link",
-      "name": "Privacy Notice",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2636",
-      "role": "listitem",
-      "name": "Licensing FAQ",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2637",
-      "role": "link",
-      "name": "Licensing FAQ",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2619",
-      "role": "listitem",
-      "name": "Archives",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2620",
-      "role": "link",
-      "name": "Archives",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2634",
-      "role": "listitem",
-      "name": "Cookie Policy",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2635",
-      "role": "link",
-      "name": "Cookie Policy",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2638",
-      "role": "listitem",
-      "name": "Accessibility",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2639",
-      "role": "link",
-      "name": "Accessibility",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2267",
-      "role": "link",
-      "name": "Jony Ive’s funky Ferrari",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2621",
-      "role": "listitem",
-      "name": "About",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2622",
-      "role": "link",
-      "name": "About",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "98",
-      "role": "image",
-      "name": "What would you be willing to put in your body?",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "140",
-      "role": "image",
-      "name": "Backrooms is at the forefront of horror’s YouTube wave",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2617",
-      "role": "listitem",
-      "name": "Community Guidelines",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2618",
-      "role": "link",
-      "name": "Community Guidelines",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2628",
-      "role": "listitem",
-      "name": "Manage Privacy Settings",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2629",
-      "role": "button",
-      "name": "Manage Privacy Settings",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "255",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble107",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "335",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble176",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2630",
-      "role": "listitem",
-      "name": "Terms of Use",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2631",
-      "role": "link",
-      "name": "Terms of Use",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2613",
-      "role": "listitem",
-      "name": "Contact",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2614",
-      "role": "link",
-      "name": "Contact",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "88",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble46",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "232",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble34",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "278",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble64",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "381",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble40",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "659",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble34",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2489",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble50",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "358",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble55",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "576",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble30",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "174",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble23",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "527",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble32",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "636",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble20",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "682",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble92",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "132",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble14",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "553",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble10",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2467",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble71",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2615",
-      "role": "listitem",
-      "name": "Tip Us",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "2616",
-      "role": "link",
-      "name": "Tip Us",
+      "ref": "2590",
+      "role": "list",
+      "name": "FacebookThreadsInstagramYoutubeRSS",
       "value": "",
       "flags": ""
     },
@@ -3051,30 +2960,212 @@
       "flags": ""
     },
     {
-      "ref": "2380",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble11",
+      "ref": "2612",
+      "role": "list",
+      "name": "ContactTip UsCommunity GuidelinesArchivesAboutEthics StatementHow We Rate and Review Products",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2222",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble4",
+      "ref": "2613",
+      "role": "listitem",
+      "name": "Contact",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2402",
+      "ref": "2614",
       "role": "link",
-      "name": "CommentsComment Icon Bubble2",
+      "name": "Contact",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "2569",
+      "ref": "2615",
+      "role": "listitem",
+      "name": "Tip Us",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2616",
       "role": "link",
-      "name": "CommentsComment Icon Bubble2",
+      "name": "Tip Us",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2617",
+      "role": "listitem",
+      "name": "Community Guidelines",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2618",
+      "role": "link",
+      "name": "Community Guidelines",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2619",
+      "role": "listitem",
+      "name": "Archives",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2620",
+      "role": "link",
+      "name": "Archives",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2621",
+      "role": "listitem",
+      "name": "About",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2622",
+      "role": "link",
+      "name": "About",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2623",
+      "role": "listitem",
+      "name": "Ethics Statement",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2624",
+      "role": "link",
+      "name": "Ethics Statement",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2625",
+      "role": "listitem",
+      "name": "How We Rate and Review Products",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2626",
+      "role": "link",
+      "name": "How We Rate and Review Products",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2627",
+      "role": "list",
+      "name": "Manage Privacy SettingsTerms of UsePrivacy NoticeCookie PolicyLicensing FAQAccessibilityPlatform Status",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2628",
+      "role": "listitem",
+      "name": "Manage Privacy Settings",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2629",
+      "role": "button",
+      "name": "Manage Privacy Settings",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2630",
+      "role": "listitem",
+      "name": "Terms of Use",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2631",
+      "role": "link",
+      "name": "Terms of Use",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2632",
+      "role": "listitem",
+      "name": "Privacy Notice",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2633",
+      "role": "link",
+      "name": "Privacy Notice",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2634",
+      "role": "listitem",
+      "name": "Cookie Policy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2635",
+      "role": "link",
+      "name": "Cookie Policy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2636",
+      "role": "listitem",
+      "name": "Licensing FAQ",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2637",
+      "role": "link",
+      "name": "Licensing FAQ",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2638",
+      "role": "listitem",
+      "name": "Accessibility",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2639",
+      "role": "link",
+      "name": "Accessibility",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2640",
+      "role": "listitem",
+      "name": "Platform Status",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "2641",
+      "role": "link",
+      "name": "Platform Status",
       "value": "",
       "flags": ""
     },
@@ -3082,48 +3173,6 @@
       "ref": "2643",
       "role": "link",
       "name": "Vox Media",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "208",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble121",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "311",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble43",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "503",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble47",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "612",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble21",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "153",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble3",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "111",
-      "role": "link",
-      "name": "CommentsComment Icon Bubble1",
       "value": "",
       "flags": ""
     }

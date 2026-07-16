@@ -21,7 +21,7 @@
  *
  * Node line grammar (deterministic field order, pinned by serialize.test.mjs):
  *   {indent}- {role}[ "{name}"][ [ref={ref}]][ = "{value}"]
- *     [ [checked] | [mixed]][ [selected]][ [disabled]][ [level={n}]]
+ *     [ [checked] | [mixed]][ [selected]][ [disabled]][ [occluded]][ [level={n}]]
  *     [ values: "{v1}", "{v2}", …]
  * Names/values are whitespace-collapsed and have embedded double-quotes escaped.
  * The synthetic multi-root sentinel (ref "0") prints no [ref] tag — it mirrors
@@ -56,9 +56,14 @@ export function formatNodeFields(node: PrunedNode): string {
   else if (node.checked === "mixed") s += " [mixed]";
   if (node.selected) s += " [selected]";
   if (node.disabled) s += " [disabled]";
+  if (node.occluded) s += " [occluded]";
   if (node.level !== undefined) s += ` [level=${node.level}]`;
   if (node.values && node.values.length) {
     s += ` values: ${node.values.map((v) => `"${quoted(v)}"`).join(", ")}`;
+  }
+  // Partial table (cap ladder removed rows) — the count keeps it honest.
+  if (node.rowsShown) {
+    s += ` (showing ${node.rowsShown.shown} of ${node.rowsShown.total} rows)`;
   }
   // Cross-origin frame leaf — the walk couldn't traverse its document. Render a
   // loud, machine-readable boundary marker so the agent knows content exists

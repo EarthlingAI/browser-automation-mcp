@@ -19,7 +19,7 @@
   // loaded — preserves the in-page ref maps so refs stay stable and resolvable
   // across an action sequence. Bump the integer when changing the in-page
   // contract (new act kind, return-shape change, ref-identity scheme).
-  const HELPERS_VERSION = 11;
+  const HELPERS_VERSION = 12;
   if (globalThis.__mcpHelpersVersion === HELPERS_VERSION) return;
   globalThis.__mcpHelpersVersion = HELPERS_VERSION;
   globalThis.__mcpHelpersLoaded = true;
@@ -55,6 +55,11 @@
     ARTICLE: "article",
   };
 
+  // Name-clamp gates for the textContent fallback in nameOf (leaf vs wrapper —
+  // see the comment there).
+  const MAX_NAME_LENGTH = 300;
+  const MAX_CONTAINER_NAME_LENGTH = 200;
+
   const INTERACTIVE_TAGS = new Set([
     "BUTTON",
     "A",
@@ -68,6 +73,14 @@
   function roleOf(el) {
     const explicit = el.getAttribute?.("role");
     if (explicit) return explicit.toLowerCase();
+    // A row-scoped TH is the row's header, not a column header — the a11y spec
+    // maps <th scope="row"> to rowheader, and the pruner's row-collapse keeps
+    // it in the same values: list as the row's data cells.
+    if (
+      el.tagName === "TH" &&
+      el.getAttribute("scope")?.toLowerCase() === "row" // scope attr is case-insensitive per spec
+    )
+      return "rowheader";
     if (el.tagName === "INPUT") {
       const t = (el.type || "text").toLowerCase();
       if (t === "checkbox") return "checkbox";
@@ -111,9 +124,26 @@
     if (el.tagName === "IMG") return el.getAttribute("alt") || "";
     const title = el.getAttribute("title");
     if (title) return title.trim();
+    // Text-content fallback, split by element shape (HELPERS_VERSION 12):
+    //   - LEAF elements (no element children) are genuine text carriers — a
+    //     long table cell, a paragraph-sized list entry. Clamp with a VISIBLE
+    //     trailing "…" so the agent sees the cut instead of a nameless node.
+    //   - Elements WITH element children are wrappers whose textContent is the
+    //     concatenation of everything inside; a big one exceeding the gate
+    //     stays NAMELESS so structural containers don't balloon the kept set
+    //     (the pruner drops unnamed structure; the real text lives in the
+    //     descendants).
     const txt = (el.textContent || "").trim();
-    if (txt && txt.length <= 200) return txt;
-    return "";
+    if (!txt) return "";
+    if (el.childElementCount === 0) {
+      if (txt.length <= MAX_NAME_LENGTH) return txt;
+      let cut = txt.slice(0, MAX_NAME_LENGTH - 1);
+      // Don't split a surrogate pair at the cut — a trailing lone high
+      // surrogate is invalid UTF-16 and garbles JSON/rendering downstream.
+      if (/[\uD800-\uDBFF]$/.test(cut)) cut = cut.slice(0, -1);
+      return cut + "…";
+    }
+    return txt.length <= MAX_CONTAINER_NAME_LENGTH ? txt : "";
   }
 
   function valueOf(el) {
@@ -269,8 +299,8 @@
     // (overlay banners almost always carry position:fixed).
     if (el.getAttribute?.("aria-hidden") === "true") node.ariaHidden = true;
     if (el.hasAttribute?.("inert")) node.inert = true;
-    // <dialog open> with modal-style open() shows a top-layer modal — useful
-    // for the pruner to prioritise its descendants.
+    // <dialog open> shows a top-layer modal — carried on the raw tree for
+    // bridge-side environment awareness (the pruner doesn't consume it).
     if (
       el.tagName === "DIALOG" &&
       /** @type {HTMLDialogElement} */ (el).open === true
@@ -283,9 +313,9 @@
     // Active-layer pass: flag an interactive element that is NOT the topmost
     // hit-tested element at its own centre as `occluded`. SPAs that keep a stale
     // previous-slide / under-layer mounted (Articulate Storyline) produce ghost
-    // interactives at the same coordinates as the live ones; the pruner uses
-    // this flag only to DEPRIORITISE (score penalty), never to exclude — so a
-    // legitimately-overlapped-but-unique control still surfaces. Hit-test in the
+    // interactives at the same coordinates as the live ones; the flag is a pure
+    // FACT — serialized as [occluded], never affecting inclusion or position —
+    // so the agent sees which twin is the live one. Hit-test in the
     // element's OWN document with LOCAL coords (pre-offset). Layout is already
     // clean mid-walk (no mutations), so elementFromPoint adds no re-layout cost.
     if (!zeroRect && isInteractive(el)) {

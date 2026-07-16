@@ -8,9 +8,9 @@
     }
   },
   "meta": {
-    "total_candidates": 742
+    "total_candidates": 799
   },
-  "jsonSize": 32124,
+  "jsonSize": 50601,
   "inventory": [
     {
       "ref": "1",
@@ -20,79 +20,16 @@
       "flags": ""
     },
     {
-      "ref": "236",
-      "role": "img",
-      "name": "Baseline Check",
+      "ref": "2",
+      "role": "list",
+      "name": "Skip to main content\n      \n      \n        Skip to search",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "79",
-      "role": "button",
-      "name": "JavaScriptJS",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "102",
-      "role": "button",
-      "name": "Web APIs",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "152",
-      "role": "button",
-      "name": "Learn",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "179",
-      "role": "button",
-      "name": "Tools",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "241",
-      "role": "img",
-      "name": "Chrome check",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "242",
-      "role": "img",
-      "name": "Edge check",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "244",
-      "role": "img",
-      "name": "Firefox check",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "246",
-      "role": "img",
-      "name": "Safari check",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "233",
-      "role": "heading",
-      "name": "Array",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "127",
-      "role": "button",
-      "name": "All",
+      "ref": "3",
+      "role": "listitem",
+      "name": "Skip to main content",
       "value": "",
       "flags": ""
     },
@@ -104,247 +41,16 @@
       "flags": ""
     },
     {
-      "ref": "6",
-      "role": "link",
+      "ref": "5",
+      "role": "listitem",
       "name": "Skip to search",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "22",
-      "role": "button",
-      "name": "HTML",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "195",
-      "role": "button",
-      "name": "About",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "49",
-      "role": "button",
-      "name": "CSS",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "297",
-      "role": "listitem",
-      "name": "JavaScript arrays are resizable and can contain a mix of different data types. (When those characteristics are undesirable, use typed arrays instead.)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "301",
+      "ref": "6",
       "role": "link",
-      "name": "typed arrays",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "300",
-      "role": "link",
-      "name": "data types",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "262",
-      "role": "link",
-      "name": "storing a collection of multiple items under a single variable name",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "263",
-      "role": "link",
-      "name": "performing common array operations",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "291",
-      "role": "heading",
-      "name": "Description",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "292",
-      "role": "link",
-      "name": "Description",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1378",
-      "role": "table",
-      "name": "Specification\n          \n        \n      \n      \n        \n              ECMAScript® 2027 Language Specification# sec-array-objects",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1383",
-      "role": "row",
-      "name": "ECMAScript® 2027 Language Specification# sec-array-objects",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1384",
-      "role": "cell",
-      "name": "ECMAScript® 2027 Language Specification# sec-array-objects",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1385",
-      "role": "link",
-      "name": "ECMAScript® 2027 Language Specification# sec-array-objects",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1380",
-      "role": "row",
-      "name": "Specification",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1381",
-      "role": "columnheader",
-      "name": "Specification",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1446",
-      "role": "listitem",
-      "name": "Static methodsfrom()fromAsync()isArray()of()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1451",
-      "role": "listitem",
-      "name": "from()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1452",
-      "role": "link",
-      "name": "from()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1454",
-      "role": "listitem",
-      "name": "fromAsync()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1455",
-      "role": "link",
-      "name": "fromAsync()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1457",
-      "role": "listitem",
-      "name": "isArray()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1458",
-      "role": "link",
-      "name": "isArray()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1460",
-      "role": "listitem",
-      "name": "of()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1461",
-      "role": "link",
-      "name": "of()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "302",
-      "role": "listitem",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "221",
-      "role": "listitem",
-      "name": "Standard built-in objects",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "222",
-      "role": "link",
-      "name": "Standard built-in objects",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1438",
-      "role": "listitem",
-      "name": "ConstructorArray()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1443",
-      "role": "listitem",
-      "name": "Array()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1444",
-      "role": "link",
-      "name": "Array()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1463",
-      "role": "listitem",
-      "name": "Static properties[Symbol.species]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1468",
-      "role": "listitem",
-      "name": "[Symbol.species]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1469",
-      "role": "link",
-      "name": "[Symbol.species]",
+      "name": "Skip to search",
       "value": "",
       "flags": ""
     },
@@ -363,51 +69,681 @@
       "flags": ""
     },
     {
-      "ref": "224",
+      "ref": "22",
+      "role": "button",
+      "name": "HTML",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "30",
       "role": "listitem",
-      "name": "Array",
+      "name": "Elements",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "225",
-      "role": "link",
-      "name": "Array",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "254",
+      "ref": "31",
       "role": "listitem",
-      "name": "See full compatibility",
+      "name": "Global attributes",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "255",
-      "role": "link",
-      "name": "See full compatibility",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "266",
-      "role": "heading",
-      "name": "In this article",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "256",
+      "ref": "32",
       "role": "listitem",
-      "name": "Report feedback",
+      "name": "Attributes",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "257",
+      "ref": "33",
+      "role": "listitem",
+      "name": "See all…",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "37",
+      "role": "listitem",
+      "name": "Responsive images",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "38",
+      "role": "listitem",
+      "name": "HTML cheatsheet",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "39",
+      "role": "listitem",
+      "name": "Date & time formats",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "40",
+      "role": "listitem",
+      "name": "See all…",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "43",
+      "role": "list",
+      "name": "SVG\n                              \n                                MathML\n                              \n                                XML",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "44",
+      "role": "listitem",
+      "name": "SVG",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "45",
+      "role": "listitem",
+      "name": "MathML",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "46",
+      "role": "listitem",
+      "name": "XML",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "49",
+      "role": "button",
+      "name": "CSS",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "57",
+      "role": "listitem",
+      "name": "Properties",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "58",
+      "role": "listitem",
+      "name": "Selectors",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "59",
+      "role": "listitem",
+      "name": "At-rules",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "60",
+      "role": "listitem",
+      "name": "Values",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "61",
+      "role": "listitem",
+      "name": "See all…",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "65",
+      "role": "listitem",
+      "name": "Box model",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "66",
+      "role": "listitem",
+      "name": "Animations",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "67",
+      "role": "listitem",
+      "name": "Flexbox",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "68",
+      "role": "listitem",
+      "name": "Colors",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "69",
+      "role": "listitem",
+      "name": "See all…",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "73",
+      "role": "listitem",
+      "name": "Column layouts",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "74",
+      "role": "listitem",
+      "name": "Centering an element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "75",
+      "role": "listitem",
+      "name": "Card component",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "76",
+      "role": "listitem",
+      "name": "See all…",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "79",
+      "role": "button",
+      "name": "JavaScriptJS",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "87",
+      "role": "listitem",
+      "name": "Standard built-in objects",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "88",
+      "role": "listitem",
+      "name": "Expressions & operators",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "89",
+      "role": "listitem",
+      "name": "Statements & declarations",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "90",
+      "role": "listitem",
+      "name": "Functions",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "91",
+      "role": "listitem",
+      "name": "See all…",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "95",
+      "role": "listitem",
+      "name": "Control flow & error handing",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "96",
+      "role": "listitem",
+      "name": "Loops and iteration",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "97",
+      "role": "listitem",
+      "name": "Working with objects",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "98",
+      "role": "listitem",
+      "name": "Using classes",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "99",
+      "role": "listitem",
+      "name": "See all…",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "102",
+      "role": "button",
+      "name": "Web APIs",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "110",
+      "role": "listitem",
+      "name": "File system API",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "111",
+      "role": "listitem",
+      "name": "Fetch API",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "112",
+      "role": "listitem",
+      "name": "Geolocation API",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "113",
+      "role": "listitem",
+      "name": "HTML DOM API",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "114",
+      "role": "listitem",
+      "name": "Push API",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "115",
+      "role": "listitem",
+      "name": "Service worker API",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "116",
+      "role": "listitem",
+      "name": "See all…",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "120",
+      "role": "listitem",
+      "name": "Using the Web animation API",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "121",
+      "role": "listitem",
+      "name": "Using the Fetch API",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "122",
+      "role": "listitem",
+      "name": "Working with the History API",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "123",
+      "role": "listitem",
+      "name": "Using the Web speech API",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "124",
+      "role": "listitem",
+      "name": "Using web workers",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "127",
+      "role": "button",
+      "name": "All",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "135",
+      "role": "listitem",
+      "name": "Accessibility",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "136",
+      "role": "listitem",
+      "name": "HTTP",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "137",
+      "role": "listitem",
+      "name": "URI",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "138",
+      "role": "listitem",
+      "name": "Web extensions",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "139",
+      "role": "listitem",
+      "name": "WebAssembly",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "140",
+      "role": "listitem",
+      "name": "WebDriver",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "141",
+      "role": "listitem",
+      "name": "See all…",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "145",
+      "role": "listitem",
+      "name": "Media",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "146",
+      "role": "listitem",
+      "name": "Performance",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "147",
+      "role": "listitem",
+      "name": "Privacy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "148",
+      "role": "listitem",
+      "name": "Security",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "149",
+      "role": "listitem",
+      "name": "Progressive web apps",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "152",
+      "role": "button",
+      "name": "Learn",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "160",
+      "role": "listitem",
+      "name": "Getting started modules",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "161",
+      "role": "listitem",
+      "name": "Core modules",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "162",
+      "role": "listitem",
+      "name": "MDN Curriculum",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "163",
+      "role": "listitem",
+      "name": "Check out the video course from Scrimba, our partner",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "166",
+      "role": "list",
+      "name": "Structuring content with HTML module",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "167",
+      "role": "listitem",
+      "name": "Structuring content with HTML module",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "170",
+      "role": "list",
+      "name": "CSS styling basics module\n                              \n                                CSS layout module",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "171",
+      "role": "listitem",
+      "name": "CSS styling basics module",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "172",
+      "role": "listitem",
+      "name": "CSS layout module",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "175",
+      "role": "list",
+      "name": "Dynamic scripting with JavaScript module",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "176",
+      "role": "listitem",
+      "name": "Dynamic scripting with JavaScript module",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "179",
+      "role": "button",
+      "name": "Tools",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "183",
+      "role": "list",
+      "name": "Playground\n                              \n                                HTTP Observatory",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "184",
+      "role": "listitem",
+      "name": "Playground",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "185",
+      "role": "listitem",
+      "name": "HTTP Observatory",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "187",
+      "role": "listitem",
+      "name": "Border-image generator",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "188",
+      "role": "listitem",
+      "name": "Border-radius generator",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "189",
+      "role": "listitem",
+      "name": "Box-shadow generator",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "190",
+      "role": "listitem",
+      "name": "Color format converter",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "191",
+      "role": "listitem",
+      "name": "Color mixer",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "192",
+      "role": "listitem",
+      "name": "Shape generator",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "195",
+      "role": "button",
+      "name": "About",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "199",
+      "role": "list",
+      "name": "About MDN\n                              \n                                Advertise with us",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "200",
+      "role": "listitem",
+      "name": "About MDN",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "201",
+      "role": "listitem",
+      "name": "Advertise with us",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "202",
+      "role": "list",
+      "name": "Community\n                              \n                                MDN on GitHub",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "203",
+      "role": "listitem",
+      "name": "Community",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "204",
+      "role": "listitem",
+      "name": "MDN on GitHub",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "206",
       "role": "link",
-      "name": "Report feedback",
+      "name": "Blog",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "212",
+      "role": "listitem",
+      "name": "Web",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "213",
+      "role": "link",
+      "name": "Web",
       "value": "",
       "flags": ""
     },
@@ -440,44 +776,149 @@
       "flags": ""
     },
     {
-      "ref": "1432",
+      "ref": "221",
       "role": "listitem",
       "name": "Standard built-in objects",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1433",
+      "ref": "222",
       "role": "link",
       "name": "Standard built-in objects",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1434",
+      "ref": "224",
       "role": "listitem",
       "name": "Array",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1436",
+      "ref": "225",
       "role": "link",
       "name": "Array",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "212",
-      "role": "listitem",
-      "name": "Web",
+      "ref": "233",
+      "role": "heading",
+      "name": "Array",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "213",
+      "ref": "236",
+      "role": "img",
+      "name": "Baseline Check",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "241",
+      "role": "img",
+      "name": "Chrome check",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "242",
+      "role": "img",
+      "name": "Edge check",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "244",
+      "role": "img",
+      "name": "Firefox check",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "246",
+      "role": "img",
+      "name": "Safari check",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "251",
+      "role": "list",
+      "name": "Learn more\n            \n          \n          \n            \n              See full compatibility\n            \n          \n          \n            \n              Report feedback",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "252",
+      "role": "listitem",
+      "name": "Learn more",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "253",
       "role": "link",
-      "name": "Web",
+      "name": "Learn more",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "254",
+      "role": "listitem",
+      "name": "See full compatibility",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "255",
+      "role": "link",
+      "name": "See full compatibility",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "256",
+      "role": "listitem",
+      "name": "Report feedback",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "257",
+      "role": "link",
+      "name": "Report feedback",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "258",
+      "role": "region",
+      "name": "The Array object, as with arrays in other programming languages, enables storing a collection of multiple items under a single variable name, and has members for performing common array operations.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "262",
+      "role": "link",
+      "name": "storing a collection of multiple items under a single variable name",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "263",
+      "role": "link",
+      "name": "performing common array operations",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "266",
+      "role": "heading",
+      "name": "In this article",
       "value": "",
       "flags": ""
     },
@@ -622,6 +1063,27 @@
       "flags": ""
     },
     {
+      "ref": "290",
+      "role": "region",
+      "name": "Description",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "291",
+      "role": "heading",
+      "name": "Description",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "292",
+      "role": "link",
+      "name": "Description",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "294",
       "role": "link",
       "name": "primitives",
@@ -629,450 +1091,30 @@
       "flags": ""
     },
     {
-      "ref": "1765",
-      "role": "link",
-      "name": "Learn web development",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1751",
-      "role": "link",
-      "name": "Community resources",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1757",
-      "role": "link",
-      "name": "MDN on GitHub",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1753",
-      "role": "link",
-      "name": "Writing guidelines",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1763",
-      "role": "link",
-      "name": "Web technologies",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1755",
-      "role": "link",
-      "name": "MDN Discord",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "514",
-      "role": "row",
-      "name": "Mutating method\nNon-mutating alternative",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "516",
-      "role": "columnheader",
-      "name": "Non-mutating alternative",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "515",
-      "role": "columnheader",
-      "name": "Mutating method",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "518",
-      "role": "row",
-      "name": "copyWithin()\nNo one-method alternative",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "522",
-      "role": "cell",
-      "name": "No one-method alternative",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "519",
-      "role": "cell",
-      "name": "copyWithin()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "520",
-      "role": "link",
-      "name": "copyWithin()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "523",
-      "role": "row",
-      "name": "fill()\nNo one-method alternative",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "527",
-      "role": "cell",
-      "name": "No one-method alternative",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "524",
-      "role": "cell",
-      "name": "fill()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "525",
-      "role": "link",
-      "name": "fill()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "528",
-      "role": "row",
-      "name": "pop()\nslice(0, -1)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "532",
-      "role": "cell",
-      "name": "slice(0, -1)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "533",
-      "role": "link",
-      "name": "slice(0, -1)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "529",
-      "role": "cell",
-      "name": "pop()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "530",
-      "role": "link",
-      "name": "pop()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "535",
-      "role": "row",
-      "name": "push(v1, v2)\nconcat([v1, v2])",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "539",
-      "role": "cell",
-      "name": "concat([v1, v2])",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "540",
-      "role": "link",
-      "name": "concat([v1, v2])",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "536",
-      "role": "cell",
-      "name": "push(v1, v2)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "537",
-      "role": "link",
-      "name": "push(v1, v2)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "542",
-      "role": "row",
-      "name": "reverse()\ntoReversed()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "546",
-      "role": "cell",
-      "name": "toReversed()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "547",
-      "role": "link",
-      "name": "toReversed()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "543",
-      "role": "cell",
-      "name": "reverse()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "544",
-      "role": "link",
-      "name": "reverse()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "549",
-      "role": "row",
-      "name": "shift()\nslice(1)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "553",
-      "role": "cell",
-      "name": "slice(1)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "554",
-      "role": "link",
-      "name": "slice(1)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "550",
-      "role": "cell",
-      "name": "shift()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "551",
-      "role": "link",
-      "name": "shift()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "556",
-      "role": "row",
-      "name": "sort()\ntoSorted()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "560",
-      "role": "cell",
-      "name": "toSorted()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "561",
-      "role": "link",
-      "name": "toSorted()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "557",
-      "role": "cell",
-      "name": "sort()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "558",
-      "role": "link",
-      "name": "sort()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "563",
-      "role": "row",
-      "name": "splice()\ntoSpliced()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "567",
-      "role": "cell",
-      "name": "toSpliced()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "568",
-      "role": "link",
-      "name": "toSpliced()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "564",
-      "role": "cell",
-      "name": "splice()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "565",
-      "role": "link",
-      "name": "splice()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "570",
-      "role": "row",
-      "name": "unshift(v1, v2)\ntoSpliced(0, 0, v1, v2)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "574",
-      "role": "cell",
-      "name": "toSpliced(0, 0, v1, v2)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "575",
-      "role": "link",
-      "name": "toSpliced(0, 0, v1, v2)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "571",
-      "role": "cell",
-      "name": "unshift(v1, v2)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "572",
-      "role": "link",
-      "name": "unshift(v1, v2)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1773",
-      "role": "link",
-      "name": "Hacks blog",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "252",
+      "ref": "297",
       "role": "listitem",
-      "name": "Learn more",
+      "name": "JavaScript arrays are resizable and can contain a mix of different data types. (When those characteristics are undesirable, use typed arrays instead.)",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "253",
+      "ref": "300",
       "role": "link",
-      "name": "Learn more",
+      "name": "data types",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "206",
+      "ref": "301",
       "role": "link",
-      "name": "Blog",
+      "name": "typed arrays",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1771",
-      "role": "link",
-      "name": "Glossary",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1769",
-      "role": "link",
-      "name": "Tutorials",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1767",
-      "role": "link",
-      "name": "Guides",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1719",
-      "role": "link",
-      "name": "MDN on GitHub",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1721",
-      "role": "link",
-      "name": "MDN on Bluesky",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1723",
-      "role": "link",
-      "name": "MDN on X",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1725",
-      "role": "link",
-      "name": "MDN on Mastodon",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1727",
-      "role": "link",
-      "name": "MDN blog RSS feed",
+      "ref": "302",
+      "role": "listitem",
+      "name": "",
       "value": "",
       "flags": ""
     },
@@ -1126,16 +1168,457 @@
       "flags": ""
     },
     {
-      "ref": "475",
-      "role": "listitem",
-      "name": "Primitive types such as strings, numbers and booleans (not String, Number, and Boolean objects): their values are copied into the new array.",
+      "ref": "318",
+      "role": "region",
+      "name": "Array indices",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "480",
+      "ref": "319",
+      "role": "heading",
+      "name": "Array indices",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "320",
       "role": "link",
-      "name": "Boolean",
+      "name": "Array indices",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "323",
+      "role": "link",
+      "name": "External link (opens in new tab)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "324",
+      "role": "link",
+      "name": "object property collection",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "325",
+      "role": "link",
+      "name": "traversal and mutation operations",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "331",
+      "role": "link",
+      "name": "bracket notation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "332",
+      "role": "link",
+      "name": "dot notation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "347",
+      "role": "region",
+      "name": "Relationship between length and numerical properties",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "348",
+      "role": "heading",
+      "name": "Relationship between length and numerical properties",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "349",
+      "role": "link",
+      "name": "Relationship between length and numerical properties",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "351",
+      "role": "link",
+      "name": "length",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "354",
+      "role": "link",
+      "name": "join()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "356",
+      "role": "link",
+      "name": "slice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "358",
+      "role": "link",
+      "name": "indexOf()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "360",
+      "role": "link",
+      "name": "length",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "363",
+      "role": "link",
+      "name": "push()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "365",
+      "role": "link",
+      "name": "splice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "367",
+      "role": "link",
+      "name": "length",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "371",
+      "role": "link",
+      "name": "length",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "375",
+      "role": "link",
+      "name": "length",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "380",
+      "role": "link",
+      "name": "length",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "384",
+      "role": "link",
+      "name": "length",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "386",
+      "role": "region",
+      "name": "Array methods and empty slots",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "387",
+      "role": "heading",
+      "name": "Array methods and empty slots",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "388",
+      "role": "link",
+      "name": "Array methods and empty slots",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "390",
+      "role": "link",
+      "name": "sparse arrays",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "394",
+      "role": "link",
+      "name": "concat()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "396",
+      "role": "link",
+      "name": "copyWithin()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "398",
+      "role": "link",
+      "name": "every()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "400",
+      "role": "link",
+      "name": "filter()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "402",
+      "role": "link",
+      "name": "flat()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "404",
+      "role": "link",
+      "name": "flatMap()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "406",
+      "role": "link",
+      "name": "forEach()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "408",
+      "role": "link",
+      "name": "indexOf()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "410",
+      "role": "link",
+      "name": "lastIndexOf()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "412",
+      "role": "link",
+      "name": "map()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "414",
+      "role": "link",
+      "name": "reduce()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "416",
+      "role": "link",
+      "name": "reduceRight()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "418",
+      "role": "link",
+      "name": "reverse()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "420",
+      "role": "link",
+      "name": "slice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "422",
+      "role": "link",
+      "name": "some()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "424",
+      "role": "link",
+      "name": "sort()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "426",
+      "role": "link",
+      "name": "splice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "436",
+      "role": "link",
+      "name": "entries()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "438",
+      "role": "link",
+      "name": "fill()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "440",
+      "role": "link",
+      "name": "find()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "442",
+      "role": "link",
+      "name": "findIndex()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "444",
+      "role": "link",
+      "name": "findLast()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "446",
+      "role": "link",
+      "name": "findLastIndex()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "448",
+      "role": "link",
+      "name": "includes()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "450",
+      "role": "link",
+      "name": "join()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "452",
+      "role": "link",
+      "name": "keys()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "454",
+      "role": "link",
+      "name": "toLocaleString()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "456",
+      "role": "link",
+      "name": "toReversed()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "458",
+      "role": "link",
+      "name": "toSorted()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "460",
+      "role": "link",
+      "name": "toSpliced()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "462",
+      "role": "link",
+      "name": "values()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "464",
+      "role": "link",
+      "name": "with()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "467",
+      "role": "region",
+      "name": "Copying methods and mutating methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "468",
+      "role": "heading",
+      "name": "Copying methods and mutating methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "469",
+      "role": "link",
+      "name": "Copying methods and mutating methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "471",
+      "role": "link",
+      "name": "shallowly",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "474",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "475",
+      "role": "listitem",
+      "name": "Primitive types such as strings, numbers and booleans (not String, Number, and Boolean objects): their values are copied into the new array.",
       "value": "",
       "flags": ""
     },
@@ -1150,6 +1633,664 @@
       "ref": "478",
       "role": "link",
       "name": "Number",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "480",
+      "role": "link",
+      "name": "Boolean",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "484",
+      "role": "link",
+      "name": "this.constructor[Symbol.species]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "486",
+      "role": "link",
+      "name": "concat()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "488",
+      "role": "link",
+      "name": "filter()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "490",
+      "role": "link",
+      "name": "flat()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "492",
+      "role": "link",
+      "name": "flatMap()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "494",
+      "role": "link",
+      "name": "map()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "496",
+      "role": "link",
+      "name": "slice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "498",
+      "role": "link",
+      "name": "splice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "502",
+      "role": "link",
+      "name": "toReversed()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "504",
+      "role": "link",
+      "name": "toSorted()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "506",
+      "role": "link",
+      "name": "toSpliced()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "508",
+      "role": "link",
+      "name": "with()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "512",
+      "role": "table",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "514",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": "values=2"
+    },
+    {
+      "ref": "518",
+      "role": "row",
+      "name": "copyWithin()\nNo one-method alternative",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "519",
+      "role": "cell",
+      "name": "copyWithin()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "520",
+      "role": "link",
+      "name": "copyWithin()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "522",
+      "role": "cell",
+      "name": "No one-method alternative",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "523",
+      "role": "row",
+      "name": "fill()\nNo one-method alternative",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "524",
+      "role": "cell",
+      "name": "fill()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "525",
+      "role": "link",
+      "name": "fill()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "527",
+      "role": "cell",
+      "name": "No one-method alternative",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "528",
+      "role": "row",
+      "name": "pop()\nslice(0, -1)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "529",
+      "role": "cell",
+      "name": "pop()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "530",
+      "role": "link",
+      "name": "pop()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "532",
+      "role": "cell",
+      "name": "slice(0, -1)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "533",
+      "role": "link",
+      "name": "slice(0, -1)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "535",
+      "role": "row",
+      "name": "push(v1, v2)\nconcat([v1, v2])",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "536",
+      "role": "cell",
+      "name": "push(v1, v2)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "537",
+      "role": "link",
+      "name": "push(v1, v2)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "539",
+      "role": "cell",
+      "name": "concat([v1, v2])",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "540",
+      "role": "link",
+      "name": "concat([v1, v2])",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "542",
+      "role": "row",
+      "name": "reverse()\ntoReversed()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "543",
+      "role": "cell",
+      "name": "reverse()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "544",
+      "role": "link",
+      "name": "reverse()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "546",
+      "role": "cell",
+      "name": "toReversed()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "547",
+      "role": "link",
+      "name": "toReversed()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "549",
+      "role": "row",
+      "name": "shift()\nslice(1)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "550",
+      "role": "cell",
+      "name": "shift()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "551",
+      "role": "link",
+      "name": "shift()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "553",
+      "role": "cell",
+      "name": "slice(1)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "554",
+      "role": "link",
+      "name": "slice(1)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "556",
+      "role": "row",
+      "name": "sort()\ntoSorted()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "557",
+      "role": "cell",
+      "name": "sort()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "558",
+      "role": "link",
+      "name": "sort()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "560",
+      "role": "cell",
+      "name": "toSorted()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "561",
+      "role": "link",
+      "name": "toSorted()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "563",
+      "role": "row",
+      "name": "splice()\ntoSpliced()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "564",
+      "role": "cell",
+      "name": "splice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "565",
+      "role": "link",
+      "name": "splice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "567",
+      "role": "cell",
+      "name": "toSpliced()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "568",
+      "role": "link",
+      "name": "toSpliced()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "570",
+      "role": "row",
+      "name": "unshift(v1, v2)\ntoSpliced(0, 0, v1, v2)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "571",
+      "role": "cell",
+      "name": "unshift(v1, v2)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "572",
+      "role": "link",
+      "name": "unshift(v1, v2)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "574",
+      "role": "cell",
+      "name": "toSpliced(0, 0, v1, v2)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "575",
+      "role": "link",
+      "name": "toSpliced(0, 0, v1, v2)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "578",
+      "role": "link",
+      "name": "spread syntax",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "579",
+      "role": "link",
+      "name": "slice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "582",
+      "role": "region",
+      "name": "Iterative methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "583",
+      "role": "heading",
+      "name": "Iterative methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "584",
+      "role": "link",
+      "name": "Iterative methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "591",
+      "role": "link",
+      "name": "element",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "596",
+      "role": "link",
+      "name": "index",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "601",
+      "role": "link",
+      "name": "array",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "614",
+      "role": "link",
+      "name": "the usual rules",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "616",
+      "role": "link",
+      "name": "non-strict",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "620",
+      "role": "link",
+      "name": "globalThis",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "624",
+      "role": "link",
+      "name": "arrow function",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "626",
+      "role": "link",
+      "name": "binding",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "630",
+      "role": "link",
+      "name": "mutating initial array in iterative methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "637",
+      "role": "link",
+      "name": "copying",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "638",
+      "role": "link",
+      "name": "generic",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "639",
+      "role": "link",
+      "name": "empty slots",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "641",
+      "role": "link",
+      "name": "every()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "643",
+      "role": "link",
+      "name": "filter()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "645",
+      "role": "link",
+      "name": "find()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "647",
+      "role": "link",
+      "name": "findIndex()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "649",
+      "role": "link",
+      "name": "findLast()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "651",
+      "role": "link",
+      "name": "findLastIndex()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "653",
+      "role": "link",
+      "name": "flatMap()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "655",
+      "role": "link",
+      "name": "forEach()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "657",
+      "role": "link",
+      "name": "map()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "659",
+      "role": "link",
+      "name": "some()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "662",
+      "role": "link",
+      "name": "every()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "664",
+      "role": "link",
+      "name": "find()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "666",
+      "role": "link",
+      "name": "findIndex()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "668",
+      "role": "link",
+      "name": "findLast()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "670",
+      "role": "link",
+      "name": "findLastIndex()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "672",
+      "role": "link",
+      "name": "some()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "676",
+      "role": "link",
+      "name": "reduce()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "678",
+      "role": "link",
+      "name": "reduceRight()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "682",
+      "role": "link",
+      "name": "sort()",
       "value": "",
       "flags": ""
     },
@@ -1182,6 +2323,13 @@
       "flags": ""
     },
     {
+      "ref": "699",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "704",
       "role": "listitem",
       "name": "reduce and reduceRight have slightly different signatures and do not always start at the first/last element.",
@@ -1189,247 +2337,9 @@
       "flags": ""
     },
     {
-      "ref": "1332",
-      "role": "listitem",
-      "name": "callbackFn will not visit any elements added beyond the array's initial length when the call to the iterative method began.",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1785",
-      "role": "listitem",
-      "name": "Community Participation Guidelines",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1786",
-      "role": "link",
-      "name": "Community Participation Guidelines",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "614",
-      "role": "link",
-      "name": "the usual rules",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1220",
-      "role": "link",
-      "name": "Loops and iteration",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1068",
-      "role": "link",
-      "name": "JavaScript First Steps: Arrays",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "757",
-      "role": "heading",
-      "name": "Constructor",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "758",
-      "role": "link",
-      "name": "Constructor",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "767",
-      "role": "heading",
-      "name": "Static properties",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "768",
-      "role": "link",
-      "name": "Static properties",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "777",
-      "role": "heading",
-      "name": "Static methods",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "778",
-      "role": "link",
-      "name": "Static methods",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "806",
-      "role": "heading",
-      "name": "Instance properties",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "807",
-      "role": "link",
-      "name": "Instance properties",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "836",
-      "role": "heading",
-      "name": "Instance methods",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "837",
-      "role": "link",
-      "name": "Instance methods",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1062",
-      "role": "heading",
-      "name": "Examples",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1063",
-      "role": "link",
-      "name": "Examples",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1376",
-      "role": "heading",
-      "name": "Specifications",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1377",
-      "role": "link",
-      "name": "Specifications",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1387",
-      "role": "heading",
-      "name": "Browser compatibility",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1388",
-      "role": "link",
-      "name": "Browser compatibility",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1391",
-      "role": "heading",
-      "name": "See also",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1392",
-      "role": "link",
-      "name": "See also",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1417",
-      "role": "heading",
-      "name": "Help improve MDN",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "319",
-      "role": "heading",
-      "name": "Array indices",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "320",
-      "role": "link",
-      "name": "Array indices",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "348",
-      "role": "heading",
-      "name": "Relationship between length and numerical properties",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "349",
-      "role": "link",
-      "name": "Relationship between length and numerical properties",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "387",
-      "role": "heading",
-      "name": "Array methods and empty slots",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "388",
-      "role": "link",
-      "name": "Array methods and empty slots",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "468",
-      "role": "heading",
-      "name": "Copying methods and mutating methods",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "469",
-      "role": "link",
-      "name": "Copying methods and mutating methods",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "583",
-      "role": "heading",
-      "name": "Iterative methods",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "584",
-      "role": "link",
-      "name": "Iterative methods",
+      "ref": "707",
+      "role": "region",
+      "name": "Generic array methods",
       "value": "",
       "flags": ""
     },
@@ -1448,6 +2358,622 @@
       "flags": ""
     },
     {
+      "ref": "713",
+      "role": "heading",
+      "name": "Normalization of the length property",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "716",
+      "role": "link",
+      "name": "converted to an integer",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "725",
+      "role": "link",
+      "name": "unsafe integer",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "726",
+      "role": "link",
+      "name": "TypeError",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "730",
+      "role": "link",
+      "name": "length",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "738",
+      "role": "heading",
+      "name": "Array-like objects",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "740",
+      "role": "link",
+      "name": "array-like object",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "746",
+      "role": "link",
+      "name": "sparse array",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "749",
+      "role": "link",
+      "name": "NodeList",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "751",
+      "role": "link",
+      "name": "HTMLCollection",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "753",
+      "role": "link",
+      "name": "arguments",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "756",
+      "role": "region",
+      "name": "Constructor",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "757",
+      "role": "heading",
+      "name": "Constructor",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "758",
+      "role": "link",
+      "name": "Constructor",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "761",
+      "role": "link",
+      "name": "Array()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "766",
+      "role": "region",
+      "name": "Static properties",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "767",
+      "role": "heading",
+      "name": "Static properties",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "768",
+      "role": "link",
+      "name": "Static properties",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "771",
+      "role": "link",
+      "name": "Array[Symbol.species]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "776",
+      "role": "region",
+      "name": "Static methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "777",
+      "role": "heading",
+      "name": "Static methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "778",
+      "role": "link",
+      "name": "Static methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "781",
+      "role": "link",
+      "name": "Array.from()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "787",
+      "role": "link",
+      "name": "Array.fromAsync()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "793",
+      "role": "link",
+      "name": "Array.isArray()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "800",
+      "role": "link",
+      "name": "Array.of()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "805",
+      "role": "region",
+      "name": "Instance properties",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "806",
+      "role": "heading",
+      "name": "Instance properties",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "807",
+      "role": "link",
+      "name": "Instance properties",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "813",
+      "role": "link",
+      "name": "Array.prototype.constructor",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "818",
+      "role": "link",
+      "name": "Array",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "821",
+      "role": "link",
+      "name": "Array.prototype[Symbol.unscopables]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "825",
+      "role": "link",
+      "name": "with",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "831",
+      "role": "link",
+      "name": "length",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "835",
+      "role": "region",
+      "name": "Instance methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "836",
+      "role": "heading",
+      "name": "Instance methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "837",
+      "role": "link",
+      "name": "Instance methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "840",
+      "role": "link",
+      "name": "Array.prototype.at()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "845",
+      "role": "link",
+      "name": "Array.prototype.concat()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "850",
+      "role": "link",
+      "name": "Array.prototype.copyWithin()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "855",
+      "role": "link",
+      "name": "Array.prototype.entries()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "859",
+      "role": "link",
+      "name": "array iterator",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "862",
+      "role": "link",
+      "name": "Array.prototype.every()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "869",
+      "role": "link",
+      "name": "Array.prototype.fill()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "874",
+      "role": "link",
+      "name": "Array.prototype.filter()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "880",
+      "role": "link",
+      "name": "Array.prototype.find()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "886",
+      "role": "link",
+      "name": "Array.prototype.findIndex()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "892",
+      "role": "link",
+      "name": "Array.prototype.findLast()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "898",
+      "role": "link",
+      "name": "Array.prototype.findLastIndex()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "904",
+      "role": "link",
+      "name": "Array.prototype.flat()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "909",
+      "role": "link",
+      "name": "Array.prototype.flatMap()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "914",
+      "role": "link",
+      "name": "Array.prototype.forEach()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "919",
+      "role": "link",
+      "name": "Array.prototype.includes()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "926",
+      "role": "link",
+      "name": "Array.prototype.indexOf()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "931",
+      "role": "link",
+      "name": "Array.prototype.join()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "936",
+      "role": "link",
+      "name": "Array.prototype.keys()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "940",
+      "role": "link",
+      "name": "array iterator",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "943",
+      "role": "link",
+      "name": "Array.prototype.lastIndexOf()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "949",
+      "role": "link",
+      "name": "Array.prototype.map()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "954",
+      "role": "link",
+      "name": "Array.prototype.pop()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "959",
+      "role": "link",
+      "name": "Array.prototype.push()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "965",
+      "role": "link",
+      "name": "Array.prototype.reduce()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "970",
+      "role": "link",
+      "name": "Array.prototype.reduceRight()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "975",
+      "role": "link",
+      "name": "Array.prototype.reverse()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "981",
+      "role": "link",
+      "name": "Array.prototype.shift()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "986",
+      "role": "link",
+      "name": "Array.prototype.slice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "991",
+      "role": "link",
+      "name": "Array.prototype.some()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "998",
+      "role": "link",
+      "name": "Array.prototype.sort()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1003",
+      "role": "link",
+      "name": "Array.prototype.splice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1008",
+      "role": "link",
+      "name": "Array.prototype.toLocaleString()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1012",
+      "role": "link",
+      "name": "Object.prototype.toLocaleString()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1015",
+      "role": "link",
+      "name": "Array.prototype.toReversed()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1020",
+      "role": "link",
+      "name": "Array.prototype.toSorted()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1025",
+      "role": "link",
+      "name": "Array.prototype.toSpliced()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1030",
+      "role": "link",
+      "name": "Array.prototype.toString()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1034",
+      "role": "link",
+      "name": "Object.prototype.toString()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1037",
+      "role": "link",
+      "name": "Array.prototype.unshift()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1043",
+      "role": "link",
+      "name": "Array.prototype.values()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1047",
+      "role": "link",
+      "name": "array iterator",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1050",
+      "role": "link",
+      "name": "Array.prototype.with()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1055",
+      "role": "link",
+      "name": "Array.prototype[Symbol.iterator]()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1059",
+      "role": "link",
+      "name": "values()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1061",
+      "role": "region",
+      "name": "Examples",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1062",
+      "role": "heading",
+      "name": "Examples",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1063",
+      "role": "link",
+      "name": "Examples",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1068",
+      "role": "link",
+      "name": "JavaScript First Steps: Arrays",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1069",
+      "role": "link",
+      "name": "explains what arrays are",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1070",
+      "role": "region",
+      "name": "Create an array",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1071",
       "role": "heading",
       "name": "Create an array",
@@ -1458,6 +2984,34 @@
       "ref": "1072",
       "role": "link",
       "name": "Create an array",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1074",
+      "role": "link",
+      "name": "array literal notation",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1075",
+      "role": "link",
+      "name": "Array()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1077",
+      "role": "link",
+      "name": "String.prototype.split()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1080",
+      "role": "region",
+      "name": "Create a string from an array",
       "value": "",
       "flags": ""
     },
@@ -1476,6 +3030,20 @@
       "flags": ""
     },
     {
+      "ref": "1084",
+      "role": "link",
+      "name": "join()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1088",
+      "role": "region",
+      "name": "Access an array item by its index",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1089",
       "role": "heading",
       "name": "Access an array item by its index",
@@ -1486,6 +3054,13 @@
       "ref": "1090",
       "role": "link",
       "name": "Access an array item by its index",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1094",
+      "role": "region",
+      "name": "Find the index of an item in an array",
       "value": "",
       "flags": ""
     },
@@ -1504,6 +3079,20 @@
       "flags": ""
     },
     {
+      "ref": "1098",
+      "role": "link",
+      "name": "indexOf()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1103",
+      "role": "region",
+      "name": "Check if an array contains a certain item",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1104",
       "role": "heading",
       "name": "Check if an array contains a certain item",
@@ -1514,6 +3103,27 @@
       "ref": "1105",
       "role": "link",
       "name": "Check if an array contains a certain item",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1110",
+      "role": "link",
+      "name": "includes()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1112",
+      "role": "link",
+      "name": "indexOf()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1116",
+      "role": "region",
+      "name": "Append an item to an array",
       "value": "",
       "flags": ""
     },
@@ -1532,6 +3142,20 @@
       "flags": ""
     },
     {
+      "ref": "1120",
+      "role": "link",
+      "name": "push()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1124",
+      "role": "region",
+      "name": "Remove the last item from an array",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1125",
       "role": "heading",
       "name": "Remove the last item from an array",
@@ -1542,6 +3166,20 @@
       "ref": "1126",
       "role": "link",
       "name": "Remove the last item from an array",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1128",
+      "role": "link",
+      "name": "pop()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1136",
+      "role": "region",
+      "name": "Remove multiple items from the end of an array",
       "value": "",
       "flags": ""
     },
@@ -1560,6 +3198,20 @@
       "flags": ""
     },
     {
+      "ref": "1140",
+      "role": "link",
+      "name": "splice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1144",
+      "role": "region",
+      "name": "Truncate an array down to just its first N items",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1145",
       "role": "heading",
       "name": "Truncate an array down to just its first N items",
@@ -1570,6 +3222,20 @@
       "ref": "1146",
       "role": "link",
       "name": "Truncate an array down to just its first N items",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1148",
+      "role": "link",
+      "name": "splice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1152",
+      "role": "region",
+      "name": "Remove the first item from an array",
       "value": "",
       "flags": ""
     },
@@ -1588,6 +3254,20 @@
       "flags": ""
     },
     {
+      "ref": "1156",
+      "role": "link",
+      "name": "shift()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1164",
+      "role": "region",
+      "name": "Remove multiple items from the beginning of an array",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1165",
       "role": "heading",
       "name": "Remove multiple items from the beginning of an array",
@@ -1598,6 +3278,20 @@
       "ref": "1166",
       "role": "link",
       "name": "Remove multiple items from the beginning of an array",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1168",
+      "role": "link",
+      "name": "splice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1172",
+      "role": "region",
+      "name": "Add a new first item to an array",
       "value": "",
       "flags": ""
     },
@@ -1616,6 +3310,20 @@
       "flags": ""
     },
     {
+      "ref": "1176",
+      "role": "link",
+      "name": "unshift()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1181",
+      "role": "region",
+      "name": "Remove a single item by index",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1182",
       "role": "heading",
       "name": "Remove a single item by index",
@@ -1626,6 +3334,20 @@
       "ref": "1183",
       "role": "link",
       "name": "Remove a single item by index",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1185",
+      "role": "link",
+      "name": "splice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1191",
+      "role": "region",
+      "name": "Remove multiple items by index",
       "value": "",
       "flags": ""
     },
@@ -1644,6 +3366,20 @@
       "flags": ""
     },
     {
+      "ref": "1195",
+      "role": "link",
+      "name": "splice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1202",
+      "role": "region",
+      "name": "Replace multiple items in an array",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1203",
       "role": "heading",
       "name": "Replace multiple items in an array",
@@ -1654,6 +3390,20 @@
       "ref": "1204",
       "role": "link",
       "name": "Replace multiple items in an array",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1206",
+      "role": "link",
+      "name": "splice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1210",
+      "role": "region",
+      "name": "Iterate over an array",
       "value": "",
       "flags": ""
     },
@@ -1672,6 +3422,76 @@
       "flags": ""
     },
     {
+      "ref": "1214",
+      "role": "link",
+      "name": "for...of",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1220",
+      "role": "link",
+      "name": "Loops and iteration",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1221",
+      "role": "link",
+      "name": "every()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1223",
+      "role": "link",
+      "name": "filter()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1225",
+      "role": "link",
+      "name": "flatMap()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1227",
+      "role": "link",
+      "name": "map()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1229",
+      "role": "link",
+      "name": "reduce()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1231",
+      "role": "link",
+      "name": "reduceRight()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1233",
+      "role": "link",
+      "name": "forEach()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1235",
+      "role": "region",
+      "name": "Call a function on each element in an array",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1236",
       "role": "heading",
       "name": "Call a function on each element in an array",
@@ -1682,6 +3502,20 @@
       "ref": "1237",
       "role": "link",
       "name": "Call a function on each element in an array",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1239",
+      "role": "link",
+      "name": "forEach()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1243",
+      "role": "region",
+      "name": "Merge multiple arrays together",
       "value": "",
       "flags": ""
     },
@@ -1700,6 +3534,20 @@
       "flags": ""
     },
     {
+      "ref": "1247",
+      "role": "link",
+      "name": "concat()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1255",
+      "role": "region",
+      "name": "Copy an array",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1256",
       "role": "heading",
       "name": "Copy an array",
@@ -1710,6 +3558,111 @@
       "ref": "1257",
       "role": "link",
       "name": "Copy an array",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1260",
+      "role": "link",
+      "name": "spread syntax",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1261",
+      "role": "link",
+      "name": "from()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1263",
+      "role": "link",
+      "name": "slice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1267",
+      "role": "link",
+      "name": "spread syntax",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1268",
+      "role": "link",
+      "name": "Array.from()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1270",
+      "role": "link",
+      "name": "Array.prototype.slice()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1272",
+      "role": "link",
+      "name": "Array.prototype.concat()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1274",
+      "role": "link",
+      "name": "shallow copies",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1275",
+      "role": "link",
+      "name": "deep copy",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1276",
+      "role": "link",
+      "name": "JSON.stringify()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1278",
+      "role": "link",
+      "name": "JSON.parse()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1282",
+      "role": "link",
+      "name": "structuredClone()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1284",
+      "role": "link",
+      "name": "transferable objects",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1287",
+      "role": "link",
+      "name": "strictly equivalent",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1289",
+      "role": "region",
+      "name": "Creating a two-dimensional array",
       "value": "",
       "flags": ""
     },
@@ -1728,6 +3681,13 @@
       "flags": ""
     },
     {
+      "ref": "1300",
+      "role": "region",
+      "name": "Using an array to tabulate a set of values",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1301",
       "role": "heading",
       "name": "Using an array to tabulate a set of values",
@@ -1738,6 +3698,13 @@
       "ref": "1302",
       "role": "link",
       "name": "Using an array to tabulate a set of values",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1306",
+      "role": "region",
+      "name": "Creating an array using the result of a match",
       "value": "",
       "flags": ""
     },
@@ -1756,6 +3723,48 @@
       "flags": ""
     },
     {
+      "ref": "1310",
+      "role": "link",
+      "name": "RegExp",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1312",
+      "role": "link",
+      "name": "RegExp.prototype.exec()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1314",
+      "role": "link",
+      "name": "String.prototype.match()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1319",
+      "role": "link",
+      "name": "RegExp.prototype.exec()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1321",
+      "role": "link",
+      "name": "String.prototype.match()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1323",
+      "role": "region",
+      "name": "Mutating initial array in iterative methods",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1324",
       "role": "heading",
       "name": "Mutating initial array in iterative methods",
@@ -1770,9 +3779,142 @@
       "flags": ""
     },
     {
+      "ref": "1327",
+      "role": "link",
+      "name": "Iterative methods",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1332",
+      "role": "listitem",
+      "name": "callbackFn will not visit any elements added beyond the array's initial length when the call to the iterative method began.",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1334",
       "role": "listitem",
       "name": "Changes to already-visited indexes do not cause callbackFn to be invoked on them again.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1336",
+      "role": "listitem",
+      "name": "",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1364",
+      "role": "link",
+      "name": "array methods and empty slots",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1375",
+      "role": "region",
+      "name": "Specifications",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1376",
+      "role": "heading",
+      "name": "Specifications",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1377",
+      "role": "link",
+      "name": "Specifications",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1378",
+      "role": "table",
+      "name": "Specification\n          \n        \n      \n      \n        \n              ECMAScript® 2027 Language Specification# sec-array-objects",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1380",
+      "role": "row",
+      "name": "",
+      "value": "",
+      "flags": "values=1"
+    },
+    {
+      "ref": "1383",
+      "role": "row",
+      "name": "ECMAScript® 2027 Language Specification# sec-array-objects",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1384",
+      "role": "cell",
+      "name": "ECMAScript® 2027 Language Specification# sec-array-objects",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1385",
+      "role": "link",
+      "name": "ECMAScript® 2027 Language Specification# sec-array-objects",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1386",
+      "role": "region",
+      "name": "Browser compatibility",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1387",
+      "role": "heading",
+      "name": "Browser compatibility",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1388",
+      "role": "link",
+      "name": "Browser compatibility",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1390",
+      "role": "region",
+      "name": "See also",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1391",
+      "role": "heading",
+      "name": "See also",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1392",
+      "role": "link",
+      "name": "See also",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1393",
+      "role": "list",
+      "name": "Indexed collections guide\nTypedArray\nArrayBuffer",
       "value": "",
       "flags": ""
     },
@@ -1819,23 +3961,198 @@
       "flags": ""
     },
     {
-      "ref": "713",
-      "role": "heading",
-      "name": "Normalization of the length property",
+      "ref": "1402",
+      "role": "region",
+      "name": "Help improve MDN",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "738",
+      "ref": "1417",
       "role": "heading",
-      "name": "Array-like objects",
+      "name": "Help improve MDN",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1788",
+      "ref": "1419",
       "role": "link",
-      "name": "a Creative Commons license",
+      "name": "Learn how to contribute",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1422",
+      "role": "link",
+      "name": "MDN contributors",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1424",
+      "role": "link",
+      "name": "Folder: en-us/web/javascript/reference/global_objects/array (Opens in a new tab)",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1425",
+      "role": "link",
+      "name": "This will take you to GitHub to file a new issue.",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1432",
+      "role": "listitem",
+      "name": "Standard built-in objects",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1433",
+      "role": "link",
+      "name": "Standard built-in objects",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1434",
+      "role": "listitem",
+      "name": "Array",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1436",
+      "role": "link",
+      "name": "Array",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1438",
+      "role": "listitem",
+      "name": "ConstructorArray()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1442",
+      "role": "list",
+      "name": "Array()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1443",
+      "role": "listitem",
+      "name": "Array()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1444",
+      "role": "link",
+      "name": "Array()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1446",
+      "role": "listitem",
+      "name": "Static methodsfrom()fromAsync()isArray()of()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1450",
+      "role": "list",
+      "name": "from()fromAsync()isArray()of()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1451",
+      "role": "listitem",
+      "name": "from()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1452",
+      "role": "link",
+      "name": "from()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1454",
+      "role": "listitem",
+      "name": "fromAsync()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1455",
+      "role": "link",
+      "name": "fromAsync()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1457",
+      "role": "listitem",
+      "name": "isArray()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1458",
+      "role": "link",
+      "name": "isArray()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1460",
+      "role": "listitem",
+      "name": "of()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1461",
+      "role": "link",
+      "name": "of()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1463",
+      "role": "listitem",
+      "name": "Static properties[Symbol.species]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1467",
+      "role": "list",
+      "name": "[Symbol.species]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1468",
+      "role": "listitem",
+      "name": "[Symbol.species]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1469",
+      "role": "link",
+      "name": "[Symbol.species]",
       "value": "",
       "flags": ""
     },
@@ -2393,44 +4710,16 @@
       "flags": ""
     },
     {
-      "ref": "1783",
-      "role": "listitem",
-      "name": "Legal",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1784",
-      "role": "link",
-      "name": "Legal",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "474",
-      "role": "listitem",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "699",
-      "role": "listitem",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1336",
-      "role": "listitem",
-      "name": "",
-      "value": "",
-      "flags": ""
-    },
-    {
       "ref": "1593",
       "role": "listitem",
       "name": "Instance propertieslength[Symbol.unscopables]",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1597",
+      "role": "list",
+      "name": "length[Symbol.unscopables]",
       "value": "",
       "flags": ""
     },
@@ -2463,419 +4752,6 @@
       "flags": ""
     },
     {
-      "ref": "1732",
-      "role": "listitem",
-      "name": "About",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1733",
-      "role": "link",
-      "name": "About",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1734",
-      "role": "listitem",
-      "name": "Blog",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1735",
-      "role": "link",
-      "name": "Blog",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1736",
-      "role": "listitem",
-      "name": "Mozilla careers",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1737",
-      "role": "link",
-      "name": "Mozilla careers",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1738",
-      "role": "listitem",
-      "name": "Advertise with us",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1739",
-      "role": "link",
-      "name": "Advertise with us",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1740",
-      "role": "listitem",
-      "name": "MDN Plus",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1741",
-      "role": "link",
-      "name": "MDN Plus",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1742",
-      "role": "listitem",
-      "name": "Product help",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1743",
-      "role": "link",
-      "name": "Product help",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "821",
-      "role": "link",
-      "name": "Array.prototype[Symbol.unscopables]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1779",
-      "role": "listitem",
-      "name": "Website Privacy Notice",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1780",
-      "role": "link",
-      "name": "Website Privacy Notice",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1055",
-      "role": "link",
-      "name": "Array.prototype[Symbol.iterator]()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1012",
-      "role": "link",
-      "name": "Object.prototype.toLocaleString()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "630",
-      "role": "link",
-      "name": "mutating initial array in iterative methods",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "484",
-      "role": "link",
-      "name": "this.constructor[Symbol.species]",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1008",
-      "role": "link",
-      "name": "Array.prototype.toLocaleString()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "898",
-      "role": "link",
-      "name": "Array.prototype.findLastIndex()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1425",
-      "role": "link",
-      "name": "This will take you to GitHub to file a new issue.",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "943",
-      "role": "link",
-      "name": "Array.prototype.lastIndexOf()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "970",
-      "role": "link",
-      "name": "Array.prototype.reduceRight()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1781",
-      "role": "listitem",
-      "name": "Telemetry Settings",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1782",
-      "role": "link",
-      "name": "Telemetry Settings",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1034",
-      "role": "link",
-      "name": "Object.prototype.toString()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "325",
-      "role": "link",
-      "name": "traversal and mutation operations",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1364",
-      "role": "link",
-      "name": "array methods and empty slots",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1077",
-      "role": "link",
-      "name": "String.prototype.split()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1314",
-      "role": "link",
-      "name": "String.prototype.match()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1270",
-      "role": "link",
-      "name": "Array.prototype.slice()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1319",
-      "role": "link",
-      "name": "RegExp.prototype.exec()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1775",
-      "role": "link",
-      "name": "Mozilla logo",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "324",
-      "role": "link",
-      "name": "object property collection",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1069",
-      "role": "link",
-      "name": "explains what arrays are",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "716",
-      "role": "link",
-      "name": "converted to an integer",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1282",
-      "role": "link",
-      "name": "structuredClone()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "454",
-      "role": "link",
-      "name": "toLocaleString()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1276",
-      "role": "link",
-      "name": "JSON.stringify()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1074",
-      "role": "link",
-      "name": "array literal notation",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1284",
-      "role": "link",
-      "name": "transferable objects",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "323",
-      "role": "link",
-      "name": "External link (opens in new tab)",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "446",
-      "role": "link",
-      "name": "findLastIndex()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "670",
-      "role": "link",
-      "name": "findLastIndex()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "751",
-      "role": "link",
-      "name": "HTMLCollection",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1422",
-      "role": "link",
-      "name": "MDN contributors",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1287",
-      "role": "link",
-      "name": "strictly equivalent",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "416",
-      "role": "link",
-      "name": "reduceRight()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "678",
-      "role": "link",
-      "name": "reduceRight()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "456",
-      "role": "link",
-      "name": "toReversed()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1268",
-      "role": "link",
-      "name": "Array.from()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1274",
-      "role": "link",
-      "name": "shallow copies",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "624",
-      "role": "link",
-      "name": "arrow function",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "442",
-      "role": "link",
-      "name": "findIndex()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "460",
-      "role": "link",
-      "name": "toSpliced()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "506",
-      "role": "link",
-      "name": "toSpliced()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "647",
-      "role": "link",
-      "name": "findIndex()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "666",
-      "role": "link",
-      "name": "findIndex()",
-      "value": "",
-      "flags": ""
-    },
-    {
       "ref": "1604",
       "role": "listitem",
       "name": "Inheritance",
@@ -2900,6 +4776,13 @@
       "ref": "1609",
       "role": "listitem",
       "name": "Static methodsapply()bind()call()toString()[Symbol.hasInstance]()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1613",
+      "role": "list",
+      "name": "apply()bind()call()toString()[Symbol.hasInstance]()",
       "value": "",
       "flags": ""
     },
@@ -2977,6 +4860,13 @@
       "ref": "1629",
       "role": "listitem",
       "name": "Static propertiesdisplayNamelengthnameprototypeargumentscaller",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1633",
+      "role": "list",
+      "name": "displayNamelengthnameprototypeargumentscaller",
       "value": "",
       "flags": ""
     },
@@ -3103,6 +4993,13 @@
       "ref": "1657",
       "role": "listitem",
       "name": "Instance methods__defineGetter__()__defineSetter__()__lookupGetter__()__lookupSetter__()hasOwnProperty()isPrototypeOf()propertyIsEnumerable()toLocaleString()toString()valueOf()",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1661",
+      "role": "list",
+      "name": "__defineGetter__()__defineSetter__()__lookupGetter__()__lookupSetter__()hasOwnProperty()isPrototypeOf()propertyIsEnumerable()toLocaleString()toString()valueOf()",
       "value": "",
       "flags": ""
     },
@@ -3282,6 +5179,13 @@
       "flags": ""
     },
     {
+      "ref": "1700",
+      "role": "list",
+      "name": "__proto__constructor",
+      "value": "",
+      "flags": ""
+    },
+    {
       "ref": "1701",
       "role": "listitem",
       "name": "__proto__",
@@ -3317,20 +5221,6 @@
       "flags": ""
     },
     {
-      "ref": "725",
-      "role": "link",
-      "name": "unsafe integer",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1267",
-      "role": "link",
-      "name": "spread syntax",
-      "value": "",
-      "flags": ""
-    },
-    {
       "ref": "1713",
       "role": "link",
       "name": "MDN logo",
@@ -3338,163 +5228,156 @@
       "flags": ""
     },
     {
-      "ref": "390",
-      "role": "link",
-      "name": "sparse arrays",
+      "ref": "1718",
+      "role": "listitem",
+      "name": "",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "444",
+      "ref": "1719",
       "role": "link",
-      "name": "findLast()",
+      "name": "MDN on GitHub",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "458",
-      "role": "link",
-      "name": "toSorted()",
+      "ref": "1720",
+      "role": "listitem",
+      "name": "",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "620",
+      "ref": "1721",
       "role": "link",
-      "name": "globalThis",
+      "name": "MDN on Bluesky",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "668",
-      "role": "link",
-      "name": "findLast()",
+      "ref": "1722",
+      "role": "listitem",
+      "name": "",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "859",
+      "ref": "1723",
       "role": "link",
-      "name": "array iterator",
+      "name": "MDN on X",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "940",
-      "role": "link",
-      "name": "array iterator",
+      "ref": "1724",
+      "role": "listitem",
+      "name": "",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1047",
+      "ref": "1725",
       "role": "link",
-      "name": "array iterator",
+      "name": "MDN on Mastodon",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "746",
-      "role": "link",
-      "name": "sparse array",
+      "ref": "1726",
+      "role": "listitem",
+      "name": "",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "358",
+      "ref": "1727",
       "role": "link",
-      "name": "indexOf()",
+      "name": "MDN blog RSS feed",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "404",
-      "role": "link",
-      "name": "flatMap()",
+      "ref": "1732",
+      "role": "listitem",
+      "name": "About",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "406",
+      "ref": "1733",
       "role": "link",
-      "name": "forEach()",
+      "name": "About",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "408",
-      "role": "link",
-      "name": "indexOf()",
+      "ref": "1734",
+      "role": "listitem",
+      "name": "Blog",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "418",
+      "ref": "1735",
       "role": "link",
-      "name": "reverse()",
+      "name": "Blog",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "492",
-      "role": "link",
-      "name": "flatMap()",
+      "ref": "1736",
+      "role": "listitem",
+      "name": "Mozilla careers",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "653",
+      "ref": "1737",
       "role": "link",
-      "name": "flatMap()",
+      "name": "Mozilla careers",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "655",
-      "role": "link",
-      "name": "forEach()",
+      "ref": "1738",
+      "role": "listitem",
+      "name": "Advertise with us",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1098",
+      "ref": "1739",
       "role": "link",
-      "name": "indexOf()",
+      "name": "Advertise with us",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1112",
-      "role": "link",
-      "name": "indexOf()",
+      "ref": "1740",
+      "role": "listitem",
+      "name": "MDN Plus",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1176",
+      "ref": "1741",
       "role": "link",
-      "name": "unshift()",
+      "name": "MDN Plus",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1225",
-      "role": "link",
-      "name": "flatMap()",
+      "ref": "1742",
+      "role": "listitem",
+      "name": "Product help",
       "value": "",
       "flags": ""
     },
     {
-      "ref": "1233",
+      "ref": "1743",
       "role": "link",
-      "name": "forEach()",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "1239",
-      "role": "link",
-      "name": "forEach()",
+      "name": "Product help",
       "value": "",
       "flags": ""
     },
@@ -3509,6 +5392,216 @@
       "ref": "1749",
       "role": "link",
       "name": "MDN Community",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1750",
+      "role": "listitem",
+      "name": "Community resources",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1751",
+      "role": "link",
+      "name": "Community resources",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1752",
+      "role": "listitem",
+      "name": "Writing guidelines",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1753",
+      "role": "link",
+      "name": "Writing guidelines",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1754",
+      "role": "listitem",
+      "name": "MDN Discord",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1755",
+      "role": "link",
+      "name": "MDN Discord",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1756",
+      "role": "listitem",
+      "name": "MDN on GitHub",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1757",
+      "role": "link",
+      "name": "MDN on GitHub",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1762",
+      "role": "listitem",
+      "name": "Web technologies",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1763",
+      "role": "link",
+      "name": "Web technologies",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1764",
+      "role": "listitem",
+      "name": "Learn web development",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1765",
+      "role": "link",
+      "name": "Learn web development",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1766",
+      "role": "listitem",
+      "name": "Guides",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1767",
+      "role": "link",
+      "name": "Guides",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1768",
+      "role": "listitem",
+      "name": "Tutorials",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1769",
+      "role": "link",
+      "name": "Tutorials",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1770",
+      "role": "listitem",
+      "name": "Glossary",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1771",
+      "role": "link",
+      "name": "Glossary",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1772",
+      "role": "listitem",
+      "name": "Hacks blog",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1773",
+      "role": "link",
+      "name": "Hacks blog",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1775",
+      "role": "link",
+      "name": "Mozilla logo",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1779",
+      "role": "listitem",
+      "name": "Website Privacy Notice",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1780",
+      "role": "link",
+      "name": "Website Privacy Notice",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1781",
+      "role": "listitem",
+      "name": "Telemetry Settings",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1782",
+      "role": "link",
+      "name": "Telemetry Settings",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1783",
+      "role": "listitem",
+      "name": "Legal",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1784",
+      "role": "link",
+      "name": "Legal",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1785",
+      "role": "listitem",
+      "name": "Community Participation Guidelines",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1786",
+      "role": "link",
+      "name": "Community Participation Guidelines",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "1788",
+      "role": "link",
+      "name": "a Creative Commons license",
       "value": "",
       "flags": ""
     }

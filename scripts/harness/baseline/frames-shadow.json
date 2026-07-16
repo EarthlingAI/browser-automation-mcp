@@ -3,21 +3,14 @@
   "url": "synthetic://frames-shadow",
   "opts": {},
   "meta": {
-    "total_candidates": 7
+    "total_candidates": 6
   },
-  "jsonSize": 514,
+  "jsonSize": 530,
   "inventory": [
     {
       "ref": "0",
       "role": "WebArea",
       "name": "Course Player",
-      "value": "",
-      "flags": ""
-    },
-    {
-      "ref": "9",
-      "role": "iframe",
-      "name": "https://cc.sans.org/ScormEngineInterface/dispatch/DispatchHost.html",
       "value": "",
       "flags": ""
     },
@@ -36,13 +29,6 @@
       "flags": ""
     },
     {
-      "ref": "8",
-      "role": "button",
-      "name": "Continue Course",
-      "value": "",
-      "flags": ""
-    },
-    {
       "ref": "5",
       "role": "button",
       "name": "Begin",
@@ -53,6 +39,20 @@
       "ref": "6",
       "role": "button",
       "name": "Next",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "8",
+      "role": "button",
+      "name": "Continue Course",
+      "value": "",
+      "flags": ""
+    },
+    {
+      "ref": "9",
+      "role": "iframe",
+      "name": "https://cc.sans.org/ScormEngineInterface/dispatch/DispatchHost.html",
       "value": "",
       "flags": ""
     }
