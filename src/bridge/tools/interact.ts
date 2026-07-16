@@ -581,7 +581,7 @@ export function registerInteractTools(
     name: "browser_evaluate",
     title: "Evaluate JavaScript in the leased tab",
     description:
-      "Run a JS expression in the leased tab and return the JSON-serialisable result. Strings come back as strings (not char-indexed objects). For unfamiliar SPAs, call browser_network_requests first to discover real backend endpoints from xhr/fetch traffic before guessing endpoint paths.",
+      "Run a JS expression in the leased tab and return the JSON-serialisable result. Strings come back as strings (not char-indexed objects). For unfamiliar SPAs, call browser_network_requests first to discover real backend endpoints from xhr/fetch traffic before guessing endpoint paths. If the debugger can't attach (surfaced as environment.attachBlocked — e.g. a conflicting extension holds it), evaluation transparently falls back to a MAIN-world injected script.",
     annotations: ACTION_WRITE,
     schema: {
       expression: z

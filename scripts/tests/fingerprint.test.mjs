@@ -1,7 +1,9 @@
-// Build fingerprint surfaces in SERVER_INSTRUCTIONS so the host agent can
-// detect schema staleness. Esbuild's `define` substitutes __BUILD_STAMP__ at
-// bundle time; this test confirms the substitution happened (vs. a literal
-// "dev" fallback) AND that the value appears in the instructions string.
+// Build fingerprint is logged to stderr at bridge startup, NOT surfaced in
+// SERVER_INSTRUCTIONS — hosts inject instructions into the model's system
+// prefix, so a per-build stamp there would bust the host's prompt cache on
+// every rebuild. Esbuild's `define` substitutes __BUILD_STAMP__ at bundle
+// time; this test confirms the substitution happened (vs. a literal "dev"
+// fallback) AND that the stamp stays OUT of the instructions string.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -17,10 +19,10 @@ test("BUILD_STAMP looks like a real stamp (not the dev fallback)", () => {
   assert.match(BUILD_STAMP, /\d{4}-\d{2}-\d{2}/, "BUILD_STAMP missing ISO date");
 });
 
-test("SERVER_INSTRUCTIONS contains a Build line with the stamp", () => {
-  assert.match(SERVER_INSTRUCTIONS, /\nBuild: \S+/);
+test("SERVER_INSTRUCTIONS carries no build stamp (prompt-cache stability)", () => {
+  assert.doesNotMatch(SERVER_INSTRUCTIONS, /\nBuild: /, "Build: line must stay out of instructions");
   assert.ok(
-    SERVER_INSTRUCTIONS.includes(BUILD_STAMP),
-    "SERVER_INSTRUCTIONS does not contain BUILD_STAMP",
+    !SERVER_INSTRUCTIONS.includes(BUILD_STAMP),
+    "per-build stamp in instructions would bust the host's prompt cache on every rebuild",
   );
 });

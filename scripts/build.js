@@ -7,9 +7,10 @@ const esbuild = require("esbuild");
 const root = path.resolve(__dirname, "..");
 const watch = process.argv.includes("--watch");
 
-// Build fingerprint — surfaces in SERVER_INSTRUCTIONS so the host agent can
-// detect schema staleness (its cached schema vs. what the server is actually
-// serving). Falls back to a timestamp-only stamp outside a git checkout.
+// Build fingerprint — logged to stderr at bridge startup so a stale dist is
+// diagnosable from host logs. Deliberately NOT placed in SERVER_INSTRUCTIONS:
+// a per-build value there would bust the host's prompt cache on every
+// rebuild. Falls back to a timestamp-only stamp outside a git checkout.
 const buildStamp = (() => {
   const ts = new Date().toISOString().slice(0, 19) + "Z";
   try {

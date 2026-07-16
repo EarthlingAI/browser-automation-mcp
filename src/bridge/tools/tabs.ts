@@ -14,7 +14,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
     name: "browser_list_tabs",
     title: "List browser tabs",
     description:
-      "List all open tabs across all browser windows. Returns id, url, title, leasedBy. Lease-free.",
+      "List all open tabs across all browser windows. Returns id, url, title, windowId, active, incognito, and leasedBy. Lease-free.",
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -66,12 +66,26 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
         .describe(
           "Open without raising the browser window or activating the tab.",
         ),
+      windowId: z
+        .coerce.number()
+        .int()
+        .optional()
+        .describe(
+          "Open into this specific browser window (from browser_list_tabs). Omit for the current/focused window — the default that suits almost every call.",
+        ),
+      incognito: z
+        .preprocess(coerceBoolean, z.boolean().default(false))
+        .describe(
+          "Open in a fresh incognito window. Best-effort: this extension may be blocked from driving incognito tabs unless the user enabled \"Allow in Incognito\" — you'll get an honest error if so.",
+        ),
     },
-    handler: async ({ url, background }) => {
+    handler: async ({ url, background, windowId, incognito }) => {
       const tab = (await ctx.daemon.send({
         type: "open_tab",
         url,
         background,
+        windowId,
+        incognito,
       })) as TabInfo & { navigated?: boolean; settledAt?: number };
       ctx.session.lastLeasedTab = tab.id;
       return tab;
@@ -174,7 +188,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
     description:
       "Set the visibility level of the leased tab along an ordered spectrum. " +
       '"background" — drop focus-emulation; the tab returns to Chrome\'s natural background throttling (~0fps requestAnimationFrame). ' +
-      '"render" (default) — enable CDP focus-emulation so a backgrounded canvas SPA (Google Sheets, Figma, Miro) renders as if visible+focused, WITHOUT raising the window or stealing focus. Screenshots and on-screen selection/scroll/menu rendering become faithful. This is a rendering/visibility aid, NOT an input precondition — synthetic events and ordinary actions reach the page regardless. ' +
+      '"render" (default) — enable CDP focus-emulation so a backgrounded canvas SPA (Google Sheets, Figma, Miro) renders as if visible+focused, WITHOUT raising the window or stealing focus. Screenshots and on-screen selection/scroll/menu rendering become faithful; also use it to watch a background auth/OAuth or redirect flow paint faithfully as it runs. This is a rendering/visibility aid, NOT an input precondition — synthetic events and ordinary actions reach the page regardless. ' +
       '"foreground" — the SOLE focus-steal: genuinely raises the browser window and activates the tab, stealing the user\'s focus. Reserve for focus-dependent flows emulation can\'t satisfy: OS file pickers, clipboard-paste permission prompts, drag-and-drop, native :focus-gated UI. Returns previousActiveTab so you can restore the user\'s prior tab afterward. ' +
       'Most canvas/rendering needs are met by "render" — only escalate to "foreground" when a native focus gate truly requires it.',
     annotations: {

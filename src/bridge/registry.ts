@@ -22,7 +22,14 @@ export interface ToolContext {
 const AUTO_SNAPSHOT_FIELDS = {
   snapshot: z
     .preprocess(coerceBoolean, z.boolean().default(true))
-    .describe("Auto-refresh UI tree after this action. Set false to skip."),
+    .describe(
+      "Auto-snapshot the tab after this action (default true; set false to skip). " +
+        "The auto-snapshot returns a DIFF against the previous snapshot of the tab — only what changed — " +
+        "led by a 'Δ {A} added, {R} removed, {K} changed' header, then '+ {node}' / '- {node}' / " +
+        "'~ {node} field: old → new' lines keyed by ref ('~ … occluded: false → true' = a layer slid over it), " +
+        "or 'Δ no changes'. It falls back to the full outline when there's no prior snapshot or the page turned " +
+        "over completely; payload.meta.mode ('diff' | 'full') says which. Call browser_snapshot for the full tree.",
+    ),
   delay: z
     .coerce.number()
     .min(0)
@@ -96,6 +103,7 @@ const COUNT_WRAPPED_TOOLS = new Set([
   "browser_list_tabs",
   "browser_console_messages",
   "browser_network_requests",
+  "browser_cookies",
 ]);
 
 export function registerTool<S extends ZodRawShape>(

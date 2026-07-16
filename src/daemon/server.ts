@@ -425,11 +425,22 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
         })) as TabInfo[];
         return all.map(annotateLease);
       }
+      case "fetch": {
+        // Lease-free privileged HTTP — no tabId, no debugger. Cookies attach
+        // by origin (SW is first-party under <all_urls>), never carries env.
+        return sendExt({ kind: "fetch", req: req.req });
+      }
+      case "cookies": {
+        // Lease-free cookie read by origin/domain (default store).
+        return sendExt({ kind: "cookies", filter: req.filter });
+      }
       case "open_tab": {
         const tab = (await sendExt({
           kind: "tabs_create",
           url: req.url,
           background: req.background !== false,
+          windowId: req.windowId,
+          incognito: req.incognito,
         })) as TabInfo & {
           navigated?: boolean;
           settledAt?: number;

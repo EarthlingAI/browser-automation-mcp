@@ -18,13 +18,22 @@ export function registerObserveTools(
     name: "browser_snapshot",
     title: "Snapshot the page accessibility tree (optionally with screenshot)",
     description:
-      "Pruned accessibility-tree snapshot of the leased tab. Returns nodes with stable numeric `ref` IDs " +
-      "to target in interaction tools. `screenshot` is tri-state: \"off\" (default, tree only), " +
-      "\"annotated\" (tree + native MCP image content block with each element's numeric ref badged on the live page), " +
-      "or \"raw\" (tree + clean pixels with no badges — for saving artifacts or showing the page as the user sees it). " +
-      "Once `\"annotated\"` or `\"raw\"` is set, every subsequent action-tool auto-snapshot automatically carries " +
-      "the image forward in the same mode (no extra call needed). Costs ~150–250 ms per action when screenshot " +
-      "mode is on; pass `screenshot:\"off\"` on the next call to drop back to tree-only.",
+      "Accessibility-tree snapshot of the leased tab, returned as an indented outline in `payload.tree`: " +
+      "one line per node, two spaces per depth level — `- {role} \"{name}\" [ref=N]`. The [ref=N] number is " +
+      "the stable id you pass to interaction tools. Inline state follows the name: [checked] / [selected] / " +
+      "[disabled] / [level=N], an input's current text as `= \"value\"`, and [occluded] (another layer covers " +
+      "the element's centre — it's in the DOM but likely not what the user sees). A table serialises its rows " +
+      "compactly: a collapsed row shows `values: \"a\", \"b\", …` with empty cells holding a \"\" slot so values " +
+      "line up by column with the header row; a partially-shown table adds `(showing X of Y rows)` on its own " +
+      "line. The snapshot spans the WHOLE page's semantic tree in DOCUMENT ORDER (landmarks, interactive " +
+      "controls, content, tables — plus same-origin iframes and open shadow DOM), losslessly compacted: nothing " +
+      "is ranked, scored, or silently dropped. Refs are stable and non-evicting — a ref keeps resolving while its " +
+      "element stays in the DOM even if a later snapshot omitted it; acting on a genuinely-removed ref returns an " +
+      "error naming nearby refs. `screenshot` is tri-state: \"off\" (default, tree only), \"annotated\" (tree + a " +
+      "native image block with each ref's number badged on the live page — vision-ready for planning the next " +
+      "action), or \"raw\" (tree + clean pixels, no badges — for saving an artifact or showing the page as the " +
+      "user sees it). Once \"annotated\" or \"raw\" is set, every subsequent action-tool auto-snapshot carries the " +
+      "image forward in the same mode; costs ~150–250 ms per action, so pass \"off\" to drop back to tree-only.",
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,

@@ -29,6 +29,8 @@ export interface TabInfo {
   title: string;
   windowId: number;
   active: boolean;
+  /** True when this tab lives in an incognito window. */
+  incognito?: boolean;
   leasedBy?: { sessionId: string; agentLabel?: string; since: number };
 }
 
@@ -117,6 +119,75 @@ export interface TabEnvState {
   };
 }
 
+// ─── privileged data primitives (no lease, no tab) ──────────────────
+
+/**
+ * Privileged HTTP request issued from the extension's service-worker context.
+ * An MV3 SW with `host_permissions:["<all_urls>"]` is first-party for every
+ * covered origin, so `credentials:"include"` attaches the user's REAL cookies
+ * (including SameSite=Lax/Strict) and the response is CORS-exempt/readable —
+ * neither of which a page-context `fetch` (via browser_evaluate) can do.
+ * Routed lease-free (cookies attach by origin, not tab; no debugger needed).
+ */
+export interface FetchReq {
+  url: string;
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+  credentials?: "include" | "same-origin" | "omit";
+  /** AbortController deadline in ms (SW-side). */
+  timeoutMs?: number;
+  /**
+   * Inline-body cap (characters of the text/base64 representation). The SW
+   * caps the returned body to this UNLESS `save` is true (then it returns the
+   * full body so the bridge can write it to disk, and the bridge caps the
+   * inline copy). Protects the WS/SW from megabyte bodies the agent discards.
+   */
+  maxInlineBytes?: number;
+  /** True when the bridge will offload the body to a file — SW returns full body. */
+  save?: boolean;
+}
+
+/**
+ * Response shape from a `fetch` ExtCommand. `body` (text flavours) XOR
+ * `bodyBase64` (binary). `byteLength` is the FULL response size; `truncated`
+ * means the inline representation was cut to `maxInlineBytes` (the full body
+ * survives on disk when `save_to_path` was set). Set-Cookie is never present —
+ * the Fetch spec forbids exposing it; read cookies via browser_cookies.
+ */
+export interface FetchResult {
+  status: number;
+  statusText: string;
+  ok: boolean;
+  finalUrl: string;
+  headers: Record<string, string>;
+  body?: string;
+  bodyBase64?: string;
+  byteLength: number;
+  truncated?: boolean;
+}
+
+/** Filter for a `cookies` ExtCommand — at least one of url/domain is required. */
+export interface CookieFilter {
+  url?: string;
+  domain?: string;
+  name?: string;
+}
+
+/** One cookie from `chrome.cookies.getAll` — includes httpOnly (which
+ * `document.cookie` cannot see). Reads the default (non-incognito) store. */
+export interface CookieRecord {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  secure: boolean;
+  httpOnly: boolean;
+  sameSite: string;
+  session: boolean;
+  expirationDate?: number;
+}
+
 // ─── bridge → daemon ────────────────────────────────────────────────
 
 export type BridgeRequest =
@@ -128,7 +199,16 @@ export type BridgeRequest =
       token: string;
     }
   | { id: string; type: "list_tabs"; query?: string }
-  | { id: string; type: "open_tab"; url: string; background?: boolean }
+  | {
+      id: string;
+      type: "open_tab";
+      url: string;
+      background?: boolean;
+      windowId?: number;
+      incognito?: boolean;
+    }
+  | { id: string; type: "fetch"; req: FetchReq }
+  | { id: string; type: "cookies"; filter: CookieFilter }
   | { id: string; type: "close_tab"; tabId: TabId }
   | {
       id: string;
@@ -165,9 +245,27 @@ export type ExtCommand =
       kind: "tabs_create";
       url: string;
       background?: boolean;
+      /** Open into this specific window (chrome.tabs.create windowId). */
+      windowId?: number;
+      /**
+       * Open in a fresh incognito window (chrome.windows.create). Best-effort:
+       * a spanning-mode extension cannot load a page into an incognito main
+       * frame, so the SW returns an honest error if Chrome refuses.
+       */
+      incognito?: boolean;
       settle?: SettleOptions;
     }
   | { kind: "tabs_remove"; tabId: TabId }
+  /**
+   * Privileged first-party HTTP request from the SW context (see FetchReq).
+   * Lease-free — no tabId, no debugger, never in the page's network log.
+   */
+  | { kind: "fetch"; req: FetchReq }
+  /**
+   * Read cookies (incl. httpOnly) from the default cookie store by origin/domain.
+   * Lease-free — chrome.cookies.getAll, no tab, no debugger.
+   */
+  | { kind: "cookies"; filter: CookieFilter }
   | {
       kind: "navigate";
       url?: string;

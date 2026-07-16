@@ -30,6 +30,12 @@ import type { ExtCommand } from "../protocol";
 const DEFAULT_TIMEOUT_MS = 30_000;
 const FAST_ACTION_TIMEOUT_MS = 10_000;
 const WAIT_FOR_BUFFER_MS = 5_000;
+/** Default fetch deadline (mirrors the bridge schema default). The caller may
+ * raise it (bridge schema caps at 300s); the daemon watchdog is always the
+ * caller's deadline + buffer, so it is the real backstop that guarantees an
+ * error even if the MV3 SW is reaped mid-request — it never fires before the
+ * SW's own AbortController. */
+const FETCH_DEFAULT_MS = 30_000;
 /**
  * Mirrors the extension's own default at `runWaitForCondition` in
  * `browser-extension/background.js`. Defensive — the bridge schema always
@@ -71,6 +77,12 @@ export function inferExtTimeout(command: ExtCommand): number {
   // runEvaluate's `timeout > 0` guard) → stays on the 30s default below.
   if (command.kind === "evaluate" && command.timeout && command.timeout > 0) {
     return command.timeout + WAIT_FOR_BUFFER_MS;
+  }
+  // Privileged fetch: widen the watchdog to the caller's deadline + buffer so
+  // the SW's AbortController fires first (the SW returns a clean error/partial
+  // rather than the daemon killing the RPC mid-flight).
+  if (command.kind === "fetch") {
+    return (command.req.timeoutMs ?? FETCH_DEFAULT_MS) + WAIT_FOR_BUFFER_MS;
   }
   if (FAST_ACTION_KINDS.has(command.kind)) {
     return FAST_ACTION_TIMEOUT_MS;

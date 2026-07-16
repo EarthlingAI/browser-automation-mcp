@@ -102,12 +102,38 @@ export function resolveSavePath(
   return { path: absolute, format };
 }
 
-export function writeImage(
-  absolutePath: string,
-  dataBase64: string,
-): void {
+/** Write raw base64-decoded bytes to disk (arbitrary binary — image, fetch body). */
+export function writeBase64(absolutePath: string, dataBase64: string): void {
   mkdirSync(dirname(absolutePath), { recursive: true });
   writeFileSync(absolutePath, Buffer.from(dataBase64, "base64"));
+}
+
+/** Alias kept for the capture pipeline's image offload — same bytes-to-disk write. */
+export const writeImage = writeBase64;
+
+/**
+ * Resolve a generic `save_to_path` (any extension — used by browser_fetch's
+ * body offload). Unlike resolveSavePath / resolveTreeSavePath there is NO
+ * extension whitelist (a fetch body may be JSON, HTML, a PDF, anything).
+ *
+ *  - `true`   → `<outputs_dir>/fetch_<ms><autoExt>` (autoExt defaults `.bin`;
+ *               the caller passes `.txt` when the body is text so an auto-named
+ *               file opens in a text viewer rather than as opaque binary).
+ *  - `string` → resolved as given; `..` segments rejected; relative → outputs_dir.
+ */
+export function resolveDownloadSavePath(
+  value: true | string,
+  autoExt = ".bin",
+): string {
+  if (value === true) {
+    return resolve(getOutputsDir(), `fetch_${Date.now()}${autoExt}`);
+  }
+  if (value.split(/[/\\]/).some((seg) => seg === "..")) {
+    throw new Error(
+      `save_to_path "${value}" contains ".." which is not allowed`,
+    );
+  }
+  return isAbsolute(value) ? value : resolve(getOutputsDir(), value);
 }
 
 // ── Tree offload (`save_tree_to_path`) — text-file variants of the image-save
@@ -191,6 +217,29 @@ export const saveToPathSchema = z
       'String — explicit path; extension picks the format (".png" → PNG, ".jpg"/".jpeg" → JPEG). ' +
       "Relative resolves to outputs_dir; absolute allowed; \"..\" segments rejected. " +
       "Save errors are non-fatal: the image still returns; failure surfaces as `saveError` in the text envelope.",
+  );
+
+/**
+ * Schema for browser_fetch's `save_to_path` — offload the response body to a
+ * file. Boolean-coerce before the union (so stringified "true"/"false" don't
+ * become literal paths); NO extension gate (a fetch body may be any type).
+ */
+export const downloadSaveToPathSchema = z
+  .preprocess(
+    (v) => {
+      const coerced = coerceBoolean(v);
+      return typeof coerced === "boolean" ? coerced : v;
+    },
+    z.union([z.string().min(1), z.boolean()]),
+  )
+  .default(false)
+  .describe(
+    "Write the response body to a file and return its path as `fetchedTo` — the escape " +
+      "hatch for bodies too big to inline. false (default) — inline only (cut to max_inline_bytes). " +
+      "true — auto-pick <outputs_dir>/fetch_<ms>.{txt|bin} (.txt for text bodies, .bin for binary). " +
+      'String — explicit path (any extension; relative resolves to outputs_dir; ".." rejected). ' +
+      "The saved body is full up to a 25 MB hard ceiling (a larger body is capped, flagged `truncated`). " +
+      "Write errors are non-fatal (`fetchError`); the inline body still returns.",
   );
 
 /**

@@ -559,9 +559,13 @@ async function dispatchInner(req) {
     case "get_focused_tab":
       return getFocusedTab();
     case "tabs_create":
-      return createTab(c.url, c.background !== false, c.settle);
+      return createTab(c.url, c.background !== false, c.settle, c.windowId, c.incognito);
     case "tabs_remove":
       return removeTab(c.tabId);
+    case "fetch":
+      return runFetch(c.req);
+    case "cookies":
+      return readCookies(c.filter);
     case "navigate":
       return navigate(tabId, c.url, c.waitUntil, c.settle);
     case "navigate_back":
@@ -651,6 +655,7 @@ async function queryTabs(query) {
     title: t.title ?? "",
     windowId: t.windowId,
     active: !!t.active,
+    incognito: !!t.incognito,
   }));
   if (!query) return mapped;
   // Case-insensitive substring match against title OR url. Mirrors the
@@ -675,9 +680,42 @@ async function getFocusedTab() {
   }
 }
 
-async function createTab(url, background, settle) {
+async function createTab(url, background, settle, windowId, incognito) {
   const previousActiveTab = await getFocusedTab();
-  const tab = await chrome.tabs.create({ url, active: !background });
+  let tab;
+  if (incognito) {
+    // chrome.tabs.create has no incognito flag — a fresh incognito window is
+    // the only way to open an incognito tab. This is best-effort: a
+    // spanning-mode extension (this one — no "incognito" manifest key) cannot
+    // load a page into an incognito main frame, so Chrome may open a blank
+    // window or throw. Surface an honest, actionable error rather than
+    // silently opening in the wrong context.
+    let win;
+    try {
+      win = await chrome.windows.create({
+        url,
+        incognito: true,
+        focused: !background,
+      });
+      tab = win?.tabs?.[0];
+      if (!tab) throw new Error("no tab in the created incognito window");
+    } catch (e) {
+      // Clean up a half-created window (e.g. a blank window opened before the
+      // spanning-mode load failed) so a refusal doesn't leak an empty window.
+      if (win?.id !== undefined) {
+        await chrome.windows.remove(win.id).catch(() => {});
+      }
+      throw new Error(
+        `could not open an incognito tab (${e?.message ?? e}). This extension runs in spanning mode, which cannot drive incognito tabs. To use incognito: open chrome://extensions, find this extension, and enable "Allow in Incognito" (a user-only toggle that cannot be set programmatically) — then retry, or drive an already-open incognito tab.`,
+      );
+    }
+  } else {
+    tab = await chrome.tabs.create({
+      url,
+      active: !background,
+      ...(windowId !== undefined ? { windowId } : {}),
+    });
+  }
   // Wait for status:complete before returning so the agent sees the actual
   // loaded URL/title — not the empty placeholder from before the load fires.
   const settled = await waitForTabComplete(tab.id, 15_000).catch(() => null);
@@ -694,6 +732,7 @@ async function createTab(url, background, settle) {
     title: fresh.title ?? "",
     windowId: fresh.windowId,
     active: !!fresh.active,
+    incognito: !!fresh.incognito,
     navigated,
     settledAt: Date.now(),
     settled: settled ?? { via: "timeout", elapsedMs: 15_000 },
@@ -722,6 +761,128 @@ function urlsLookLikeMatch(requested, landed) {
 async function removeTab(tabId) {
   await chrome.tabs.remove(tabId);
   return { closed: tabId };
+}
+
+// ─── privileged data primitives (no tab, no debugger) ───────────────
+
+// Hard ceiling on the body the SW will read into memory + ship over the WS,
+// so a pathological multi-hundred-MB download can't OOM the service worker.
+// Independent of the agent's maxInlineBytes (a display cap) — this is a safety
+// net; a body past it is truncated with `truncated:true` even when saving.
+const FETCH_MAX_BODY_BYTES = 25 * 1024 * 1024;
+
+const TEXT_CONTENT_TYPE_RE =
+  /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded|.*\+json|.*\+xml)|image\/svg\+xml)/i;
+
+// Run a first-party fetch in the SW context. Under host_permissions <all_urls>
+// the SW is first-party for every covered origin, so credentials:"include"
+// attaches the user's real cookies and the response is CORS-exempt. Set-Cookie
+// is never readable (Fetch spec forbidden header) — the caller reads cookies
+// via browser_cookies. Errors are thrown with an actionable message.
+async function runFetch(req) {
+  const controller = new AbortController();
+  const timeoutMs = req.timeoutMs ?? 30_000;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let res;
+  try {
+    res = await fetch(req.url, {
+      method: req.method ?? "GET",
+      headers: req.headers ?? undefined,
+      body: req.body ?? undefined,
+      credentials: req.credentials ?? "include",
+      redirect: "follow",
+      signal: controller.signal,
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    if (e?.name === "AbortError") {
+      throw new Error(
+        `fetch aborted after ${timeoutMs}ms (timeout) — raise timeout or check the URL is reachable`,
+      );
+    }
+    throw new Error(
+      `fetch failed for ${req.url}: ${e?.message ?? e} (network error, invalid URL, or blocked by the site)`,
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+
+  const headers = {};
+  for (const [k, v] of res.headers.entries()) headers[k] = v;
+
+  const contentType = res.headers.get("content-type") ?? "";
+  const isText = TEXT_CONTENT_TYPE_RE.test(contentType) || contentType === "";
+  const buf = await res.arrayBuffer();
+  const fullByteLength = buf.byteLength;
+  const overHardCeiling = fullByteLength > FETCH_MAX_BODY_BYTES;
+  const bytes = overHardCeiling
+    ? new Uint8Array(buf, 0, FETCH_MAX_BODY_BYTES)
+    : new Uint8Array(buf);
+
+  const out = {
+    status: res.status,
+    statusText: res.statusText,
+    ok: res.ok,
+    finalUrl: res.url,
+    headers,
+    byteLength: fullByteLength,
+  };
+
+  // Inline-cap only applies when the bridge WON'T offload — otherwise the SW
+  // must return the full body so the bridge can write it to disk. maxInlineBytes
+  // counts SOURCE bytes: we slice the raw byte buffer BEFORE decode/encode so
+  // the cap is byte-exact and can never split a UTF-8 sequence (text) or a
+  // base64 quantum (binary).
+  const maxInline = req.maxInlineBytes ?? 25_000;
+  const capInline = !req.save && bytes.length > maxInline;
+  const inlineBytes = capInline ? bytes.subarray(0, maxInline) : bytes;
+  if (isText) {
+    out.body = new TextDecoder().decode(inlineBytes);
+  } else {
+    out.bodyBase64 = base64FromBytes(inlineBytes);
+  }
+  if (capInline || overHardCeiling) out.truncated = true;
+  return out;
+}
+
+function base64FromBytes(bytes) {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(
+      null,
+      bytes.subarray(i, i + chunk),
+    );
+  }
+  return btoa(binary);
+}
+
+// Read cookies (incl. httpOnly) from the default cookie store. At least one of
+// url/domain is enforced bridge-side; belt-and-braces here too.
+async function readCookies(filter) {
+  if (!filter || (!filter.url && !filter.domain)) {
+    throw new Error(
+      "browser_cookies requires at least one of `url` or `domain`",
+    );
+  }
+  const query = {};
+  if (filter.url) query.url = filter.url;
+  if (filter.domain) query.domain = filter.domain;
+  if (filter.name) query.name = filter.name;
+  const cookies = await chrome.cookies.getAll(query);
+  return cookies.map((c) => ({
+    name: c.name,
+    value: c.value,
+    domain: c.domain,
+    path: c.path,
+    secure: c.secure,
+    httpOnly: c.httpOnly,
+    sameSite: c.sameSite,
+    session: c.session,
+    ...(c.expirationDate !== undefined
+      ? { expirationDate: c.expirationDate }
+      : {}),
+  }));
 }
 
 async function navigate(tabId, url, waitUntil, _settle) {

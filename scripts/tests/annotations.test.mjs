@@ -15,6 +15,7 @@ import {
   registerTabTools,
   registerObserveTools,
   registerInteractTools,
+  registerNetTools,
   BridgeSession,
 } from "../../dist/test-exports.mjs";
 
@@ -192,6 +193,19 @@ const EXPECTED = {
     idempotent: false,
     openWorld: true,
   },
+  // Net (privileged data primitives)
+  browser_fetch: {
+    readOnly: false,
+    destructive: true,
+    idempotent: false,
+    openWorld: true,
+  },
+  browser_cookies: {
+    readOnly: true,
+    destructive: false,
+    idempotent: true,
+    openWorld: true,
+  },
 };
 
 function collectRegisteredTools() {
@@ -216,6 +230,7 @@ function collectRegisteredTools() {
   registerTabTools(fakeServer, ctx);
   registerObserveTools(fakeServer, ctx);
   registerInteractTools(fakeServer, ctx);
+  registerNetTools(fakeServer, ctx);
   return captured;
 }
 

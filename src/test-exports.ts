@@ -29,6 +29,7 @@ export {
 export { registerTabTools } from "./bridge/tools/tabs";
 export { registerObserveTools } from "./bridge/tools/observe";
 export { registerInteractTools } from "./bridge/tools/interact";
+export { registerNetTools } from "./bridge/tools/net";
 export { coerceToArray, coerceLiteralNumber, coerceBoolean } from "./bridge/tools/coerce";
 export {
   resolveSavePath,

@@ -1,6 +1,6 @@
 # browser-automation-mcp
 
-Cross-tab control of the user's real authenticated Chrome session via a passive MV3 extension. 27 tools across tabs, observation, and interaction — actions run in the background by default, never raising the window or stealing focus. The one exception is `browser_activate_tab(level:"foreground")`, an explicit opt-in focus-steal for OS file pickers / clipboard / drag-drop; the default `browser_activate_tab(level:"render")` resumes faithful rendering of a backgrounded canvas tab without any window raise.
+Cross-tab control of the user's real authenticated Chrome session via a passive MV3 extension. 29 tools across tabs, observation, interaction, and lease-free data primitives (`browser_fetch` / `browser_cookies`) — actions run in the background by default, never raising the window or stealing focus. The one exception is `browser_activate_tab(level:"foreground")`, an explicit opt-in focus-steal for OS file pickers / clipboard / drag-drop; the default `browser_activate_tab(level:"render")` resumes faithful rendering of a backgrounded canvas tab without any window raise.
 
 ## Setup
 
@@ -49,7 +49,7 @@ All tools are prefixed `browser_*`. Action tools (any tool that mutates the page
 
 #### `browser_list_tabs` (read-only)
 
-List all open tabs across all browser windows. Returns `id`, `url`, `title`, `leasedBy`. Lease-free.
+List all open tabs across all browser windows. Returns `id`, `url`, `title`, `leasedBy`, `incognito`. Lease-free.
 
 | Parameter | Type   | Default | Description                                       |
 | --------- | ------ | ------- | ------------------------------------------------- |
@@ -63,8 +63,10 @@ Open a URL in a new tab and auto-claim the lease. Defaults to background — nev
 | ------------ | ------- | ------- | -------------------------------------------------------- |
 | `url`        | string  | —       | URL to open (validated).                                 |
 | `background` | boolean | `true`  | Open without raising the browser window or activating the tab. |
+| `windowId`   | int     | —       | Open the tab in this existing window (from `browser_list_tabs`) instead of the current one. |
+| `incognito`  | boolean | `false` | Open in an incognito window. Fails with an honest error if the extension isn't allowed in incognito (spanning mode can't script an incognito frame); the half-created window is removed, not leaked. |
 
-Returns `{ id, url, title, navigated, settledAt, previousActiveTab }` — `navigated:false` signals the SPA dropped the requested URL to its root.
+Returns `{ id, url, title, navigated, settledAt, previousActiveTab, incognito }` — `navigated:false` signals the SPA dropped the requested URL to its root.
 
 #### `browser_close_tab`
 
@@ -415,6 +417,39 @@ Wait for a CSS selector, a JS predicate, network idle, or a timeout. Exactly one
 
 Condition mode runs through `chrome.debugger Runtime.evaluate` to bypass strict-CSP sites' `unsafe-eval` restrictions (Suno, ChatGPT, banks). The daemon's watchdog matches the command's `timeout` (plus a 5 s safety buffer), so the full schema-max of 5 minutes is honoured end-to-end.
 
+### Data primitives (privileged, lease-free)
+
+`browser_fetch` and `browser_cookies` bypass the observe-act loop entirely — no tab lease, no debugger, no `environment` field. Paired with `browser_network_requests` (discover a logged-in site's real endpoints) and `browser_evaluate` (page-context JS), they let you drive a site's own backend API directly.
+
+#### `browser_fetch`
+
+Issue an HTTP request from the extension's own service-worker context — **first-party** for the target origin. Unlike `fetch()` inside `browser_evaluate` (page-context, CORS-blocked, SameSite-limited), this attaches the user's real cookies (`credentials:"include"` by default, incl. httpOnly and SameSite=Lax/Strict) and reads the response CORS-exempt. `Set-Cookie` is never exposed (Fetch-spec rule — read cookies with `browser_cookies`). Uses the default (non-incognito) cookie store; the request never appears in the page's own network log.
+
+| Parameter          | Type    | Default     | Description                                                                                     |
+| ------------------ | ------- | ----------- | ---------------------------------------------------------------------------------------------- |
+| `url`              | string  | —           | Absolute URL to request.                                                                       |
+| `method`           | string  | `GET`       | HTTP method.                                                                                    |
+| `headers`          | object  | —           | Extra request headers as `{name: value}`.                                                       |
+| `body`             | string  | —           | Request body (e.g. a JSON string for a POST). Set a matching content-type header.               |
+| `credentials`      | enum    | `include`   | `include` (attach cookies), `same-origin`, or `omit` (anonymous).                               |
+| `timeout`          | int     | `30000`     | Ms before abort. Max 300000.                                                                    |
+| `max_inline_bytes` | int     | `25000`     | Cap on the inline body. Larger → cut (`truncated:true`); use `save_to_path` for the full body.  |
+| `save_to_path`     | bool\|string | `false`| Write the body to disk and return `fetchedTo`. `true` → auto-name `<outputs_dir>/fetch_<ms>.{txt\|bin}` (`.txt` for text, `.bin` for binary); string → explicit path (relative resolves to outputs_dir, `..` rejected). |
+
+Returns `{ status, statusText, ok, finalUrl, headers, body \| bodyBase64, byteLength, truncated?, previewTruncated?, fetchedTo? }`. Binary responses come back as `bodyBase64`. Two independent size signals: **`truncated`** = the SW cut the body at its 25 MB hard ceiling; **`previewTruncated`** = the FULL body is on disk (`fetchedTo`) and the inline copy is a preview cut to `max_inline_bytes`. The inline preview is always cut on a safe boundary (text trims a dangling surrogate; base64 cuts on a 4-char quantum) so it never carries a torn sequence. A save-path failure is non-fatal (`fetchError`); the inline body still returns.
+
+#### `browser_cookies` (read-only)
+
+Read cookies from the default (non-incognito) store by origin/domain — **including httpOnly** cookies that `document.cookie` (via `browser_evaluate`) cannot see. Use to inspect a site's auth/session state, or to grab a cookie to replay through `browser_fetch`. Read-only — there is no cookie write/delete surface by design.
+
+| Parameter | Type   | Default | Description                                                                        |
+| --------- | ------ | ------- | --------------------------------------------------------------------------------- |
+| `url`     | string | —       | Cookies that would be sent to this URL (host + path scoped). One of url/domain required. |
+| `domain`  | string | —       | All cookies for this domain (and subdomains). One of url/domain required.          |
+| `name`    | string | —       | Filter to cookies with this exact name.                                            |
+
+Returns session + persistent cookies with `{ name, value, domain, path, secure, httpOnly, sameSite, session, expirationDate? }`. CHIPS partitioned cookies are not returned (the unpartitioned jar only).
+
 ## Annotations
 
 | Tool                       | readOnlyHint | destructiveHint | idempotentHint | openWorldHint |
@@ -446,6 +481,8 @@ Condition mode runs through `chrome.debugger Runtime.evaluate` to bypass strict-
 | `browser_press_key`        | —            | ✓               | —              | ✓             |
 | `browser_evaluate`         | —            | ✓               | —              | ✓             |
 | `browser_wait_for`         | ✓            | —               | ✓              | ✓             |
+| `browser_fetch`            | —            | ✓               | —              | ✓             |
+| `browser_cookies`          | ✓            | —               | ✓              | ✓             |
 
 The full policy is sweep-tested in `scripts/tests/annotations.test.mjs`.
 
@@ -479,7 +516,7 @@ browser-automation-mcp/
 │   │   └── timeouts.ts       # Pure helper inferring per-command extension-RPC watchdog (wait_for honours its own timeout + 5s; fast action kinds — click/click_xy/draw/type/select_option/hover/scroll/press_key/drag/drop/resolve_ref — get a 10s budget; evaluate with an explicit timeout widens to timeout+5s; everything else gets 30s)
 │   ├── bridge/
 │   │   ├── mcp.ts            # MCP server entry (stdio + streamable-HTTP transports)
-│   │   ├── meta.ts           # SERVER_INSTRUCTIONS string + BUILD_STAMP (injected by esbuild)
+│   │   ├── meta.ts           # SERVER_INSTRUCTIONS string + BUILD_STAMP (injected by esbuild; logged to stderr at startup, kept out of instructions for prompt-cache stability)
 │   │   ├── client.ts         # Daemon client over loopback TCP (single-shot disconnect retry)
 │   │   ├── registry.ts       # Tool registration + per-session ref registry + settle plumbing + envelope helpers + per-tab environment stamping
 │   │   ├── session.ts        # Per-bridge session state (lastSnapshotRefs, lastLeasedTab, isStale)
@@ -487,8 +524,9 @@ browser-automation-mcp/
 │   │       ├── tabs.ts            # 8 tab tools (5 tab/lease + browser_activate_tab + browser_resize + browser_handle_dialog)
 │   │       ├── observe.ts         # 3 observation tools (browser_snapshot, console, network)
 │   │       ├── interact.ts        # 16 action tools (auto-snapshot + auto-settle wrapped)
+│   │       ├── net.ts             # 2 lease-free privileged data primitives (browser_fetch, browser_cookies)
 │   │       ├── capture.ts         # Unified-capture orchestrator — single source of truth for browser_snapshot and the auto-snapshot replay path
-│   │       ├── save.ts            # save_to_path schema + resolver (resolveSavePath, writeImage, getOutputsDir)
+│   │       ├── save.ts            # save_to_path schema + resolvers (resolveSavePath image + resolveDownloadSavePath fetch-body offload, writeImage/writeBase64/writeText, getOutputsDir)
 │   │       ├── visual.ts          # Annotation visual constants (badge color, font, sizing) — travel inside annotate_image payload
 │   │       ├── containment.ts     # computeDrawStroke — containment-based parent-bbox suppression for annotated screenshots
 │   │       └── coerce.ts          # Schema-input coercion helpers (coerceToArray, coerceBoolean, coerceLiteralNumber)
@@ -519,6 +557,7 @@ browser-automation-mcp/
         ├── coerce.test.mjs            # Schema coercion (stringified numbers/booleans/arrays)
         ├── envelope.test.mjs          # toolResult / toolError envelope shape (incl. mixed image+text content)
         ├── environment-contract.test.mjs # Black-box env-field contract (event stamping on success+error, consume-once, targetless upload validation, snapshot NOTE leads)
+        ├── net-contract.test.mjs      # Black-box contract for the lease-free data primitives (browser_fetch schema bounds + save-offload preview/truncated/boundary/fetchError; browser_cookies url|domain requirement + wire filter)
         ├── evaluate.test.mjs          # browser_evaluate primitive-wrap (Issue #2 regression)
         ├── click_xy.test.mjs         # browser_click_xy + trusted-click/press_key bridge wiring (coord forwarding, viewport bounds check, ref→centre resolution, trusted-flag passthrough)
         ├── draw.test.mjs             # browser_draw bridge wiring (point-list forwarding, per-point viewport bounds check, best-effort when no viewport)
@@ -526,7 +565,7 @@ browser-automation-mcp/
         ├── drop.test.mjs              # browser_drop bridge wiring (file-payload read + drop ExtCommand, missing-file rejection)
         ├── handle_dialog.test.mjs     # browser_handle_dialog bridge wiring (arm/clear forwards, default lifetime, xor validation, leased-tab fallback)
         ├── fill_form.test.mjs         # browser_fill_form bridge-side batching (type/select_option/click sequencing, default kind, value validation)
-        ├── fingerprint.test.mjs       # Build fingerprint surfaces in SERVER_INSTRUCTIONS
+        ├── fingerprint.test.mjs       # Build fingerprint substituted at bundle time + kept OUT of SERVER_INSTRUCTIONS
         ├── prune.test.mjs             # Pruner keep-rules, document order, cap ladder, table/row collapse, occluded passthrough
         ├── distill.test.mjs           # Lossless distillation rules (text merge, restatement drop, wrapper unwrap, fact-immunity, idempotence)
         ├── ref.test.mjs              # Ref-grammar chokepoint (parseRef/formatRef round-trip, compareRefs (frameId,localId) tuple order, NaN-safety)
@@ -831,7 +870,7 @@ npm test                   # node --test scripts/tests/*.test.mjs
 npm run dev                # esbuild watch mode (main bundle only)
 ```
 
-The test harness imports from `dist/test-exports.mjs`, so run `npm run build` once before `npm test`. Tests cover pruner heuristics (including viewportOnly auto-fallback, total_candidates surfacing, and the Round 7 philosophy flip — named-landmark widening, within-budget no-drop, score-only-reordering, and the loud over-limit `meta.notice`), the ref registry (non-evicting resolution, tab-change reset, and the `resolve_ref` liveness probe in `execOnLeasedTab`), envelope shape (including the mixed image+text content array), schema coercion, build fingerprint, annotation policy, daemon watchdog inference, the `browser_evaluate` primitive-wrap regression, the unified-capture two-hop topology (`snapshot_capture` + `annotate_image`), the tri-state screenshot mode (`"off"` → no image, `"annotated"` → 2 hops, `"raw"` → 1 hop with raw bytes, plus defense-in-depth for `"annotated"` + `withTree:false`), the annotation scale formula (`scaleX = imgW / cssViewport.w`, pixel-accurate across the DPR × maxWidth matrix), `save_to_path` resolution (format-from-extension inference, unknown-extension rejection, outputs_dir precedence, traversal rejection, non-fatal save errors), `replaySnapshot` (visual params replayed; `save_to_path` never replayed), `computeDrawStroke` (containment-based parent-bbox suppression), the visual-constants contract, the compact-outline serializer (`serialize.test.mjs` — grammar shape and content: flags, value, values-collapse, whitespace-collapse, quote-escape, nesting, synthetic-root) and the `meta.notice` inlining (`NOTE:` first line), and the diff serializer (`diff.test.mjs` — added/removed/changed classification, `Δ`-header counts, multi-field transitions, no-changes case, synthetic-root skip, numeric-ref sort) plus its auto-snapshot integration (`replay.test.mjs` — diff on the second snapshot of a tab, full fallback when there's no prior / a cross-tab prior / an oversized diff, and explicit-snapshot-always-full), and the CP6 parity tools (`fill_form.test.mjs` — bridge-side type/select_option/click sequencing, default kind, value validation; `resize.test.mjs` — resize ExtCommand forwarding + leased-tab fallback), and the CP7 drag-and-drop parity tools (`drag.test.mjs` — single `drag` ExtCommand forwarding, mechanism passthrough, target-ref validation; `drop.test.mjs` — file-payload read off disk + `drop` ExtCommand forwarding, missing-file rejection), and the CP8 dialog parity tool (`handle_dialog.test.mjs` — arm forwards a single `handle_dialog` ExtCommand carrying disposition/promptText/lifetime, clear forwards `{clear:true}`, default lifetime is `"one_shot"`, xor validation rejects both/neither before any daemon hop, leased-tab fallback when `tabId` is omitted, sticky-lifetime passthrough, promptText-on-dismiss permissive forwarding), and the CP9 fast-action timeout policy (`timeout.test.mjs` — synthetic-event action kinds — click/type/select_option/hover/scroll/press_key/drag/drop/resolve_ref — get the 10 s budget; navigate/evaluate/upload/snapshot_capture/CDP-glue commands stay on the 30 s default; wait_for still adds the 5 s buffer to the caller timeout), and the trusted CDP coordinate-input tools (`click_xy.test.mjs` — `browser_click_xy` coordinate forwarding, the last-snapshot viewport bounds check with its actionable error, best-effort pass-through when no viewport is known yet, `browser_click(trusted:true)` ref→rect-centre resolution into a `click_xy` command, the rect-less-ref error, and `browser_press_key(trusted)` flag passthrough; `draw.test.mjs` — `browser_draw` point-list forwarding and per-point bounds check), and the ref-grammar chokepoint (`ref.test.mjs` — `parseRef`/`formatRef` round-trip for bare-numeric main-frame refs and cross-origin `fN:localId` refs, and `compareRefs`'s NaN-safe (frameId, localId) tuple order; `diff.test.mjs` also pins that the diff serializer sorts mixed main-frame + `fN:` refs deterministically), and the Phase 4b cross-origin descent surface (`serialize.test.mjs`/`prune.test.mjs` — the `frameDescended` field passes through the pruner without leaking `crossOrigin`, the spliced `fN:` child survives, and the serializer renders `[cross-origin frame — descended]` with `crossOrigin` taking precedence if both are stale-set; `replay.test.mjs` — `includeCrossOriginFrames` is replayed onto the auto-snapshot `snapshot_capture` hop and stays off unless opted in), and the environment-awareness contract (`environment-contract.test.mjs` — black-box against the behavioural invariants: env stamped verbatim on success AND error envelopes, lean omission when empty, consume-once drain, non-object results wrapped as `{result, environment}`, per-tab `EnvReport` array form, targetless-upload validation (absolute-path requirement, stat-validated files, batch poisoning, paths-not-bytes on the wire), and the snapshot `NOTE:` leads for standing `fileChooser`/`attachBlocked` states) — 255 cases total. All tests run without standing up the daemon or extension; they exercise pure helpers.
+The test harness imports from `dist/test-exports.mjs`, so run `npm run build` once before `npm test`. Tests cover pruner heuristics (including viewportOnly auto-fallback, total_candidates surfacing, and the Round 7 philosophy flip — named-landmark widening, within-budget no-drop, score-only-reordering, and the loud over-limit `meta.notice`), the ref registry (non-evicting resolution, tab-change reset, and the `resolve_ref` liveness probe in `execOnLeasedTab`), envelope shape (including the mixed image+text content array), schema coercion, build fingerprint, annotation policy, daemon watchdog inference, the `browser_evaluate` primitive-wrap regression, the unified-capture two-hop topology (`snapshot_capture` + `annotate_image`), the tri-state screenshot mode (`"off"` → no image, `"annotated"` → 2 hops, `"raw"` → 1 hop with raw bytes, plus defense-in-depth for `"annotated"` + `withTree:false`), the annotation scale formula (`scaleX = imgW / cssViewport.w`, pixel-accurate across the DPR × maxWidth matrix), `save_to_path` resolution (format-from-extension inference, unknown-extension rejection, outputs_dir precedence, traversal rejection, non-fatal save errors), `replaySnapshot` (visual params replayed; `save_to_path` never replayed), `computeDrawStroke` (containment-based parent-bbox suppression), the visual-constants contract, the compact-outline serializer (`serialize.test.mjs` — grammar shape and content: flags, value, values-collapse, whitespace-collapse, quote-escape, nesting, synthetic-root) and the `meta.notice` inlining (`NOTE:` first line), and the diff serializer (`diff.test.mjs` — added/removed/changed classification, `Δ`-header counts, multi-field transitions, no-changes case, synthetic-root skip, numeric-ref sort) plus its auto-snapshot integration (`replay.test.mjs` — diff on the second snapshot of a tab, full fallback when there's no prior / a cross-tab prior / an oversized diff, and explicit-snapshot-always-full), and the CP6 parity tools (`fill_form.test.mjs` — bridge-side type/select_option/click sequencing, default kind, value validation; `resize.test.mjs` — resize ExtCommand forwarding + leased-tab fallback), and the CP7 drag-and-drop parity tools (`drag.test.mjs` — single `drag` ExtCommand forwarding, mechanism passthrough, target-ref validation; `drop.test.mjs` — file-payload read off disk + `drop` ExtCommand forwarding, missing-file rejection), and the CP8 dialog parity tool (`handle_dialog.test.mjs` — arm forwards a single `handle_dialog` ExtCommand carrying disposition/promptText/lifetime, clear forwards `{clear:true}`, default lifetime is `"one_shot"`, xor validation rejects both/neither before any daemon hop, leased-tab fallback when `tabId` is omitted, sticky-lifetime passthrough, promptText-on-dismiss permissive forwarding), and the CP9 fast-action timeout policy (`timeout.test.mjs` — synthetic-event action kinds — click/type/select_option/hover/scroll/press_key/drag/drop/resolve_ref — get the 10 s budget; navigate/evaluate/upload/snapshot_capture/CDP-glue commands stay on the 30 s default; wait_for still adds the 5 s buffer to the caller timeout), and the trusted CDP coordinate-input tools (`click_xy.test.mjs` — `browser_click_xy` coordinate forwarding, the last-snapshot viewport bounds check with its actionable error, best-effort pass-through when no viewport is known yet, `browser_click(trusted:true)` ref→rect-centre resolution into a `click_xy` command, the rect-less-ref error, and `browser_press_key(trusted)` flag passthrough; `draw.test.mjs` — `browser_draw` point-list forwarding and per-point bounds check), and the ref-grammar chokepoint (`ref.test.mjs` — `parseRef`/`formatRef` round-trip for bare-numeric main-frame refs and cross-origin `fN:localId` refs, and `compareRefs`'s NaN-safe (frameId, localId) tuple order; `diff.test.mjs` also pins that the diff serializer sorts mixed main-frame + `fN:` refs deterministically), and the Phase 4b cross-origin descent surface (`serialize.test.mjs`/`prune.test.mjs` — the `frameDescended` field passes through the pruner without leaking `crossOrigin`, the spliced `fN:` child survives, and the serializer renders `[cross-origin frame — descended]` with `crossOrigin` taking precedence if both are stale-set; `replay.test.mjs` — `includeCrossOriginFrames` is replayed onto the auto-snapshot `snapshot_capture` hop and stays off unless opted in), and the environment-awareness contract (`environment-contract.test.mjs` — black-box against the behavioural invariants: env stamped verbatim on success AND error envelopes, lean omission when empty, consume-once drain, non-object results wrapped as `{result, environment}`, per-tab `EnvReport` array form, targetless-upload validation (absolute-path requirement, stat-validated files, batch poisoning, paths-not-bytes on the wire), and the snapshot `NOTE:` leads for standing `fileChooser`/`attachBlocked` states), and the lease-free data-primitive contract (`net-contract.test.mjs` — `browser_fetch` schema bounds re-parsed from the registered `inputSchema` (timeout 1…300000, credentials enum, method/GET default, `max_inline_bytes` ≥0, absolute-URL requirement), the save-offload handler contract (auto-named `.txt`/`.bin`, `previewTruncated` vs the SW's own `truncated`, full body on disk, base64 preview cut on a 4-char quantum, non-fatal `fetchError`, lease-free wire shape), and `browser_cookies`'s url|domain requirement + wire filter forwarding) — 269 cases total. All tests run without standing up the daemon or extension; they exercise pure helpers.
 
 ## License
 

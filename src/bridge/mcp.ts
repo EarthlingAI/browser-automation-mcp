@@ -8,7 +8,8 @@ import { BridgeSession } from "./session";
 import { registerTabTools } from "./tools/tabs";
 import { registerObserveTools } from "./tools/observe";
 import { registerInteractTools } from "./tools/interact";
-import { SERVER_INSTRUCTIONS } from "./meta";
+import { registerNetTools } from "./tools/net";
+import { BUILD_STAMP, SERVER_INSTRUCTIONS } from "./meta";
 
 export interface BridgeOptions {
   agentLabel?: string;
@@ -28,10 +29,15 @@ async function buildServer(opts: BridgeOptions): Promise<{ server: McpServer; da
   registerTabTools(server, ctx);
   registerObserveTools(server, ctx);
   registerInteractTools(server, ctx);
+  registerNetTools(server, ctx);
   return { server, daemon };
 }
 
 export async function startBridge(opts: BridgeOptions): Promise<void> {
+  // Stderr only — the stamp must never enter SERVER_INSTRUCTIONS (hosts inject
+  // instructions into the model's system prefix; a per-build value there would
+  // bust the host's prompt cache on every rebuild).
+  console.error(`[browser-automation-mcp] build ${BUILD_STAMP}`);
   const mode = (process.env.MCP_TRANSPORT ?? "stdio").toLowerCase();
   if (mode === "http") {
     await startHttp(opts);
