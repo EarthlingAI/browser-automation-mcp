@@ -25,7 +25,11 @@ function collectRegisteredTools() {
     },
   };
   const ctx = {
-    daemon: { sessionId: "test-session" },
+    daemon: {
+      sessionId: "test-session",
+      takeEnv: () => undefined,
+      peekEnv: () => undefined,
+    },
     session: new BridgeSession(),
   };
   registerTabTools(fakeServer, ctx);

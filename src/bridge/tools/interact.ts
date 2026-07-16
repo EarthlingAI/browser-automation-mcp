@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from "node:fs";
-import { basename, extname } from "node:path";
+import { basename, extname, isAbsolute, resolve } from "node:path";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
@@ -428,7 +428,7 @@ export function registerInteractTools(
     name: "browser_upload",
     title: "Upload files to a file input",
     description:
-      "Upload local files to a file input, targeted by `ref` (from browser_snapshot) or by CSS `selector`. Use `selector` for a hidden or portal-mounted file input that never receives a ref: it is resolved in place with document.querySelector and the files are set on it without moving the node. Provide exactly one of `ref` or `selector`.",
+      "Upload local files. Target an <input type=file> by `ref` (from browser_snapshot) or CSS `selector` (use `selector` for a hidden or portal-mounted input that never receives a ref). With NEITHER, this fulfils the tab's pending intercepted native file chooser: when a click would have opened the OS picker, the picker is intercepted instead and reported as `environment.fileChooser` — call browser_upload with just `files` to hand it the files headlessly (no OS dialog, no focus theft).",
     annotations: ACTION_WRITE,
     schema: {
       ref: z
@@ -447,11 +447,37 @@ export function registerInteractTools(
       tabId: z.coerce.number().int().optional(),
     },
     handler: async ({ ref, selector, files, tabId }) => {
-      // Exactly one target. MCP tool schemas are a flat ZodRawShape with no
+      // At most one target — MCP tool schemas are a flat ZodRawShape with no
       // cross-field validator, so fail fast here rather than silently letting
-      // the page side guess a target (or no-op on neither).
-      if ((ref === undefined) === (selector === undefined))
-        throw new Error("provide exactly one of `ref` or `selector`");
+      // the page side guess. NO target = chooser-fulfilment mode: the
+      // extension answers the pending intercepted chooser with the LOCAL
+      // paths via DOM.setFileInputFiles — Chrome reads the files itself, so
+      // no base64 round-trip (and none of the payload size ceilings).
+      if (ref !== undefined && selector !== undefined)
+        throw new Error("provide at most one of `ref` or `selector`");
+      if (ref === undefined && selector === undefined) {
+        // Validate bridge-side (Chrome fulfils silently even for a bogus
+        // path, which would surface as a confusing page-level failure).
+        // Require ABSOLUTE paths: a relative path would resolve against this
+        // bridge process's cwd — a location the caller has no view of — so a
+        // "working" relative path is a coincidence, not a contract.
+        const paths = (files as string[]).map((p) => {
+          if (!isAbsolute(p))
+            throw new Error(
+              `file path must be absolute: "${p}" (relative paths would resolve against the bridge process's working directory, not yours)`,
+            );
+          const abs = resolve(p);
+          let isFile: boolean;
+          try {
+            isFile = statSync(abs).isFile();
+          } catch {
+            throw new Error(`file not found: ${abs}`);
+          }
+          if (!isFile) throw new Error(`not a regular file: ${abs}`);
+          return abs;
+        });
+        return execOnLeasedTab(ctx, tabId, { kind: "upload", paths });
+      }
       const payloads = readUploadPayloads(files);
       return execOnLeasedTab(ctx, tabId, {
         kind: "upload",

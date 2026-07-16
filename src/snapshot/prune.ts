@@ -47,10 +47,14 @@ export interface RawNode {
   // filtering, position-fixed overlay detection.
   ariaHidden?: boolean;
   inert?: boolean;
-  /** Top-layer `<dialog open>` marker from helpers.js. Not consumed by the
-   * pruner today — carried on the raw tree for the modal/environment-awareness
-   * work that reads it bridge-side. */
-  dialogModal?: boolean;
+  /**
+   * Modal-layer marker from helpers.js (HELPERS_VERSION 13): "dialog" for an
+   * open `<dialog>`, "ariaModal" for aria-modal="true", "fullscreen" for the
+   * Fullscreen-API lock holder. Not consumed by the pruner — carried on the
+   * raw tree so capture.ts can surface a standing modal in snapMeta.modal +
+   * a leading NOTE (environment awareness).
+   */
+  modal?: "dialog" | "ariaModal" | "fullscreen";
   position?: string;
   /**
    * Set by helpers.js when this interactive element is NOT the topmost
@@ -199,6 +203,14 @@ export interface PruneMeta {
    * exists. Makes a skipped cross-origin frame loud (invariant #20).
    */
   frames?: Array<{ url: string; descended: boolean }>;
+  /**
+   * The page's active modal layer, when one exists — the first raw-tree node
+   * flagged `modal` by helpers.js (open `<dialog>`, aria-modal="true", or the
+   * Fullscreen-API lock holder). Set by `runUnifiedCapture` (not `prune` — the
+   * flag rides the raw tree). A modal usually means interaction outside it is
+   * blocked or ignored, so it also leads the outline as a NOTE.
+   */
+  modal?: { type: "dialog" | "ariaModal" | "fullscreen"; ref?: string; role: string; name?: string };
 }
 
 const COOKIE_BANNER_NAME_RE =
@@ -284,8 +296,12 @@ export function prune(
         ? { first_omitted_ref: cut.firstOmittedRef }
         : {}),
     };
+    // The viewportOnly lever only helps when the cut tree is NOT already
+    // viewport-scoped (explicitly or via the fallback above) — offering it
+    // then would be a dead lever.
+    const alreadyViewport = explicitViewportOnly || meta.viewport_fallback;
     notices.push(
-      `Showing the first ${meta.truncated.shown} of ${count} nodes in document order — the first omitted node is [ref=${cut.firstOmittedRef ?? "?"}]. To recover the rest: raise 'limit' (now ${limit}), scope to a subtree with scope:"<ref>", pass viewportOnly:true, or write the full tree to a file with save_tree_to_path:true.`,
+      `Showing the first ${meta.truncated.shown} of ${count} nodes in document order — the first omitted node is [ref=${cut.firstOmittedRef ?? "?"}]. To recover the rest: raise 'limit' (now ${limit}), scope to a subtree with scope:"<ref>", ${alreadyViewport ? "" : "pass viewportOnly:true, "}or write the full tree to a file with save_tree_to_path:true.`,
     );
   }
 

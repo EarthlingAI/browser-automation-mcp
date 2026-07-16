@@ -24,6 +24,8 @@ function setup(responses = [], { viewport } = {}) {
   if (viewport) session.lastViewport = viewport;
   const daemon = {
     sessionId: "test-draw",
+    takeEnv: () => undefined,
+    peekEnv: () => undefined,
     async exec(tabId, command) {
       calls.push({ tabId, command });
       if (queue.length === 0)

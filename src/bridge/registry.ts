@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { z, ZodRawShape } from "zod";
-import { DaemonClient } from "./client";
+import { DaemonClient, EnvReport } from "./client";
 import { BridgeSession, RefMeta, SnapshotParams } from "./session";
 import { ExtCommand, SettleOptions, TabId } from "../protocol";
 import { PrunedNode, RawNode } from "../snapshot/prune";
@@ -122,11 +122,16 @@ export function registerTool<S extends ZodRawShape>(
         // (browser_snapshot) return this so the wrapper can emit a mixed
         // image+text MCP envelope.
         if (isCaptureResult(result)) {
-          return toolResult(result.payload, def.name, result.image);
+          return toolResult(
+            result.payload,
+            def.name,
+            result.image,
+            ctx.daemon.takeEnv(),
+          );
         }
-        return toolResult(result, def.name);
+        return toolResult(result, def.name, undefined, ctx.daemon.takeEnv());
       } catch (err: any) {
-        return toolError(err);
+        return toolError(err, ctx.daemon.takeEnv());
       }
     },
   );
@@ -209,10 +214,15 @@ export function registerActionTool<S extends ZodRawShape>(
             payload.snapshot = snap;
           }
         }
-        return toolResult(payload, def.name, imageForEnvelope);
+        return toolResult(
+          payload,
+          def.name,
+          imageForEnvelope,
+          ctx.daemon.takeEnv(),
+        );
       } catch (err: any) {
         ctx.pendingSettle = undefined;
-        return toolError(err);
+        return toolError(err, ctx.daemon.takeEnv());
       }
     },
   );
@@ -468,12 +478,23 @@ export function toolResult(
   result: unknown,
   toolName?: string,
   image?: ImagePayload,
+  environment?: EnvReport,
 ) {
   let payload: unknown = result;
   // Lean envelope: wrap array-results from list-style tools so the agent
   // sees a top-level `count` without parsing the array length itself.
   if (toolName && COUNT_WRAPPED_TOOLS.has(toolName) && Array.isArray(result)) {
     payload = { count: result.length, items: result };
+  }
+  // Environment awareness: anything notable that happened on the tab during
+  // this tool call (auto-handled dialogs, popups, a pending file chooser, a
+  // blocked debugger attach) rides out on the SAME envelope — inform, never
+  // block. Non-object payloads get wrapped so the field has somewhere to live.
+  if (environment) {
+    payload =
+      payload !== null && typeof payload === "object" && !Array.isArray(payload)
+        ? { ...(payload as Record<string, unknown>), environment }
+        : { result: payload, environment };
   }
   const textBlock = {
     type: "text" as const,
@@ -494,10 +515,13 @@ export function toolResult(
   return { content };
 }
 
-export function toolError(err: any) {
+export function toolError(err: any, environment?: EnvReport) {
   const payload: Record<string, unknown> = {
     error: err?.message ?? String(err),
   };
+  // Same environment stamp as toolResult — an errored action is exactly when
+  // the agent most needs to know a dialog fired or the attach is blocked.
+  if (environment) payload.environment = environment;
   if (err?.leasedBy !== undefined && err.leasedBy !== null)
     payload.leasedBy = err.leasedBy;
   if (err?.since !== undefined && err.since !== null) payload.since = err.since;

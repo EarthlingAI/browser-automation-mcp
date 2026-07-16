@@ -133,14 +133,31 @@ interface SnapshotCaptureResponse {
   cssViewport?: { w: number; h: number };
 }
 
-/** Locate the raw node whose nodeId equals the agent-visible ref. */
-function findRawByNodeId(node: RawNode, nodeId: string): RawNode | undefined {
-  if (node.nodeId === nodeId) return node;
+/** First raw node (document order) matching the predicate. */
+function findRaw(
+  node: RawNode,
+  pred: (n: RawNode) => boolean,
+): RawNode | undefined {
+  if (pred(node)) return node;
   for (const child of node.children) {
-    const match = findRawByNodeId(child, nodeId);
+    const match = findRaw(child, pred);
     if (match) return match;
   }
   return undefined;
+}
+
+/**
+ * Locate the page's active modal layer in the raw tree — the first node
+ * helpers.js flagged `modal` (an open <dialog>/aria-modal/fullscreen holder is
+ * effectively singular per page; nested duplicates restate the same layer).
+ */
+function findModalNode(node: RawNode): RawNode | undefined {
+  return findRaw(node, (n) => Boolean(n.modal));
+}
+
+/** Locate the raw node whose nodeId equals the agent-visible ref. */
+function findRawByNodeId(node: RawNode, nodeId: string): RawNode | undefined {
+  return findRaw(node, (n) => n.nodeId === nodeId);
 }
 
 interface AnnotateImageResponse {
@@ -270,6 +287,19 @@ export async function runUnifiedCapture(
     if (captureResp.tree.frames?.length) {
       snapMeta.frames = captureResp.tree.frames;
     }
+    // Modal awareness: surface the page's active modal layer (open <dialog>,
+    // aria-modal overlay, fullscreen lock) from the raw tree — a modal usually
+    // blocks interaction with everything else, so the agent must know it's
+    // there even when the pruned outline buries it.
+    const modalNode = findModalNode(captureResp.tree);
+    if (modalNode) {
+      snapMeta.modal = {
+        type: modalNode.modal!,
+        ...(modalNode.nodeId ? { ref: modalNode.nodeId } : {}),
+        role: modalNode.role,
+        ...(modalNode.name ? { name: modalNode.name } : {}),
+      };
+    }
     const fullBody = serializeTree(newTree);
     let body: string;
     if (prior) {
@@ -285,7 +315,35 @@ export async function runUnifiedCapture(
       body = fullBody;
       snapMeta.mode = "full";
     }
-    payload.tree = meta?.notice ? `NOTE: ${meta.notice}\n${body}` : body;
+    // Lead the outline with every note that must not be missed: the pruner's
+    // recovery notice (cap/fallback) plus any STANDING environment condition —
+    // a pending native file chooser or a blocked debugger attach changes what
+    // the agent should do next, so it belongs in front of the tree, not only
+    // in the structured `environment` field.
+    const leadNotes: string[] = [];
+    const standing = ctx.daemon.peekEnv(tabId);
+    if (standing?.fileChooser) {
+      leadNotes.push(
+        "a native file chooser was intercepted on this tab and awaits files — fulfil it with browser_upload (just `files`, no ref/selector) or the upload flow stays stalled",
+      );
+    }
+    if (standing?.attachBlocked) {
+      leadNotes.push(
+        `debugger attach is blocked on this tab (${standing.attachBlocked.error}) — trusted input/screenshots unavailable until it clears; see environment.attachBlocked`,
+      );
+    }
+    if (snapMeta.modal) {
+      const m = snapMeta.modal;
+      const label = m.name ? ` "${m.name}"` : "";
+      const refPart = m.ref ? ` [ref=${m.ref}]` : "";
+      leadNotes.push(
+        `a modal layer is active (${m.type}: ${m.role}${label}${refPart}) — interaction outside it is likely blocked; deal with the modal first`,
+      );
+    }
+    if (meta?.notice) leadNotes.push(meta.notice);
+    payload.tree = leadNotes.length
+      ? `${leadNotes.map((n) => `NOTE: ${n}`).join("\n")}\n${body}`
+      : body;
     payload.meta = snapMeta;
     // Refresh the baseline for the NEXT auto-snapshot diff (CP5) — except on a
     // scoped snapshot, whose subtree must not masquerade as a full-page prior.

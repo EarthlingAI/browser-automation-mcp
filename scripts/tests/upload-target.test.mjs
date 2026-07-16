@@ -1,9 +1,12 @@
-// browser_upload targeting: exactly one of `ref` or `selector`.
+// browser_upload targeting: at most one of `ref` or `selector`; NEITHER is
+// the chooser-fulfilment mode (answers the tab's pending intercepted native
+// file chooser with local paths).
 //
 // The tool schema is a flat ZodRawShape (no cross-field validator), so the
-// "exactly one target" rule is enforced in the handler. This test captures the
-// registered callback and drives it to assert the guard fires on neither/both
-// and passes through on a single target (failing later for a different reason).
+// targeting rule is enforced in the handler. This test captures the
+// registered callback and drives it to assert the guard fires on both, and
+// passes through on a single target or none (failing later for a different
+// reason — a nonexistent file / no leased tab).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -20,7 +23,11 @@ function captureUploadCallback() {
     },
   };
   const ctx = {
-    daemon: { sessionId: "test-session" },
+    daemon: {
+      sessionId: "test-session",
+      takeEnv: () => undefined,
+      peekEnv: () => undefined,
+    },
     session: new BridgeSession(),
   };
   registerInteractTools(fakeServer, ctx);
@@ -34,10 +41,10 @@ async function errorText(cb, args) {
   return JSON.parse(res.content[0].text).error;
 }
 
-test("rejects neither ref nor selector", async () => {
+test("neither ref nor selector = chooser mode (fails later, not on the target guard)", async () => {
   const cb = captureUploadCallback();
   const err = await errorText(cb, { files: ["/nope.png"] });
-  assert.match(err, /exactly one of/);
+  assert.doesNotMatch(err, /at most one of/);
 });
 
 test("rejects both ref and selector", async () => {
@@ -47,13 +54,13 @@ test("rejects both ref and selector", async () => {
     selector: "input[type=file]",
     files: ["/nope.png"],
   });
-  assert.match(err, /exactly one of/);
+  assert.match(err, /at most one of/);
 });
 
 test("accepts ref-only (fails later, not on the target guard)", async () => {
   const cb = captureUploadCallback();
   const err = await errorText(cb, { ref: "e1", files: ["/nonexistent.png"] });
-  assert.doesNotMatch(err, /exactly one of/);
+  assert.doesNotMatch(err, /at most one of/);
 });
 
 test("accepts selector-only (fails later, not on the target guard)", async () => {
@@ -62,5 +69,5 @@ test("accepts selector-only (fails later, not on the target guard)", async () =>
     selector: "input[type=file]",
     files: ["/nonexistent.png"],
   });
-  assert.doesNotMatch(err, /exactly one of/);
+  assert.doesNotMatch(err, /at most one of/);
 });

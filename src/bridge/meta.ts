@@ -108,16 +108,31 @@ level:"foreground") — the only focus-steal, reserved for native :focus / file-
 gates. If the blocker is the browser CHROME itself — its settings pages, the extension's own UI, an OS
 file dialog — that's beyond this server's reach: fall back to OS-level desktop automation or the shell.
 
-Native dialogs: alert / confirm / prompt / beforeunload block the page until answered. The bridge
-safe-defaults to AUTO-DISMISS so no tool can block on an unhandled dialog — Page.* is enabled on
-every debugger-attached tab and a global listener answers Page.javascriptDialogOpening with
-accept:false unless a handler is armed. To accept (or supply prompt text), pre-arm with
-browser_handle_dialog BEFORE the action that triggers the dialog — typically right before a
-browser_click on a button you know fires a confirm. disposition is "accept" or "dismiss"; pass
-promptText with disposition:"accept" for prompt() dialogs; lifetime defaults to "one_shot"
-(auto-clears after the next dialog) — pass "sticky" to keep it armed across multiple dialogs (the
-debugger stays attached so page-driven dialogs from timers / network / beforeunload also auto-
-answer), then clear:true to disarm. Once cleared, the safe-default auto-dismiss takes over.
+Native dialogs: alert / confirm / prompt / beforeunload block the page until answered. A type-aware
+safe-default auto-answers every dialog so no tool can block: alert/confirm/prompt are DISMISSED;
+beforeunload is ACCEPTED while you're actively driving the tab (so navigations proceed) but DISMISSED
+when the tab is idle (the user's own close keeps its unsaved-changes protection). Every auto-answer —
+armed or defaulted — is reported as a dialog event on the next response's environment field; nothing
+is answered silently. To choose the answer (or supply prompt text), pre-arm with browser_handle_dialog
+BEFORE the action that triggers the dialog. disposition is "accept" or "dismiss"; pass promptText with
+disposition:"accept" for prompt() dialogs; lifetime defaults to "one_shot" (auto-clears after the next
+dialog) — pass "sticky" to keep it armed across multiple dialogs, then clear:true to disarm. The
+debugger is held for the whole lease, so page-driven dialogs from timers / network / beforeunload are
+answered too.
+
+Environment awareness: tool responses carry an 'environment' field when the browser did something
+around your command — absent when nothing happened. EVENTS report once then drain: a dialog was
+auto-answered ({kind:"dialog", type, message, disposition, wasArmed}), or a page you clicked opened a
+popup ({kind:"popup", tabId, url, restoredFocus, leased} — the user's focus is restored automatically
+and the popup's lease is auto-claimed for you, so you can snapshot/drive it immediately). STANDING
+states re-stamp every response until cleared: fileChooser (the page opened a file chooser — it was
+intercepted, no OS picker appeared; fulfil it by calling browser_upload with ONLY files (absolute
+paths, no ref/selector)) and attachBlocked (the debugger can't attach, with the conflicting extension
+origins; browser_evaluate transparently falls back to a MAIN-world script). Standing conditions also
+lead the next snapshot as NOTE: lines. Read environment whenever it appears — it explains failures
+and surfaces waiting work. Caveat: a chooser opened from inside a cross-origin iframe bypasses
+interception (a real OS picker opens) — dismiss it and upload via a ref inside the frame
+(includeCrossOriginFrames:true) instead.
 
 Ref registry: refs are stable and non-evicting — a ref keeps resolving for as long as its
 element stays in the page's DOM, even if a later snapshot dropped it (pruner cap, scrolled out
@@ -126,8 +141,10 @@ nearby refs; an unknown (never-snapshotted) ref errors the same way. Most action
 auto-snapshot, so you rarely manage this by hand.
 
 Lease model: claim a tab with browser_switch_tab (or browser_open_tab auto-claims) before
-acting. Multiple agents coexist by holding leases on different tabs. browser_release_tab
-hands over. If another agent revoked your lease (or the tab closed), the next action returns
-lease_required with a hint — re-claim via browser_switch_tab and continue.
+acting. Multiple agents coexist by holding leases on different tabs. The lease owns the debugger
+session — it attaches once at claim (one steady infobar, no per-action flicker) and detaches at
+release, so release leases you no longer need. If another agent revoked your lease (or the tab
+closed), the next action returns lease_required with a hint — re-claim via browser_switch_tab and
+continue.
 
 Build: ${BUILD_STAMP}`;

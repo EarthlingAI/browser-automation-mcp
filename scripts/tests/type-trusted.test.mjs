@@ -32,6 +32,8 @@ function setup(responses = [], { refs = {} } = {}) {
   }
   const daemon = {
     sessionId: "test-type-trusted",
+    takeEnv: () => undefined,
+    peekEnv: () => undefined,
     async exec(tabId, command) {
       calls.push({ tabId, command });
       if (queue.length === 0)

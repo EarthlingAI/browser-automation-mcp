@@ -15,6 +15,8 @@ function setup(responses = []) {
   const session = new BridgeSession();
   const daemon = {
     sessionId: "test-resize",
+    takeEnv: () => undefined,
+    peekEnv: () => undefined,
     async exec(tabId, command) {
       calls.push({ tabId, command });
       if (queue.length === 0)

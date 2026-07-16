@@ -10,10 +10,9 @@
  * `select_option`/`drag`/`drop`/`resolve_ref`) complete in milliseconds plus
  * the wrapper's settle (default 1.5s); they get a tighter 10s budget so a
  * wedged action surfaces as `extension_timeout` in ~10s instead of 30s. This
- * complements the page-side safe-default `Page.handleJavaScriptDialog{accept:
- * false}` for native dialogs (invariant #35) — even if an edge case slips past
- * the auto-dismiss, the agent only waits 10s for an action to give up rather
- * than 30s.
+ * complements the page-side safe-default `Page.handleJavaScriptDialog` auto-
+ * answer for native dialogs (invariant #35) — even if an edge case slips past
+ * it, the agent only waits 10s for an action to give up rather than 30s.
  *
  * `wait_for` is the slow exception in the other direction — the agent-facing
  * schema advertises a max timeout of 5 minutes, and the extension's

@@ -249,7 +249,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
       "Call BEFORE the action that triggers the dialog — typically right before a browser_click on a button you know fires a confirm. " +
       'Set disposition to "accept" or "dismiss"; pass promptText to fill a prompt() dialog\'s input. ' +
       'lifetime "one_shot" (default) clears the disposition after the next dialog fires; "sticky" persists across multiple dialogs until you call again with clear:true. ' +
-      "Once cleared, dialogs revert to Chrome's default behaviour (it auto-dismisses, generally). " +
+      "With no handler armed, the safe-default answers every dialog: alert/confirm/prompt are dismissed, beforeunload is accepted (the agent's own navigation proceeds) — each auto-answer is reported in the response's `environment.events`. Arm only to accept a confirm/prompt, or to dismiss a beforeunload (i.e. STAY on the page). " +
       "Pass clear:true (xor with disposition) to disarm an existing handler. " +
       "Uses CDP Page.javascriptDialogOpening + Page.handleJavaScriptDialog under the hood — no window raise, no focus theft.",
     annotations: {

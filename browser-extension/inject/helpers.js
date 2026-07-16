@@ -19,7 +19,7 @@
   // loaded — preserves the in-page ref maps so refs stay stable and resolvable
   // across an action sequence. Bump the integer when changing the in-page
   // contract (new act kind, return-shape change, ref-identity scheme).
-  const HELPERS_VERSION = 12;
+  const HELPERS_VERSION = 13;
   if (globalThis.__mcpHelpersVersion === HELPERS_VERSION) return;
   globalThis.__mcpHelpersVersion = HELPERS_VERSION;
   globalThis.__mcpHelpersLoaded = true;
@@ -299,13 +299,25 @@
     // (overlay banners almost always carry position:fixed).
     if (el.getAttribute?.("aria-hidden") === "true") node.ariaHidden = true;
     if (el.hasAttribute?.("inert")) node.inert = true;
-    // <dialog open> shows a top-layer modal — carried on the raw tree for
+    // Modal-layer flag (HELPERS_VERSION 13) — carried on the raw tree for
     // bridge-side environment awareness (the pruner doesn't consume it).
+    // Three ways a page declares "this layer owns the interaction":
+    //   "dialog"     → an open <dialog> element (top layer when showModal())
+    //   "ariaModal"  → aria-modal="true" (ARIA-declared modal, e.g. role=dialog overlays)
+    //   "fullscreen" → the element holding the Fullscreen API lock
     if (
       el.tagName === "DIALOG" &&
       /** @type {HTMLDialogElement} */ (el).open === true
     ) {
-      node.dialogModal = true;
+      node.modal = "dialog";
+    } else if (el.getAttribute?.("aria-modal") === "true" && !zeroRect) {
+      // !zeroRect: SPAs commonly keep a CLOSED aria-modal dialog mounted with
+      // zero size — flagging it would produce a permanent phantom "modal
+      // active" NOTE. A zero-rect <dialog open>/fullscreen holder can't
+      // happen (the browser lays both out), so only ariaModal needs the gate.
+      node.modal = "ariaModal";
+    } else if (el.ownerDocument?.fullscreenElement === el) {
+      node.modal = "fullscreen";
     }
     if (style && style.position && style.position !== "static") {
       node.position = style.position;

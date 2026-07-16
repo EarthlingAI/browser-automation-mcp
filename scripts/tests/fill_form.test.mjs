@@ -32,6 +32,8 @@ function setup(responses = []) {
   }
   const daemon = {
     sessionId: "test-fillform",
+    takeEnv: () => undefined,
+    peekEnv: () => undefined,
     async exec(tabId, command) {
       calls.push({ tabId, command });
       if (queue.length === 0)

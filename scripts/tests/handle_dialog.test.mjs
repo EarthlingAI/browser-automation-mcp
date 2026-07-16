@@ -11,7 +11,8 @@
 // unconditionally on every fresh debugger attach (debuggerAttach), so the
 // global listener intercepts EVERY native dialog the tab fires while the
 // debugger is attached for any reason. With no arm in `dialogDispositions`
-// the listener safe-defaults to DISMISS (accept:false) so the page can't
+// the type-aware safe-default answers (dismiss; beforeunload accepts while
+// the agent is driving) so the page can't
 // block the next agent tool call. The bridge wire shape is unchanged — only
 // the extension-side dispatch differs — so this suite is unaffected; the
 // safe-default is covered by live-E2E (see Progress Log CP9 path-v re-run).
@@ -26,6 +27,8 @@ function setup(responses = []) {
   const session = new BridgeSession();
   const daemon = {
     sessionId: "test-handle-dialog",
+    takeEnv: () => undefined,
+    peekEnv: () => undefined,
     async exec(tabId, command) {
       calls.push({ tabId, command });
       if (queue.length === 0)

@@ -5,6 +5,9 @@ import {
   readFileSync,
   existsSync,
   unlinkSync,
+  appendFileSync,
+  statSync,
+  renameSync,
 } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
@@ -20,6 +23,7 @@ import {
   IndicatorState,
   TabInfo,
   TabId,
+  TabEnvState,
   resolveExtPort,
   DAEMON_PORT_FILE,
   DAEMON_TOKEN_FILE,
@@ -79,6 +83,50 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
   let extSocket: WebSocket | null = null;
   const pendingExt = new Map<string, (m: ExtResponse) => void>();
   const tabsCache = new Map<TabId, TabInfo>();
+  /**
+   * Per-tab environment state captured off the most recent extension response
+   * (ok OR error) and consumed by the NEXT bridge `exec` response for that tab.
+   * Last-write-wins per tab: when two sessions drive the SAME tab concurrently
+   * one exec may consume the other's event batch — acceptable, since standing
+   * states are re-stamped by the extension on every response and drained
+   * events surface to *an* agent driving that tab rather than nobody.
+   */
+  const envByTab = new Map<TabId, TabEnvState>();
+
+  // ─── liveness journal (dropout forensics) ──────────────────────
+  //
+  // Append-only jsonl of connectivity events (daemon boot, extension WS
+  // open/close/replaced, SW hello, bridge subscribe/close, per-command
+  // extension timeouts). Exists to answer "why did the extension drop?"
+  // after the fact — the disconnect cause is otherwise lost with the daemon's
+  // stderr. Size-capped: rotates to `.1` (single generation) at ~512KB.
+  const journalPath = join(runtimeDir, "liveness.jsonl");
+  const JOURNAL_MAX_BYTES = 512 * 1024;
+  function journal(event: string, fields: Record<string, unknown> = {}): void {
+    try {
+      try {
+        if (statSync(journalPath).size > JOURNAL_MAX_BYTES) {
+          renameSync(journalPath, `${journalPath}.1`);
+        }
+      } catch {
+        // No journal file yet — the append below creates it.
+      }
+      appendFileSync(
+        journalPath,
+        JSON.stringify({ ts: new Date().toISOString(), event, ...fields }) +
+          "\n",
+      );
+    } catch {
+      // Fail-soft: forensics must never break live traffic.
+    }
+  }
+  journal("daemon_boot", { pid: process.pid });
+  /**
+   * Why and when the extension last went away — folded into the
+   * "extension not connected" error so the agent sees the probable cause
+   * (SW killed? daemon replaced it? clean close?) and how stale it is.
+   */
+  let lastExtDisconnect: { at: number; cause: string } | null = null;
 
   const extPort = resolveExtPort();
   // Fail-fast on bind failure: another daemon already owns the relay port. Track a `wsStarted`
@@ -117,16 +165,26 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
     console.error(`[daemon] WebSocketServer error: ${err.message}`);
   });
   wss.on("connection", (ws) => {
-    if (extSocket) extSocket.close(4002, "replaced");
+    if (extSocket) {
+      journal("ext_ws_replaced");
+      extSocket.close(4002, "replaced");
+    }
+    journal("ext_ws_open");
     extSocket = ws;
     ws.on("error", (err) => {
       console.error(`[daemon] extension WS error: ${err.message}`);
+      journal("ext_ws_error", { error: err.message });
     });
     ws.on("message", (raw) => {
       handleExtMessage(String(raw));
     });
-    ws.on("close", () => {
-      if (extSocket === ws) extSocket = null;
+    ws.on("close", (code, reason) => {
+      const cause = `ws close ${code}${reason?.length ? ` (${reason.toString()})` : ""}`;
+      journal("ext_ws_close", { code, reason: reason?.toString() || "" });
+      if (extSocket === ws) {
+        extSocket = null;
+        lastExtDisconnect = { at: Date.now(), cause };
+      }
     });
     rebroadcastIndicators();
   });
@@ -168,6 +226,34 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
     } else if (ev.type === "tab_closed") {
       tabsCache.delete(ev.tabId);
       leases.dropTab(ev.tabId);
+      envByTab.delete(ev.tabId);
+    } else if (ev.type === "hello") {
+      journal("ext_hello", {
+        version: ev.version,
+        swStartedAt: ev.swStartedAt,
+      });
+    } else if (ev.type === "popup_opened") {
+      tabsCache.set(ev.tab.id, ev.tab);
+      // Auto-lease the popup to the opener's session: the popup IS the
+      // continuation of the agent's own action (its trusted click / the
+      // page's window.open), so the agent should be able to act on it
+      // without a manual browser_switch_tab hop. The indicator push then
+      // triggers the extension's eager lease-attach on the popup.
+      const opener = leases.get(ev.openerTabId);
+      if (opener) {
+        const claimed = leases.claim(
+          ev.tab.id,
+          opener.sessionId,
+          opener.agentLabel,
+          { reason: `popup opened by leased tab ${ev.openerTabId}` },
+        );
+        if (claimed.ok) {
+          pushIndicator(ev.tab.id, {
+            state: "leased",
+            agentLabel: opener.agentLabel,
+          });
+        }
+      }
     }
   }
 
@@ -187,7 +273,12 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
   function sendExt(command: ExtCommand, tabId?: TabId): Promise<unknown> {
     return new Promise((resolve, reject) => {
       if (!extSocket || extSocket.readyState !== WebSocket.OPEN) {
-        const err: any = new Error("extension not connected");
+        // Fold in the last-known disconnect cause + age — "SW closed 4s ago"
+        // reads very differently from "closed 2h ago" (dead extension).
+        const since = lastExtDisconnect
+          ? ` (last disconnect: ${lastExtDisconnect.cause}, ${Math.round((Date.now() - lastExtDisconnect.at) / 1000)}s ago)`
+          : "";
+        const err: any = new Error(`extension not connected${since}`);
         err.kind = "extension_disconnected";
         err.tabId = tabId;
         err.recovery = EXT_DISCONNECT_RECOVERY_HINT;
@@ -198,6 +289,11 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
       const id = randomBytes(8).toString("hex");
       const req: ExtRequest = { id, tabId, command };
       pendingExt.set(id, (m) => {
+        // Environment passthrough: the extension stamps per-tab env state on
+        // BOTH ok and error responses; park it for the enclosing bridge exec
+        // to consume (handleBridgeLine) since `resolve(m.result)` drops the
+        // envelope.
+        if (m.env && tabId !== undefined) envByTab.set(tabId, m.env);
         if (m.ok) resolve(m.result);
         else {
           const err: any = new Error(m.error);
@@ -213,6 +309,7 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
       });
       setTimeout(() => {
         if (pendingExt.delete(id)) {
+          journal("ext_command_timeout", { kind: command.kind, tabId });
           const err: any = new Error("extension timeout");
           err.kind = "extension_timeout";
           err.tabId = tabId;
@@ -245,7 +342,14 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
       if (client.sessionId) {
         bySession.delete(client.sessionId);
         const released = leases.releaseAll(client.sessionId);
-        for (const id of released) pushIndicator(id, { state: "released" });
+        for (const id of released) {
+          pushIndicator(id, { state: "released" });
+          envByTab.delete(id);
+        }
+        journal("bridge_close", {
+          sessionId: client.sessionId,
+          leasesReleased: released,
+        });
         if (released.length) {
           console.error(
             `[daemon] released ${released.length} lease(s) from disconnected session ${client.sessionId}`,
@@ -265,10 +369,25 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
     } catch {
       return;
     }
+    // Consume-once env passthrough for tab-targeted execs: whatever the
+    // extension stamped for this tab rides out on this response and is
+    // cleared (standing states are re-stamped extension-side every response,
+    // so nothing sticky is lost by consuming).
+    const takeEnv = (): TabEnvState | undefined => {
+      if (req.type !== "exec") return undefined;
+      const env = envByTab.get(req.tabId);
+      if (env) envByTab.delete(req.tabId);
+      return env;
+    };
     try {
       const result = await dispatch(client, req);
-      respond(client, { id: req.id, ok: true, result });
+      const env = takeEnv();
+      respond(client, { id: req.id, ok: true, result, ...(env ? { env } : {}) });
     } catch (err: any) {
+      // A lease_required rejection never reached the extension AND the caller
+      // is not the tab's holder — delivering (and consuming) the parked env
+      // here would leak the holder's events to a non-holder session.
+      const env = err?.message === "lease_required" ? undefined : takeEnv();
       respond(client, {
         id: req.id,
         ok: false,
@@ -278,6 +397,7 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
         hint: err?.hint,
         recovery: err?.recovery,
         kind: err?.kind,
+        ...(env ? { env } : {}),
       });
     }
   }
@@ -292,6 +412,10 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
         client.sessionId = req.sessionId;
         client.agentLabel = req.agentLabel;
         bySession.set(req.sessionId, client);
+        journal("bridge_subscribe", {
+          sessionId: req.sessionId,
+          agentLabel: req.agentLabel,
+        });
         return { ok: true };
       }
       case "list_tabs": {
@@ -373,13 +497,22 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
         };
       }
       case "release_tab": {
+        // Parked env dies with the lease: a future lease of the same tab must
+        // not receive the previous agent's drained events (the extension
+        // clears its side on the released indicator; this is the daemon twin).
         if (req.tabId === undefined) {
           const released = leases.releaseAll(client.sessionId);
-          for (const id of released) pushIndicator(id, { state: "released" });
+          for (const id of released) {
+            pushIndicator(id, { state: "released" });
+            envByTab.delete(id);
+          }
           return { released };
         }
         const ok = leases.release(req.tabId, client.sessionId);
-        if (ok) pushIndicator(req.tabId, { state: "released" });
+        if (ok) {
+          pushIndicator(req.tabId, { state: "released" });
+          envByTab.delete(req.tabId);
+        }
         return { released: ok ? [req.tabId] : [] };
       }
       case "exec": {

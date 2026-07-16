@@ -30,6 +30,8 @@ function setup(responses = [], refs = ["1", "2"]) {
   }
   const daemon = {
     sessionId: "test-drag",
+    takeEnv: () => undefined,
+    peekEnv: () => undefined,
     async exec(tabId, command) {
       calls.push({ tabId, command });
       if (queue.length === 0)

@@ -1,7 +1,7 @@
 // Daemon-side watchdog inference. The 30s default protects slow commands
 // (page loads, screenshots, evaluate, upload). Synthetic-event action kinds
 // get a tighter 10s budget so a wedged action surfaces in ~10s, not 30s —
-// the defensive backup for the page-side safe-default dialog auto-dismiss
+// the defensive backup for the page-side safe-default dialog auto-answer
 // (invariant #35). wait_for commands get (command.timeout ?? 10_000) + 5_000
 // so the extension's polite "predicate did not become truthy" response can
 // fire before the daemon's safety net.

@@ -175,6 +175,8 @@ test("runUnifiedCapture: save_to_path:true writes the file and reports savedTo",
       const ctx = {
         daemon: {
           sessionId: "save-integration",
+          takeEnv: () => undefined,
+          peekEnv: () => undefined,
           async exec(_tabId, _command) {
             return {
               tree: { role: "WebArea", name: "T", depth: 0, children: [] },
@@ -225,6 +227,8 @@ test("runUnifiedCapture: explicit '.png' path → image format follows extension
       const ctx = {
         daemon: {
           sessionId: "save-png",
+          takeEnv: () => undefined,
+          peekEnv: () => undefined,
           async exec(_tabId, command) {
             seenFormats.push(command.format);
             return {
@@ -264,6 +268,8 @@ test("runUnifiedCapture: save_to_path with traversal segment surfaces saveError,
   const ctx = {
     daemon: {
       sessionId: "save-error",
+      takeEnv: () => undefined,
+      peekEnv: () => undefined,
       async exec() {
         return {
           tree: { role: "WebArea", name: "T", depth: 0, children: [] },
@@ -294,6 +300,8 @@ test("runUnifiedCapture: unsupported save extension surfaces saveError, image st
   const ctx = {
     daemon: {
       sessionId: "save-bad-ext",
+      takeEnv: () => undefined,
+      peekEnv: () => undefined,
       async exec() {
         return {
           tree: { role: "WebArea", name: "T", depth: 0, children: [] },
@@ -402,6 +410,8 @@ test("runUnifiedCapture: save_tree_to_path writes the UNCAPPED outline; refs mer
     const ctx = {
       daemon: {
         sessionId: "t",
+        takeEnv: () => undefined,
+        peekEnv: () => undefined,
         async exec() {
           return { tree, screenshot: undefined, cssViewport: { w: 1024, h: 768 } };
         },
@@ -448,6 +458,8 @@ test("runUnifiedCapture: tree-offload write failure is non-fatal (treeSaveError)
   const ctx = {
     daemon: {
       sessionId: "t",
+      takeEnv: () => undefined,
+      peekEnv: () => undefined,
       async exec() {
         return { tree, screenshot: undefined, cssViewport: { w: 1024, h: 768 } };
       },

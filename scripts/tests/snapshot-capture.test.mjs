@@ -15,6 +15,8 @@ function makeCtx(daemonResponses) {
   const responses = [...daemonResponses];
   const daemon = {
     sessionId: "test-snapshot-capture",
+    takeEnv: () => undefined,
+    peekEnv: () => undefined,
     async exec(tabId, command) {
       calls.push({ tabId, command });
       if (responses.length === 0) {

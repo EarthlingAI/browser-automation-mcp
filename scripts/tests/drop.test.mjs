@@ -29,6 +29,8 @@ function setup(responses = []) {
   session.refRegistry.set("5", meta);
   const daemon = {
     sessionId: "test-drop",
+    takeEnv: () => undefined,
+    peekEnv: () => undefined,
     async exec(tabId, command) {
       calls.push({ tabId, command });
       if (queue.length === 0)

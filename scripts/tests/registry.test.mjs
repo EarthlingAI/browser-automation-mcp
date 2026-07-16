@@ -32,6 +32,8 @@ function makeCtx({ daemonResponses = [], sessionInit } = {}) {
   if (sessionInit) sessionInit(session);
   const daemon = {
     sessionId: "test-registry",
+    takeEnv: () => undefined,
+    peekEnv: () => undefined,
     async exec(tabId, command) {
       calls.push({ tabId, command });
       if (responses.length === 0) {

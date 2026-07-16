@@ -58,6 +58,65 @@ export type SettleResult =
   | { via: "timeout"; elapsedMs: number }
   | { via: "none"; elapsedMs: 0 };
 
+// ─── per-tab environment state ──────────────────────────────────────
+
+/**
+ * A one-shot environment occurrence on a tab, reported ONCE on the next
+ * response for that tab and then drained (the extension keeps a small capped
+ * ring per tab). These are things that already happened and were handled —
+ * the agent is informed, never blocked.
+ */
+export type TabEnvEvent =
+  | {
+      kind: "dialog";
+      /** alert | confirm | prompt | beforeunload (CDP dialog type). */
+      type: string;
+      message?: string;
+      /** How it was answered: "accept" or "dismiss". */
+      disposition: string;
+      /** True when a pre-armed browser_handle_dialog handler answered it (vs the safe-default). */
+      wasArmed: boolean;
+    }
+  | {
+      kind: "popup";
+      /** The tab the popup opened as. */
+      tabId: TabId;
+      url: string;
+      /** True when the extension restored focus to the previously-active tab. */
+      restoredFocus: boolean;
+      /**
+       * True when auto-leasing was initiated: the opener held a lease when the
+       * popup arrived, so the daemon claims the popup for that session
+       * (popup_opened handler). Stamped extension-side before the claim
+       * round-trips — the lease indicator on the popup is the confirmation.
+       */
+      leased: boolean;
+    };
+
+/**
+ * Environment state stamped onto every extension response for a tab-targeted
+ * command. `events` are drained one-shot occurrences; `fileChooser` and
+ * `attachBlocked` are STANDING states re-stamped on every response until the
+ * underlying condition clears. Lean by construction: the whole field is
+ * omitted when there is nothing notable.
+ */
+export interface TabEnvState {
+  events?: TabEnvEvent[];
+  /** A native file chooser was intercepted and is awaiting fulfilment via browser_upload. */
+  fileChooser?: {
+    /** CDP chooser mode: "selectSingle" | "selectMultiple". */
+    mode: string;
+    /** Backend node id of the triggering <input type=file>, when Chrome reports one. */
+    backendNodeId?: number;
+  };
+  /** chrome.debugger.attach is failing on this tab (e.g. another extension holds it). */
+  attachBlocked?: {
+    error: string;
+    /** Foreign chrome-extension:// frame origins present in the tab (likely culprits). */
+    conflicting?: string[];
+  };
+}
+
 // ─── bridge → daemon ────────────────────────────────────────────────
 
 export type BridgeRequest =
@@ -84,7 +143,7 @@ export type BridgeRequest =
 // ─── daemon → bridge ────────────────────────────────────────────────
 
 export type BridgeResponse =
-  | { id: string; ok: true; result: unknown }
+  | { id: string; ok: true; result: unknown; env?: TabEnvState }
   | {
       id: string;
       ok: false;
@@ -94,6 +153,7 @@ export type BridgeResponse =
       hint?: string;
       recovery?: string;
       kind?: string;
+      env?: TabEnvState;
     };
 
 // ─── daemon ↔ extension ─────────────────────────────────────────────
@@ -243,11 +303,20 @@ export type ExtCommand =
       deltaX?: number;
       settle?: SettleOptions;
     }
+  /**
+   * Two modes. TARGETED (ref or selector): sets the named `<input type=file>`'s
+   * files from the base64 payloads (page-side, helpers.js::actUpload).
+   * CHOOSER-FULFILMENT (no ref, no selector): answers the tab's pending
+   * intercepted native file chooser via `DOM.setFileInputFiles` — `paths` are
+   * ABSOLUTE local file paths handed to Chrome directly (no base64 read), and
+   * `files` is unused. The pending chooser is a standing `TabEnvState.fileChooser`.
+   */
   | {
       kind: "upload";
       ref?: string;
       selector?: string;
-      files: Array<{ name: string; mimeType: string; dataBase64: string }>;
+      files?: Array<{ name: string; mimeType: string; dataBase64: string }>;
+      paths?: string[];
       settle?: SettleOptions;
     }
   /**
@@ -408,18 +477,19 @@ export type ExtCommand =
   | { kind: "resize"; width: number; height: number }
   /**
    * Pre-arm an auto-response for the leased tab's next native JS dialog
-   * (alert / confirm / prompt / beforeunload). The extension subscribes to CDP
-   * `Page.javascriptDialogOpening` events on tabs with an armed disposition and
-   * answers via `Page.handleJavaScriptDialog{accept, promptText?}`. `disposition`
+   * (alert / confirm / prompt / beforeunload). `Page.enable` is asserted
+   * unconditionally on every fresh debugger attach (invariant #35), so a
+   * global `Page.javascriptDialogOpening` listener catches every dialog on
+   * any attached tab: an armed disposition answers per this command, else the
+   * type-aware safe-default answers (dismiss; beforeunload accepts) — and
+   * every auto-answer is reported as a `TabEnvState` dialog event. `disposition`
    * is "accept" or "dismiss"; `promptText` (only meaningful when accepting a
    * `prompt`) is fed into the dialog's input. `lifetime:"one_shot"` (default)
-   * clears the disposition after the next dialog fires; `"sticky"` persists until
-   * an explicit `clear:true` (xor with disposition) or tab close. `Page.enable` is
-   * scoped to tabs with an active handler and dropped via `Page.disable` the
-   * moment the handler clears — never enabled on focus-emulation alone (invariant
-   * #35). The disposition is debugger-session-tracked but the Map is SW state, so
-   * `debuggerAttach` re-asserts `Page.enable` on every fresh attach for tabs with
-   * an entry (same model as focus-emulation / resize).
+   * clears the disposition after the next dialog fires; `"sticky"` persists
+   * until an explicit `clear:true` (xor with disposition) or tab close. The
+   * debugger session is lease-owned (invariant #36), so both lifetimes ride
+   * the standing attach and page-driven dialogs (timers, beforeunload) always
+   * get the armed answer.
    */
   | {
       kind: "handle_dialog";
@@ -458,14 +528,28 @@ export interface ExtRequest {
 }
 
 export type ExtResponse =
-  | { id: string; ok: true; result: unknown }
-  | { id: string; ok: false; error: string };
+  | { id: string; ok: true; result: unknown; env?: TabEnvState }
+  | { id: string; ok: false; error: string; env?: TabEnvState };
 
 export type ExtEvent =
-  | { type: "hello"; version: string }
+  /**
+   * Liveness handshake sent by the extension on every WS open. `swStartedAt`
+   * is when the MV3 service-worker instance woke — the daemon's dropout
+   * journal uses it to tell an SW restart from a plain socket blip.
+   */
+  | { type: "hello"; version: string; swStartedAt?: number }
+  /** SW keepalive heartbeat (alarm-driven); the daemon ignores it. */
+  | { type: "ping"; ts: number }
   | { type: "tab_closed"; tabId: TabId }
   | { type: "tab_created"; tab: TabInfo }
-  | { type: "tab_updated"; tab: TabInfo };
+  | { type: "tab_updated"; tab: TabInfo }
+  /**
+   * A leased tab spawned a popup (`_blank` target / window.open). The
+   * extension already reverted any focus theft and reported it on the
+   * opener's env ring; the daemon auto-claims the popup for the opener's
+   * session so the agent can act on it immediately.
+   */
+  | { type: "popup_opened"; openerTabId: TabId; tab: TabInfo };
 
 export type ExtMessage = ExtResponse | ExtEvent;
 

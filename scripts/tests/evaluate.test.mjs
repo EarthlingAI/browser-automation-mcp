@@ -25,6 +25,8 @@ function captureRegistration(name) {
   };
   const stubDaemon = {
     sessionId: "test-session",
+    takeEnv: () => undefined,
+    peekEnv: () => undefined,
     // browser_evaluate runs through execOnLeasedTab → daemon.exec → returns
     // the value verbatim. The bug used to live in the wrapper *after* this.
     async exec(_tabId, command) {

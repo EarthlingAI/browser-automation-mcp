@@ -206,7 +206,11 @@ function collectRegisteredTools() {
   // Fake context — handlers are never invoked here, so a stub daemon shaped
   // like a DaemonClient (sessionId only) is enough for registration time.
   const ctx = {
-    daemon: { sessionId: "test-session" },
+    daemon: {
+      sessionId: "test-session",
+      takeEnv: () => undefined,
+      peekEnv: () => undefined,
+    },
     session: new BridgeSession(),
   };
   registerTabTools(fakeServer, ctx);

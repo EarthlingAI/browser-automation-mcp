@@ -6,9 +6,19 @@ import {
   DistributiveOmit,
   ExtCommand,
   TabId,
+  TabEnvState,
 } from "../protocol";
 
 type Resolver = (m: BridgeResponse) => void;
+
+/**
+ * Environment state as surfaced on a tool envelope: per-tab, tabId stamped so
+ * a session holding several leases can attribute each event/standing state.
+ * A single object when one tab reported, an array when several did.
+ */
+export type EnvReport =
+  | (TabEnvState & { tabId: TabId })
+  | Array<TabEnvState & { tabId: TabId }>;
 
 export class DaemonClient {
   private socket: Socket | null = null;
@@ -20,6 +30,17 @@ export class DaemonClient {
   // Serialises concurrent recovery attempts inside one bridge — multiple send() calls
   // that race past `!this.connected` all await the same respawn rather than each spawning.
   private recoveryPromise: Promise<void> | null = null;
+  /**
+   * Environment state accumulated off daemon responses (ok AND error) since
+   * the last `takeEnv()`, keyed PER TAB — a session can hold several leases,
+   * and an exec on tab B must not disturb (or masquerade as) tab A's state.
+   * A tool call spans SEVERAL daemon round-trips (act + auto-snapshot +
+   * resolve_ref probes …), so events from every hop merge here and ride out
+   * once on the tool's final envelope, tabId-stamped. Standing states
+   * (fileChooser / attachBlocked) overwrite per tab — the extension re-stamps
+   * them on every response, so the latest copy is always current.
+   */
+  private pendingEnv = new Map<TabId, TabEnvState>();
 
   constructor(
     endpoint: { port: number; token: string },
@@ -120,6 +141,48 @@ export class DaemonClient {
     return msg === "extension not connected";
   }
 
+  /**
+   * Fold one exec response's env into ITS TAB's accumulator. Events concat
+   * (each is a drained one-shot — never re-sent). Standing states are
+   * replaced WHOLESALE by the newest response for that tab: the extension
+   * re-stamps them on every response while the condition holds, so their
+   * absence on a fresh exec env (or an env-less exec response) means the
+   * condition cleared — for that tab only.
+   */
+  private noteEnv(tabId: TabId, env: TabEnvState | undefined): void {
+    const prior = this.pendingEnv.get(tabId);
+    const events = [...(prior?.events ?? []), ...(env?.events ?? [])];
+    if (!events.length && !env?.fileChooser && !env?.attachBlocked) {
+      this.pendingEnv.delete(tabId);
+      return;
+    }
+    this.pendingEnv.set(tabId, {
+      ...(events.length ? { events } : {}),
+      ...(env?.fileChooser ? { fileChooser: env.fileChooser } : {}),
+      ...(env?.attachBlocked ? { attachBlocked: env.attachBlocked } : {}),
+    });
+  }
+
+  /**
+   * Consume-once: everything accumulated since the last take, tabId-stamped,
+   * for the tool envelope. Single object when one tab reported (the common
+   * case), array when several did.
+   */
+  takeEnv(): EnvReport | undefined {
+    if (this.pendingEnv.size === 0) return undefined;
+    const all = [...this.pendingEnv.entries()].map(([tabId, env]) => ({
+      tabId,
+      ...env,
+    }));
+    this.pendingEnv.clear();
+    return all.length === 1 ? all[0] : all;
+  }
+
+  /** Non-consuming look at one tab's accumulated env (e.g. snapshot NOTE lead). */
+  peekEnv(tabId: TabId): TabEnvState | undefined {
+    return this.pendingEnv.get(tabId);
+  }
+
   private sendOnce(
     req: DistributiveOmit<BridgeRequest, "id">,
   ): Promise<unknown> {
@@ -127,6 +190,9 @@ export class DaemonClient {
     const full = { id, ...req } as BridgeRequest;
     return new Promise((resolve, reject) => {
       this.pending.set(id, (msg) => {
+        // Env riding on the daemon response (exec only). Both paths — an
+        // errored action still surfaces what happened in the environment.
+        if (req.type === "exec") this.noteEnv(req.tabId, msg.env);
         if (msg.ok) resolve(msg.result);
         else {
           const err: any = new Error(msg.error);

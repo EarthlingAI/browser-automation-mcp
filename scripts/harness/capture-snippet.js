@@ -19,7 +19,7 @@
  *
  * DRIFT NOTE: the RawNode field set (nodeId/role/name/depth/rect/inViewport/
  * children + value/disabled/checked/selected/expanded/ariaHidden/inert/
- * dialogModal/position) is the stable contract between helpers.js and prune.ts.
+ * modal/position) is the stable contract between helpers.js and prune.ts.
  * Keep this walk byte-faithful to helpers.js::walkA11y so captured fixtures
  * stay representative of what the live pipeline feeds the pruner.
  */
@@ -127,7 +127,9 @@
     if (expanded !== null && expanded !== undefined) node.expanded = expanded === "true";
     if (el.getAttribute?.("aria-hidden") === "true") node.ariaHidden = true;
     if (el.hasAttribute?.("inert")) node.inert = true;
-    if (el.tagName === "DIALOG" && el.open === true) node.dialogModal = true;
+    if (el.tagName === "DIALOG" && el.open === true) node.modal = "dialog";
+    else if (el.getAttribute?.("aria-modal") === "true" && !(rect.width === 0 || rect.height === 0)) node.modal = "ariaModal";
+    else if (el.ownerDocument?.fullscreenElement === el) node.modal = "fullscreen";
     if (style && style.position && style.position !== "static") node.position = style.position;
     for (const child of Array.from(el.children)) {
       const sub = walkA11y(child, depth + 1);

@@ -66,6 +66,8 @@ function makeCtx({ daemonResponses, sessionInit }) {
   if (sessionInit) sessionInit(session);
   const daemon = {
     sessionId: "test-replay",
+    takeEnv: () => undefined,
+    peekEnv: () => undefined,
     async exec(tabId, command) {
       calls.push({ tabId, command });
       if (responses.length === 0) {
@@ -304,6 +306,8 @@ test("replaySnapshot error path preserves structured fields (kind/recovery/hint/
   const ctx = {
     daemon: {
       sessionId: "test-error-replay",
+      takeEnv: () => undefined,
+      peekEnv: () => undefined,
       async exec() {
         throw error;
       },

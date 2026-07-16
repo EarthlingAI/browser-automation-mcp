@@ -32,6 +32,8 @@ function setup(responses = [], { refs = {}, viewport } = {}) {
   }
   const daemon = {
     sessionId: "test-click-xy",
+    takeEnv: () => undefined,
+    peekEnv: () => undefined,
     async exec(tabId, command) {
       calls.push({ tabId, command });
       if (queue.length === 0)
