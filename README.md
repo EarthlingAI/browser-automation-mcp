@@ -702,7 +702,7 @@ The bridge holds the daemon endpoint in memory but lazily re-resolves it on sock
 `src/daemon/spawn.ts` auto-selects between two re-exec modes:
 
 - **Entry on disk** (dev / standalone, `node dist/index.js`) — re-exec `process.execPath <entry> --daemon` directly.
-- **Entry not on disk** (compiled host mode, source runs from memory) — re-enter via the host dispatcher as `<MCP_HOST_DISPATCHER> run-mcp browser-automation-mcp --daemon`. `MCP_HOST_DISPATCHER` is injected by the host on every spawned MCP child; its absence here is fatal.
+- **Entry not on disk** (compiled host mode, source runs from memory) — re-enter via the host dispatcher as `<MCP_HOST_DISPATCHER> run-mcp browser-automation-mcp --daemon`. `MCP_HOST_DISPATCHER` is injected by the host on every spawned MCP child (a plain executable path, or a JSON argv prefix when it starts with `[`); its absence here is fatal.
 
 Lease state lives only in the daemon's memory and is lost on respawn. The next tool call on a previously-leased tab returns `lease_required` — the agent re-claims via `browser_switch_tab`. In-flight requests at the moment the daemon dies fail fast with `daemon connection lost` rather than hanging.
 
@@ -853,7 +853,7 @@ The hint is a single universal string — the same message covers SW idle-death,
 | `BROWSER_AUTOMATION_MCP_OUTPUTS_DIR`  | `<runtime_dir>/outputs/` then `<cwd>/outputs/browser/`        | Override where `save_to_path` writes screenshots. Takes priority over the runtime-dir / cwd fallbacks. |
 | `BROWSER_AUTOMATION_MCP_RELAY_PORT`   | `9223`                                                        | Override the daemon ↔ extension WebSocket port. **Also update `DAEMON_URL` in `browser-extension/background.js` if you change this** — the unpacked extension cannot read process env vars. |
 | `BROWSER_EXTENSION_TAB_GROUP_LABEL`   | `Automation`                                                  | Brand prefix used in the Chrome tab-group title when an agent claims a tab (e.g. `"Acme — Alice"`). Daemon reads at startup and stamps it onto every `IndicatorState`, so the same generic MCP can ship under host-specific branding without forking the extension. |
-| `MCP_HOST_DISPATCHER`                 | (injected by host)                                            | Path to the host's MCP dispatcher executable, used for daemon re-exec when the entry isn't on disk. |
+| `MCP_HOST_DISPATCHER`                 | (injected by host)                                            | Host's MCP dispatcher — a plain executable path or a JSON argv prefix (leading `[`) — used for daemon re-exec when the entry isn't on disk. |
 
 Default runtime dir per OS:
 

@@ -112,14 +112,20 @@ export async function ensureDaemon(
     // memory, so scriptPath is synthetic. Re-enter through the host dispatcher
     // contract — the host injects MCP_HOST_DISPATCHER on every spawned MCP
     // child so sidecar processes can re-invoke themselves by name.
-    const dispatcher = process.env.MCP_HOST_DISPATCHER;
-    if (!dispatcher) {
+    const dispatcherRaw = process.env.MCP_HOST_DISPATCHER;
+    if (!dispatcherRaw) {
       throw new Error(
         "daemon entry not on disk and MCP_HOST_DISPATCHER unset — cannot spawn daemon",
       );
     }
-    cmd = dispatcher;
-    cmdArgs = ["run-mcp", "browser-automation-mcp", "--daemon"];
+    // The host publishes either a plain executable path or (leading '[') a JSON
+    // argv prefix — source-mode hosts have no single spawnable exe, only an
+    // interpreter bootstrap.
+    const dispatcher: string[] = dispatcherRaw.trimStart().startsWith("[")
+      ? JSON.parse(dispatcherRaw)
+      : [dispatcherRaw];
+    cmd = dispatcher[0];
+    cmdArgs = [...dispatcher.slice(1), "run-mcp", "browser-automation-mcp", "--daemon"];
   }
   const child = spawn(cmd, cmdArgs, {
     detached: true,
