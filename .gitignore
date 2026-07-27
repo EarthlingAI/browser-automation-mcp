@@ -44,9 +44,9 @@ registry.npmjs.com/
 
 .claude/
 
-# Install marker written by `engine setup-deps` (engine.cli.setup_deps.provision_mcps)
+# Install marker written by the host agent system's dependency provisioner.
 .installed_for_engine_version
-# Inter-process unpark signal dropped by `engine setup-deps` after a successful (re)provision; consumed by the live MCP supervisor on its next monitor tick (engine.mcp_supervisor._await_unpark).
-.unpark_requested
+# Transient signal written by the host agent system's dependency provisioner after a reinstall; consumed by the process that supervises this server.
+.reprovisioned
 
 outputs/
