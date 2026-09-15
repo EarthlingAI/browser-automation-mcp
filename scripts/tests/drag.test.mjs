@@ -38,6 +38,8 @@ function setup(responses = [], refs = ["1", "2"]) {
         throw new Error(`unexpected daemon.exec call: ${command.kind}`);
       return queue.shift();
     },
+    // Acted-tab identity for the surface member's target/title.
+    takeTab: () => ({ url: "https://lists.test/board", title: "Sortable List" }),
   };
   const callbacks = new Map();
   const server = {
@@ -60,7 +62,7 @@ test("drag forwards a single drag ExtCommand carrying ref/targetRef/mechanism", 
   const drag = callbacks.get("browser_drag");
   assert.ok(drag, "browser_drag should be registered");
 
-  await drag({ ref: "1", targetRef: "2", mechanism: "pointer", tabId: TAB });
+  const res = await drag({ ref: "1", targetRef: "2", mechanism: "pointer", tabId: TAB, snapshot: false });
 
   assert.equal(
     calls.length,
@@ -72,6 +74,17 @@ test("drag forwards a single drag ExtCommand carrying ref/targetRef/mechanism", 
   assert.equal(calls[0].command.ref, "1");
   assert.equal(calls[0].command.targetRef, "2");
   assert.equal(calls[0].command.mechanism, "pointer");
+  // The result envelope leads with the surface member — browser_drag's
+  // static action is "click" — and stamps the acted tab's host/title.
+  const decoded = parse(res);
+  assert.deepEqual(Object.keys(decoded)[0], "surface");
+  assert.deepEqual(decoded.surface, {
+    kind: "automation",
+    app: "Chrome",
+    action: "click",
+    target: "lists.test",
+    title: "Sortable List",
+  });
 });
 
 test("drag passes the mechanism through verbatim (native)", async () => {

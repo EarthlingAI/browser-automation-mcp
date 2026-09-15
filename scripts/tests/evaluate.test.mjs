@@ -7,7 +7,11 @@
 // `result` key instead.
 //
 // This test exercises the wrapper end-to-end with a stubbed daemon that
-// returns the string verbatim, and asserts the envelope shape.
+// returns the string verbatim, and asserts the envelope shape — including the
+// automation-run `surface` member (registry.ts's buildSurface) that now leads
+// every tool result, success or error. `browser_evaluate`'s static action is
+// "other"; the stub's `takeTab()` reports the acted tab so `target`/`title`
+// are exercised too (see registry.ts's AutomationSurface contract).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -38,6 +42,12 @@ function captureRegistration(name) {
       }
       throw new Error("unexpected command kind: " + command.kind);
     },
+    // Acted-tab identity for the surface member's target/title — a real
+    // DaemonClient stamps this from the daemon's exec response.
+    takeTab: () => ({
+      url: "https://chatgpt.com/c/6a05538f-1234-5678-9abc-def012345678",
+      title: "ChatGPT",
+    }),
   };
   const session = new BridgeSession();
   // Pretend a switch_tab has already happened.
@@ -66,6 +76,17 @@ test("browser_evaluate returns a string as a string, not a char-indexed object",
     settle_timeout: 0,
   });
   const decoded = parsePayload(envelope);
+  // The surface member is the RESERVED FIRST member of the object — a
+  // primitive result is wrapped under `result` AFTER it, never spread ahead
+  // of it.
+  assert.deepEqual(Object.keys(decoded), ["surface", "result"]);
+  assert.deepEqual(decoded.surface, {
+    kind: "automation",
+    app: "Chrome",
+    action: "other",
+    target: "chatgpt.com",
+    title: "ChatGPT",
+  });
   // The string must round-trip as a string under the `result` key.
   assert.equal(typeof decoded.result, "string");
   assert.equal(
@@ -85,9 +106,10 @@ test("browser_evaluate returns a string as a string, not a char-indexed object",
   );
   // Also pin the exact lean-JSON envelope text so a regression to pretty-
   // printing (`JSON.stringify(payload, null, 2)`) or a stray field surfaces
-  // in the diff. The single-key payload here has a deterministic shape.
+  // in the diff. The surface member leads; the single remaining payload key
+  // has a deterministic shape.
   assert.equal(
     envelope.content[0].text,
-    '{"result":"https://chatgpt.com/c/6a05538f-1234-5678-9abc-def012345678"}',
+    '{"surface":{"kind":"automation","app":"Chrome","action":"other","target":"chatgpt.com","title":"ChatGPT"},"result":"https://chatgpt.com/c/6a05538f-1234-5678-9abc-def012345678"}',
   );
 });

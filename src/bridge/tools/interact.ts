@@ -109,6 +109,7 @@ export function registerInteractTools(
 ): void {
   registerActionTool(server, ctx, {
     name: "browser_navigate",
+    action: "navigate",
     title: "Navigate or reload the leased tab",
     description:
       "Navigate the leased tab to a URL. Omit `url` to reload the current page.",
@@ -130,6 +131,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_navigate_back",
+    action: "navigate",
     title: "Navigate back in history",
     description: "Go back one entry in the leased tab's history.",
     annotations: ACTION_WRITE,
@@ -142,6 +144,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_click",
+    action: "click",
     title: "Click an element",
     description:
       "Click an element by `ref` from a recent snapshot. Supports modifiers, double/right click. Set trusted:true to escalate to a real CDP coordinate click (clicks the ref's centre) for widgets that gate on event.isTrusted or sit under an overlay — costs the debugger infobar; see browser_click_xy for arbitrary coordinates.",
@@ -223,6 +226,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_click_xy",
+    action: "click",
     title: "Trusted click at viewport coordinates",
     description:
       "Click at an absolute (x, y) CSS-pixel coordinate in the viewport via a TRUSTED CDP mouse event — it hit-tests through overlays/iframes and satisfies event.isTrusted gates that page-side synthetic clicks can't. Use when there's no usable ref (cross-origin iframe, canvas widget, a custom control that ignores synthetic events). Coordinates share the snapshot's coordinate space (top-left origin, pre-scroll). Costs the debugger infobar and auto-asserts focus-emulation. Prefer browser_click(ref) for ordinary elements.",
@@ -255,6 +259,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_draw",
+    action: "other",
     title: "Trusted freehand pointer stroke",
     description:
       "Draw a continuous pointer stroke through a list of (x, y) CSS-pixel viewport coordinates via TRUSTED CDP mouse events (press → moves → release, button held throughout). For signature pads, canvas drawing surfaces, slider drags, and pointer-based drag-and-drop that need real coordinate input. Give at least 2 points; more points trace a smoother path. Costs the debugger infobar and auto-asserts focus-emulation.",
@@ -284,6 +289,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_type",
+    action: "type",
     title: "Type into an element",
     description:
       "Type text into a textbox by `ref`. Clears existing value unless append:true. Set trusted:true to enter the text via a real CDP input event (Input.insertText) instead of a synthetic value-set — needed for controlled rich-text editors (DraftJS/Slate, e.g. TikTok/some chat composers) where a synthetic insert lands in the DOM but never reaches the editor's model, leaving the text inert and the send button disarmed. Costs the debugger infobar.",
@@ -301,6 +307,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_select_option",
+    action: "click",
     title: "Select a <select> option",
     description:
       "Select an option in a <select> element by value or visible label.",
@@ -316,6 +323,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_fill_form",
+    action: "type",
     title: "Fill multiple form fields",
     description:
       'Fill several form fields in one batch. Each field is {ref, value, kind?}: kind defaults to "type" (set a textbox value), "select_option" picks a <select> option by value or visible label, "click" toggles a checkbox/radio (value ignored). Fields apply in order; faster than one browser_type/browser_select_option per field. Fills run back-to-back with no inter-field settle — the single auto-snapshot after the batch covers the final repaint.',
@@ -393,6 +401,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_hover",
+    action: "click",
     title: "Hover over an element",
     description:
       "Hover the pointer over an element by `ref`. Useful for revealing hover menus.",
@@ -407,6 +416,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_scroll",
+    action: "scroll",
     title: "Scroll the page or an element",
     description:
       "Scroll the page or a specific scrollable element by deltas (positive = down/right).",
@@ -426,6 +436,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_upload",
+    action: "upload",
     title: "Upload files to a file input",
     description:
       "Upload local files. Target an <input type=file> by `ref` (from browser_snapshot) or CSS `selector` (use `selector` for a hidden or portal-mounted input that never receives a ref). With NEITHER, this fulfils the tab's pending intercepted native file chooser: when a click would have opened the OS picker, the picker is intercepted instead and reported as `environment.fileChooser` — call browser_upload with just `files` to hand it the files headlessly (no OS dialog, no focus theft).",
@@ -490,6 +501,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_drag",
+    action: "click",
     title: "Drag one element onto another",
     description:
       'Drag the source element (`ref`) onto a target element (`targetRef`). mechanism="auto" (default) inspects the source\'s draggable flag: "native" fires the HTML5 drag-and-drop event sequence (dragstart→dragover→drop with a shared DataTransfer) for draggable="true" sources (file managers, HTML5-DnD demos, SortableJS default); "pointer" fires a mouse/pointer press→move→release sequence for pointer-based libraries (react-beautiful-dnd, SortableJS forceFallback, most kanban boards). Pass mechanism explicitly to override the heuristic if the auto pick does not move the element. All synthetic and page-side — no window raise, no focus theft.',
@@ -536,6 +548,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_drop",
+    action: "click",
     title: "Drop files onto an element",
     description:
       "Drop local files onto a drop-zone element by `ref` — synthesizes the HTML5 dragenter→dragover→drop sequence carrying the files in a DataTransfer, exactly as a desktop file-drop would. Use for 'drag files here' upload zones that expose no <input type=file> for browser_upload to target.",
@@ -557,6 +570,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_press_key",
+    action: "key",
     title: "Press a keyboard key/shortcut",
     description:
       "Press a keyboard shortcut at page level. Key names follow KeyboardEvent.key. Set trusted:true to escalate to a real CDP key event for inputs that gate on event.isTrusted or need the browser's own key handling (real form-submit on Enter, focus navigation on Tab) — costs the debugger infobar; see invariant #34.",
@@ -579,6 +593,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_evaluate",
+    action: "other",
     title: "Evaluate JavaScript in the leased tab",
     description:
       "Run a JS expression in the leased tab and return the JSON-serialisable result. Strings come back as strings (not char-indexed objects). For unfamiliar SPAs, call browser_network_requests first to discover real backend endpoints from xhr/fetch traffic before guessing endpoint paths. If the debugger can't attach (surfaced as environment.attachBlocked — e.g. a conflicting extension holds it), evaluation transparently falls back to a MAIN-world injected script.",
@@ -606,6 +621,7 @@ export function registerInteractTools(
 
   registerTool(server, ctx, {
     name: "browser_clipboard",
+    action: "other",
     title: "Read or write the OS clipboard",
     description:
       "Move structured data on/off the OS clipboard — the content channel for canvas-based spreadsheet/document/slide apps whose grid or document is painted to a <canvas> and so exposes nothing to browser_snapshot. " +
@@ -648,6 +664,7 @@ export function registerInteractTools(
 
   registerActionTool(server, ctx, {
     name: "browser_wait_for",
+    action: "wait",
     title: "Wait for a condition",
     description:
       'Wait for a CSS selector, a JS predicate, network idle, or a timeout. Use `condition` for state-machine SPAs — e.g. condition: "document.querySelectorAll(\'[data-clip-status=\\"complete\\"]\').length === 4" — instead of polling externally. Selectors should be passed raw (the JSON layer handles escaping). Exactly one of `selector`, `condition`, or `networkIdle:true` must be set.',

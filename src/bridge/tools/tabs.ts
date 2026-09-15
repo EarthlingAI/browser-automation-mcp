@@ -12,6 +12,7 @@ import { coerceBoolean } from "./coerce";
 export function registerTabTools(server: McpServer, ctx: ToolContext): void {
   registerTool(server, ctx, {
     name: "browser_list_tabs",
+    action: "tab",
     title: "List browser tabs",
     description:
       "List all open tabs across all browser windows. Returns id, url, title, windowId, active, incognito, and leasedBy. Lease-free.",
@@ -50,6 +51,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
 
   registerTool(server, ctx, {
     name: "browser_open_tab",
+    action: "tab",
     title: "Open a new tab",
     description:
       "Open a URL in a new tab and auto-claim the lease. Defaults to background (no focus change). Returns the actual loaded url/title plus a `navigated` flag and a `settledAt` timestamp.",
@@ -94,6 +96,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
 
   registerTool(server, ctx, {
     name: "browser_close_tab",
+    action: "tab",
     title: "Close a tab",
     description: "Close a tab by id. Releases the lease.",
     annotations: {
@@ -115,6 +118,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
 
   registerTool(server, ctx, {
     name: "browser_switch_tab",
+    action: "tab",
     title: "Claim a tab lease",
     description:
       "Claim the lease on an existing tab so this session can act on it. Errors with leasedBy if held; pass force:true with a reason to revoke. Returns the previously-active tab so the agent can restore focus later if desired. Call browser_release_tab when you finish controlling the tab so other sessions can claim it.",
@@ -149,6 +153,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
 
   registerTool(server, ctx, {
     name: "browser_release_tab",
+    action: "tab",
     title: "Release tab lease(s)",
     description:
       "Release the lease on a tab so another session can claim. Omit tabId to release all this session's leases.",
@@ -184,6 +189,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
 
   registerTool(server, ctx, {
     name: "browser_activate_tab",
+    action: "tab",
     title: "Set tab visibility level (render / focus)",
     description:
       "Set the visibility level of the leased tab along an ordered spectrum. " +
@@ -223,6 +229,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
 
   registerActionTool(server, ctx, {
     name: "browser_resize",
+    action: "tab",
     title: "Resize the tab viewport",
     description:
       "Resize the leased tab's viewport to width×height CSS pixels via CDP device-metrics emulation — WITHOUT raising the window or stealing focus (same debugger-scoped infra as browser_activate_tab render mode). window.innerWidth/Height, media queries, and responsive layout reflect the new size, so you can exercise mobile/tablet/desktop breakpoints. The override is sticky per tab (re-asserted across an action sequence) and clears on tab close or extension reload. Auto-snapshots the reflowed layout.",
@@ -257,6 +264,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
 
   registerTool(server, ctx, {
     name: "browser_handle_dialog",
+    action: "click",
     title: "Pre-arm a response to the next native JS dialog",
     description:
       "Pre-arm an auto-response for the leased tab's next native JS dialog (alert / confirm / prompt / beforeunload). " +

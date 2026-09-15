@@ -37,6 +37,8 @@ function setup(responses = []) {
         throw new Error(`unexpected daemon.exec call: ${command.kind}`);
       return queue.shift();
     },
+    // Acted-tab identity for the surface member's target/title.
+    takeTab: () => ({ url: "https://uploads.test/dropzone", title: "Dropzone" }),
   };
   const callbacks = new Map();
   const server = {
@@ -61,7 +63,7 @@ test("drop reads files off disk and forwards a drop ExtCommand", async () => {
     const drop = callbacks.get("browser_drop");
     assert.ok(drop, "browser_drop should be registered");
 
-    await drop({ ref: "5", files: [file], tabId: TAB });
+    const res = await drop({ ref: "5", files: [file], tabId: TAB, snapshot: false });
 
     assert.equal(calls.length, 1);
     assert.equal(calls[0].tabId, TAB);
@@ -72,6 +74,17 @@ test("drop reads files off disk and forwards a drop ExtCommand", async () => {
     assert.equal(f.name, "hello.txt");
     assert.equal(f.mimeType, "text/plain");
     assert.equal(Buffer.from(f.dataBase64, "base64").toString(), "drop me");
+    // browser_drop's static action is "click" — surface leads with the acted
+    // tab's host/title.
+    const decoded = parse(res);
+    assert.deepEqual(Object.keys(decoded)[0], "surface");
+    assert.deepEqual(decoded.surface, {
+      kind: "automation",
+      app: "Chrome",
+      action: "click",
+      target: "uploads.test",
+      title: "Dropzone",
+    });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

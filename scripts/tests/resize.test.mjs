@@ -23,6 +23,11 @@ function setup(responses = []) {
         throw new Error(`unexpected daemon.exec call: ${command.kind}`);
       return queue.shift();
     },
+    // Acted-tab identity for the surface member's target/title — browser_resize
+    // is one of the "tab" action tools that DOES exec on the leased tab (unlike
+    // list/open/close/switch/release, which are lease-free control-plane calls
+    // and never carry target/title).
+    takeTab: () => ({ url: "https://responsive.test/preview", title: "Responsive Preview" }),
   };
   const callbacks = new Map();
   const server = {
@@ -39,13 +44,25 @@ test("resize forwards a resize ExtCommand to the explicit tabId", async () => {
   const resize = callbacks.get("browser_resize");
   assert.ok(resize, "browser_resize should be registered");
 
-  await resize({ width: 390, height: 844, tabId: 700 });
+  const res = await resize({ width: 390, height: 844, tabId: 700, snapshot: false });
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].tabId, 700);
   assert.deepEqual(calls[0].command, { kind: "resize", width: 390, height: 844 });
   // resize is not a settleable kind — no settle policy is injected.
   assert.equal(calls[0].command.settle, undefined);
+  // browser_resize's static action is "tab" — surface leads and (unlike the
+  // lease-free tab-list/open/close/switch/release tools) carries the acted
+  // tab's host/title, since resize does exec on the leased tab.
+  const decoded = JSON.parse(res.content[0].text);
+  assert.deepEqual(Object.keys(decoded)[0], "surface");
+  assert.deepEqual(decoded.surface, {
+    kind: "automation",
+    app: "Chrome",
+    action: "tab",
+    target: "responsive.test",
+    title: "Responsive Preview",
+  });
 });
 
 test("resize falls back to the leased tab when tabId is omitted", async () => {

@@ -518,7 +518,7 @@ browser-automation-mcp/
 │   │   ├── mcp.ts            # MCP server entry (stdio + streamable-HTTP transports)
 │   │   ├── meta.ts           # SERVER_INSTRUCTIONS string + BUILD_STAMP (injected by esbuild; logged to stderr at startup, kept out of instructions for prompt-cache stability)
 │   │   ├── client.ts         # Daemon client over loopback TCP (single-shot disconnect retry)
-│   │   ├── registry.ts       # Tool registration + per-session ref registry + settle plumbing + envelope helpers + per-tab environment stamping
+│   │   ├── registry.ts       # Tool registration + per-session ref registry + settle plumbing + envelope helpers + per-tab environment stamping + automation-run surface member
 │   │   ├── session.ts        # Per-bridge session state (lastSnapshotRefs, lastLeasedTab, isStale)
 │   │   └── tools/
 │   │       ├── tabs.ts            # 8 tab tools (5 tab/lease + browser_activate_tab + browser_resize + browser_handle_dialog)
@@ -720,6 +720,30 @@ The daemon appends connectivity milestones to `liveness.jsonl` in the runtime di
 
 Tool responses are lean single-line JSON. List-style tools (`browser_list_tabs`, `browser_console_messages`, `browser_network_requests`) wrap their results as `{ count, items, ... }`. Errors carry structured fields — null/undefined keys are stripped.
 
+### Automation-run surface member (reserved first member)
+
+Every tool result's JSON object — success **and** error — begins with a reserved `surface` member. A host UI (e.g. Earthling) reads it to coalesce consecutive browser-automation tool calls into one human-readable "automation run" bubble ("Working in Chrome · example.com · Snapshot…"). The contract is server-name-agnostic: a server opts in purely by emitting this member. It rides in-band as the **first member of the object** because the Claude Agent SDK drops result-level `_meta`/`structuredContent`, so the result's text content is the only channel that survives.
+
+```jsonc
+{
+  "surface": {
+    "kind": "automation",          // always "automation"
+    "app": "Chrome",               // always "Chrome"
+    "action": "snapshot",          // static per tool: navigate | click | type | scroll |
+                                   //   key | snapshot | tab | upload | wait | other
+    "target": "example.com",       // acted tab's URL host — omitted when unknown
+    "title": "Example Domain",     // acted tab's page title — omitted when unknown
+    "screenshot": "C:\\...\\shot.jpg" // absolute path, ONLY when save_to_path wrote a file
+  },
+  // …the existing payload follows…
+}
+```
+
+- `action` is fixed per tool definition (owner: Earthling engine `engine/agent/tooling.py`; the MCP mirrors those literals).
+- `target`/`title` come from the acted tab (the daemon stamps them onto its `exec` response from `tabsCache`). Tools that do no `exec` — `browser_list_tabs`, `browser_open_tab`, `browser_close_tab`, `browser_switch_tab`, `browser_release_tab`, `browser_fetch`, `browser_cookies` — omit them.
+- `screenshot` is the absolute file path (never a data URL) and appears only when `save_to_path` actually wrote a file.
+- Optional keys are omitted rather than sent null/empty. When a payload is a primitive or array, it is wrapped under `result` so the `surface` member always leads an object.
+
 **Success (action tool with auto-snapshot):**
 
 ```jsonc
@@ -750,10 +774,10 @@ Tool responses are lean single-line JSON. List-style tools (`browser_list_tabs`,
 **Success (primitive from `browser_evaluate`):**
 
 ```json
-{ "result": "https://example.com/page" }
+{ "surface": { "kind": "automation", "app": "Chrome", "action": "other", "target": "example.com", "title": "Example" }, "result": "https://example.com/page" }
 ```
 
-The wrapper detects primitives and arrays and wraps them under `result` rather than spreading (spreading `"abc"` produces `{0:"a",1:"b",2:"c"}`).
+The wrapper detects primitives and arrays and wraps them under `result` rather than spreading (spreading `"abc"` produces `{0:"a",1:"b",2:"c"}`) — and this wrap is also what lets the reserved `surface` member lead an object even when the payload is a bare string.
 
 ### Mixed-content envelope (snapshot + screenshot tools)
 

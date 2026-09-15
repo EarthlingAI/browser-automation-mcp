@@ -32,6 +32,8 @@ function setup(responses = [], { viewport } = {}) {
         throw new Error(`unexpected daemon.exec call: ${command.kind}`);
       return queue.shift();
     },
+    // Acted-tab identity for the surface member's target/title.
+    takeTab: () => ({ url: "https://canvas.test/pad", title: "Signature Pad" }),
   };
   const callbacks = new Map();
   const server = {
@@ -59,7 +61,7 @@ test("browser_draw forwards a single draw ExtCommand carrying all points + butto
     { x: 20, y: 30 },
     { x: 40, y: 60 },
   ];
-  await draw({ points, button: "left", tabId: TAB });
+  const res = await draw({ points, button: "left", tabId: TAB, snapshot: false });
 
   assert.equal(calls.length, 1, "exactly one daemon hop");
   assert.equal(calls[0].tabId, TAB);
@@ -67,6 +69,17 @@ test("browser_draw forwards a single draw ExtCommand carrying all points + butto
   assert.equal(c.kind, "draw");
   assert.deepEqual(c.points, points);
   assert.equal(c.button, "left");
+  // browser_draw's static action is "other" — the surface member still leads
+  // and stamps the acted tab's host/title.
+  const decoded = parse(res);
+  assert.deepEqual(Object.keys(decoded)[0], "surface");
+  assert.deepEqual(decoded.surface, {
+    kind: "automation",
+    app: "Chrome",
+    action: "other",
+    target: "canvas.test",
+    title: "Signature Pad",
+  });
 });
 
 test("browser_draw rejects when any point falls outside the known viewport", async () => {

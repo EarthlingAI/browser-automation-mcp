@@ -35,7 +35,7 @@ import {
 // envelope stamp); `standing` feeds peekEnv (read by the snapshot NOTE lead).
 // `responses` is a queue of daemon.exec results; an Error entry is thrown to
 // simulate a daemon-side failure.
-function setup({ responses = [], env, standing } = {}) {
+function setup({ responses = [], env, standing, tab } = {}) {
   const calls = [];
   const queue = [...responses];
   let takeEnvCalls = 0;
@@ -55,6 +55,10 @@ function setup({ responses = [], env, standing } = {}) {
       if (next instanceof Error) throw next;
       return next;
     },
+    // Acted-tab identity for the surface member's target/title — `tab` is
+    // undefined by default, matching a non-exec (control-plane) call or a
+    // call the daemon didn't stamp; individual tests opt in.
+    takeTab: () => tab,
   };
   const callbacks = new Map();
   const server = {
@@ -322,4 +326,72 @@ test("no standing state → snapshot outline has no NOTE lead", async () => {
   const firstLine = parse(res).tree.split("\n")[0];
   assert.ok(!firstLine.startsWith("NOTE: "), `unexpected NOTE lead: ${firstLine}`);
   assert.match(firstLine, /^- WebArea/, "outline starts straight at the root node");
+});
+
+// ─── 4. surface member — a representative sample of static actions ────
+//
+// registry.ts's `buildSurface` derives `target`/`title` from the daemon's
+// acted-tab stamp (`takeTab()`), consumed once per tool call. These tools all
+// exec on the leased tab, so — unlike browser_fetch/browser_cookies
+// (net-contract.test.mjs) — a real DaemonClient WOULD stamp a tab for them.
+
+const ACTED_TAB = { url: "https://app.test/dashboard?tab=2", title: "Dashboard" };
+
+test("browser_navigate's result envelope carries surface action:navigate with the acted tab's host/title", async () => {
+  const { callbacks } = setup({ responses: [{ navigated: true }], tab: ACTED_TAB });
+  const navigate = callbacks.get("browser_navigate");
+  const res = await navigate({ url: "https://app.test/dashboard", tabId: 7, waitUntil: "domcontentloaded", snapshot: false });
+  const decoded = parse(res);
+  assert.deepEqual(Object.keys(decoded)[0], "surface");
+  assert.deepEqual(decoded.surface, {
+    kind: "automation",
+    app: "Chrome",
+    action: "navigate",
+    target: "app.test",
+    title: "Dashboard",
+  });
+});
+
+test("browser_scroll's result envelope carries surface action:scroll; target/title omitted when the daemon reports no tab", async () => {
+  const { callbacks } = setup({ responses: [{ scrolled: true }] }); // no `tab` — the default
+  const scroll = callbacks.get("browser_scroll");
+  const res = await scroll({ tabId: 7, deltaY: 400, deltaX: 0, snapshot: false });
+  const decoded = parse(res);
+  assert.deepEqual(Object.keys(decoded)[0], "surface");
+  assert.equal(decoded.surface.action, "scroll");
+  assert.equal("target" in decoded.surface, false, "no tab reported ⇒ target omitted, never null");
+  assert.equal("title" in decoded.surface, false);
+});
+
+test("browser_wait_for's result envelope carries surface action:wait", async () => {
+  const { callbacks } = setup({ responses: [{ satisfied: true }], tab: ACTED_TAB });
+  const waitFor = callbacks.get("browser_wait_for");
+  const res = await waitFor({
+    condition: "true",
+    timeout: 1000,
+    poll_interval_ms: 100,
+    tabId: 7,
+    snapshot: false,
+  });
+  const decoded = parse(res);
+  assert.equal(decoded.surface.action, "wait");
+  assert.equal(decoded.surface.target, "app.test");
+});
+
+test("an error envelope from an exec'd tool still carries surface + the acted tab (daemon-side failure)", async () => {
+  const daemonError = Object.assign(new Error("navigation aborted"), { kind: "extension_timeout" });
+  const { callbacks } = setup({ responses: [daemonError], tab: ACTED_TAB });
+  const navigate = callbacks.get("browser_navigate");
+  const res = await navigate({ url: "https://app.test/dashboard", tabId: 7, waitUntil: "domcontentloaded", snapshot: false });
+  assert.equal(res.isError, true);
+  const decoded = parse(res);
+  assert.deepEqual(Object.keys(decoded)[0], "surface");
+  assert.deepEqual(decoded.surface, {
+    kind: "automation",
+    app: "Chrome",
+    action: "navigate",
+    target: "app.test",
+    title: "Dashboard",
+  });
+  assert.equal("screenshot" in decoded.surface, false, "an errored action wrote no file");
 });

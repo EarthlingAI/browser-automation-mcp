@@ -222,8 +222,20 @@ export type BridgeRequest =
 
 // ─── daemon → bridge ────────────────────────────────────────────────
 
+/**
+ * Acted tab's identity, stamped by the daemon onto every `exec` response from
+ * its `tabsCache` (no extra round trip). The bridge reads it via
+ * `DaemonClient.takeTab()` to fill the automation-run surface member's
+ * `target` (URL host) and `title`. Omitted when the tab is unknown to the
+ * cache. Lean-by-construction: never sent for non-exec responses.
+ */
+export interface BridgeTabMeta {
+  url: string;
+  title: string;
+}
+
 export type BridgeResponse =
-  | { id: string; ok: true; result: unknown; env?: TabEnvState }
+  | { id: string; ok: true; result: unknown; env?: TabEnvState; tab?: BridgeTabMeta }
   | {
       id: string;
       ok: false;
@@ -234,6 +246,7 @@ export type BridgeResponse =
       recovery?: string;
       kind?: string;
       env?: TabEnvState;
+      tab?: BridgeTabMeta;
     };
 
 // ─── daemon ↔ extension ─────────────────────────────────────────────

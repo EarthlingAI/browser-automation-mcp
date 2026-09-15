@@ -140,3 +140,136 @@ test("toolResult passthrough: { payload: <primitive> } stays as plain envelope",
   const decoded = parseText(env);
   assert.deepEqual(decoded, { payload: "txn-1234" });
 });
+
+// ─── Automation-run `surface` member (buildSurface / AutomationSurface) ────
+//
+// Rides in-band as the RESERVED FIRST member of every tool result's JSON
+// object (registry.ts) so Earthling's engine/UI can coalesce consecutive
+// automation calls into one run bubble. `toolResult`/`toolError` only attach
+// it when the caller passes an `action` — the registry wrappers always do;
+// omitting it here is the standalone test-harness convenience exercised by
+// every test above this section.
+
+test("toolResult: surface is the reserved FIRST key of an object payload", () => {
+  const env = toolResult({ clicked: true, extra: 1 }, undefined, undefined, undefined, "click");
+  const decoded = parseText(env);
+  assert.deepEqual(Object.keys(decoded), ["surface", "clicked", "extra"]);
+  assert.deepEqual(decoded.surface, { kind: "automation", app: "Chrome", action: "click" });
+});
+
+test("toolResult: a primitive result wraps under `result` AFTER the surface member", () => {
+  const env = toolResult("hello", undefined, undefined, undefined, "other");
+  const decoded = parseText(env);
+  assert.deepEqual(Object.keys(decoded), ["surface", "result"]);
+  assert.equal(decoded.result, "hello");
+});
+
+test("toolResult: an array result (no count-wrap) also wraps under `result` after the surface", () => {
+  const env = toolResult([1, 2, 3], undefined, undefined, undefined, "other");
+  const decoded = parseText(env);
+  assert.deepEqual(Object.keys(decoded), ["surface", "result"]);
+  assert.deepEqual(decoded.result, [1, 2, 3]);
+});
+
+test("toolResult: a count-wrapped list result still leads with the surface member", () => {
+  const items = [{ id: 1 }, { id: 2 }];
+  const env = toolResult(items, "browser_list_tabs", undefined, undefined, "tab");
+  const decoded = parseText(env);
+  assert.deepEqual(Object.keys(decoded), ["surface", "count", "items"]);
+  assert.equal(decoded.count, 2);
+});
+
+test("toolResult: target is the acted tab's URL host and title passes through verbatim", () => {
+  const env = toolResult(
+    {},
+    undefined,
+    undefined,
+    undefined,
+    "navigate",
+    { url: "https://example.test:8443/dash?x=1#frag", title: "Dashboard — Example" },
+  );
+  const decoded = parseText(env);
+  assert.equal(decoded.surface.target, "example.test:8443");
+  assert.equal(decoded.surface.title, "Dashboard — Example");
+});
+
+test("toolResult: target/title are OMITTED (never null) when no tab is supplied", () => {
+  const env = toolResult({}, undefined, undefined, undefined, "click");
+  const decoded = parseText(env);
+  assert.equal("target" in decoded.surface, false);
+  assert.equal("title" in decoded.surface, false);
+});
+
+test("toolResult: title is omitted (not an empty string) when the tab has no title", () => {
+  const env = toolResult(
+    {},
+    undefined,
+    undefined,
+    undefined,
+    "navigate",
+    { url: "https://example.test/", title: "" },
+  );
+  const decoded = parseText(env);
+  assert.equal(decoded.surface.target, "example.test");
+  assert.equal("title" in decoded.surface, false);
+});
+
+test("toolResult: target is omitted when the acted tab's url does not parse", () => {
+  const env = toolResult(
+    {},
+    undefined,
+    undefined,
+    undefined,
+    "navigate",
+    { url: "not-a-url", title: "Whatever" },
+  );
+  const decoded = parseText(env);
+  assert.equal("target" in decoded.surface, false, "unparsable url must not throw or leak a bogus host");
+  assert.equal(decoded.surface.title, "Whatever", "title is independent of url parseability");
+});
+
+test("toolResult: screenshot appears only when the payload actually wrote a file (savedTo present)", () => {
+  const withSave = toolResult({ savedTo: "/tmp/out/shot.png" }, undefined, undefined, undefined, "snapshot");
+  assert.equal(parseText(withSave).surface.screenshot, "/tmp/out/shot.png");
+
+  const withoutSave = toolResult({ tree: "…" }, undefined, undefined, undefined, "snapshot");
+  assert.equal("screenshot" in parseText(withoutSave).surface, false);
+});
+
+test("toolResult: without an action argument, no surface member is attached at all", () => {
+  // Documents the one legitimate omission path: callers (like most of this
+  // file's earlier tests) that exercise toolResult directly without an
+  // `action` get the pre-surface envelope shape unchanged.
+  const env = toolResult({ hello: "world" });
+  assert.equal("surface" in parseText(env), false);
+});
+
+test("toolError: surface member leads the error envelope too, alongside structured error fields", () => {
+  const err = new Error("boom");
+  err.kind = "lease_required";
+  const env = toolError(
+    err,
+    undefined,
+    "click",
+    { url: "https://example.test/app", title: "App" },
+  );
+  const decoded = parseText(env);
+  assert.deepEqual(Object.keys(decoded), ["surface", "error", "kind"]);
+  assert.deepEqual(decoded.surface, {
+    kind: "automation",
+    app: "Chrome",
+    action: "click",
+    target: "example.test",
+    title: "App",
+  });
+});
+
+test("toolError: the surface member never carries a screenshot field (an errored call wrote no file)", () => {
+  const env = toolError(new Error("boom"), undefined, "snapshot", { url: "https://x.test/", title: "X" });
+  assert.equal("screenshot" in parseText(env).surface, false);
+});
+
+test("toolError: without an action argument, no surface member is attached", () => {
+  const env = toolError(new Error("boom"));
+  assert.equal("surface" in parseText(env), false);
+});

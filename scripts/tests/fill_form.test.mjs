@@ -40,6 +40,8 @@ function setup(responses = []) {
         throw new Error(`unexpected daemon.exec call: ${command.kind}`);
       return queue.shift();
     },
+    // Acted-tab identity for the surface member's target/title.
+    takeTab: () => ({ url: "https://forms.test/signup", title: "Sign Up" }),
   };
   const callbacks = new Map();
   const server = {
@@ -90,6 +92,16 @@ test("fill_form issues type/select_option/click ExtCommands in order", async () 
 
   const payload = parse(res);
   assert.equal(payload.filled, 3);
+  // browser_fill_form's static action is "type" — surface leads and stamps
+  // the acted tab's host/title (registry.ts buildSurface).
+  assert.deepEqual(Object.keys(payload)[0], "surface");
+  assert.deepEqual(payload.surface, {
+    kind: "automation",
+    app: "Chrome",
+    action: "type",
+    target: "forms.test",
+    title: "Sign Up",
+  });
 });
 
 test("fill_form defaults kind to type when omitted", async () => {

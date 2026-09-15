@@ -379,15 +379,34 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
       if (env) envByTab.delete(req.tabId);
       return env;
     };
+    // Acted tab identity for the automation-run surface member — read from the
+    // daemon's existing tabsCache (kept current by tab_created/tab_updated
+    // events), no extra extension round trip. Mirrors takeEnv's exec-only
+    // scope: non-exec bridge ops carry no tab meta. The bridge derives the
+    // surface `target` host from `url`.
+    const tabMeta = (): { url: string; title: string } | undefined => {
+      if (req.type !== "exec") return undefined;
+      const t = tabsCache.get(req.tabId);
+      if (!t) return undefined;
+      return { url: t.url, title: t.title };
+    };
     try {
       const result = await dispatch(client, req);
       const env = takeEnv();
-      respond(client, { id: req.id, ok: true, result, ...(env ? { env } : {}) });
+      const tab = tabMeta();
+      respond(client, {
+        id: req.id,
+        ok: true,
+        result,
+        ...(env ? { env } : {}),
+        ...(tab ? { tab } : {}),
+      });
     } catch (err: any) {
       // A lease_required rejection never reached the extension AND the caller
       // is not the tab's holder — delivering (and consuming) the parked env
       // here would leak the holder's events to a non-holder session.
       const env = err?.message === "lease_required" ? undefined : takeEnv();
+      const tab = tabMeta();
       respond(client, {
         id: req.id,
         ok: false,
@@ -398,6 +417,7 @@ export async function startDaemon(runtimeDir: string): Promise<void> {
         recovery: err?.recovery,
         kind: err?.kind,
         ...(env ? { env } : {}),
+        ...(tab ? { tab } : {}),
       });
     }
   }

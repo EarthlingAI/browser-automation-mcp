@@ -3,7 +3,7 @@ import { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { z, ZodRawShape } from "zod";
 import { DaemonClient, EnvReport } from "./client";
 import { BridgeSession, RefMeta, SnapshotParams } from "./session";
-import { ExtCommand, SettleOptions, TabId } from "../protocol";
+import { BridgeTabMeta, ExtCommand, SettleOptions, TabId } from "../protocol";
 import { PrunedNode, RawNode } from "../snapshot/prune";
 import { parseRef } from "../snapshot/ref";
 import { coerceBoolean } from "./tools/coerce";
@@ -83,11 +83,35 @@ export type ToolHandler<S extends ZodRawShape> = (
   ctx: ToolContext,
 ) => Promise<unknown>;
 
+/**
+ * Automation-run surface `action` verb. Static per tool. The literal set is
+ * OWNED by Earthling's engine (engine/agent/tooling.py) — this union mirrors
+ * that contract and must be kept in step with it. The UI coalesces consecutive
+ * automation tool calls into one "automation run" bubble keyed on this verb,
+ * NOT on server names.
+ */
+export type SurfaceAction =
+  | "navigate"
+  | "click"
+  | "type"
+  | "scroll"
+  | "key"
+  | "snapshot"
+  | "tab"
+  | "upload"
+  | "wait"
+  | "other";
+
 export interface ToolDef<S extends ZodRawShape> {
   name: string;
   title: string;
   description: string;
   annotations: ToolAnnotations;
+  /**
+   * Static automation-run surface verb for this tool (see SurfaceAction). Rides
+   * out on every result as the reserved first member of the JSON object.
+   */
+  action: SurfaceAction;
   schema: S;
   handler: ToolHandler<S>;
   /**
@@ -135,11 +159,25 @@ export function registerTool<S extends ZodRawShape>(
             def.name,
             result.image,
             ctx.daemon.takeEnv(),
+            def.action,
+            ctx.daemon.takeTab(),
           );
         }
-        return toolResult(result, def.name, undefined, ctx.daemon.takeEnv());
+        return toolResult(
+          result,
+          def.name,
+          undefined,
+          ctx.daemon.takeEnv(),
+          def.action,
+          ctx.daemon.takeTab(),
+        );
       } catch (err: any) {
-        return toolError(err, ctx.daemon.takeEnv());
+        return toolError(
+          err,
+          ctx.daemon.takeEnv(),
+          def.action,
+          ctx.daemon.takeTab(),
+        );
       }
     },
   );
@@ -227,10 +265,17 @@ export function registerActionTool<S extends ZodRawShape>(
           def.name,
           imageForEnvelope,
           ctx.daemon.takeEnv(),
+          def.action,
+          ctx.daemon.takeTab(),
         );
       } catch (err: any) {
         ctx.pendingSettle = undefined;
-        return toolError(err, ctx.daemon.takeEnv());
+        return toolError(
+          err,
+          ctx.daemon.takeEnv(),
+          def.action,
+          ctx.daemon.takeTab(),
+        );
       }
     },
   );
@@ -482,11 +527,80 @@ export interface ImagePayload {
   mimeType: string;
 }
 
+/**
+ * Automation-run surface member. Rides in-band as the RESERVED FIRST member of
+ * every tool result's JSON object so Earthling's UI can coalesce consecutive
+ * browser/desktop automation tool calls into one human-readable "automation
+ * run" bubble ("Working in Chrome · outlook.office.com · Clicking…"). The
+ * contract is server-name-agnostic: a server opts in purely by emitting this
+ * member. The Claude Agent SDK drops result-level `_meta`/`structuredContent`,
+ * so the result's text content is the ONLY channel that survives — hence
+ * in-band as the first object member (ordering is by construction, object
+ * literal spread).
+ *
+ * OWNER: Earthling engine (engine/agent/tooling.py) defines this contract;
+ * these literals and key names mirror it and must be kept in step. Values are
+ * data only. Optional keys are OMITTED (never null/empty) when unknown.
+ */
+interface AutomationSurface {
+  kind: "automation";
+  app: "Chrome";
+  action: SurfaceAction;
+  /** Acted tab's URL host; omitted when unknown. */
+  target?: string;
+  /** Acted tab's page title; omitted when unknown. */
+  title?: string;
+  /** Absolute path of a screenshot this call wrote to disk; omitted otherwise. */
+  screenshot?: string;
+}
+
+function hostOf(url: string): string | undefined {
+  try {
+    const u = new URL(url);
+    // Only real web origins make a meaningful bubble target. chrome:// and
+    // chrome-extension:// parse to pseudo-hosts (chrome://settings/reset →
+    // "settings"; chrome-extension://abc/… → the extension id "abc") that read
+    // as nonsense; about:/file:/data:/view-source: already yield an empty host.
+    // Gate on the web schemes so all of these fall away to no target.
+    if (u.protocol !== "http:" && u.protocol !== "https:") return undefined;
+    return u.host || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** A screenshot path only when save_to_path actually wrote a file — surfaced by
+ * the capture pipeline as top-level `savedTo` (never a data URL). */
+function screenshotPathOf(payload: unknown): string | undefined {
+  if (payload !== null && typeof payload === "object" && !Array.isArray(payload)) {
+    const v = (payload as Record<string, unknown>).savedTo;
+    if (typeof v === "string" && v.length > 0) return v;
+  }
+  return undefined;
+}
+
+function buildSurface(
+  action: SurfaceAction,
+  tab: BridgeTabMeta | undefined,
+  screenshot: string | undefined,
+): AutomationSurface {
+  const surface: AutomationSurface = { kind: "automation", app: "Chrome", action };
+  if (tab) {
+    const host = hostOf(tab.url);
+    if (host) surface.target = host;
+    if (tab.title) surface.title = tab.title;
+  }
+  if (screenshot) surface.screenshot = screenshot;
+  return surface;
+}
+
 export function toolResult(
   result: unknown,
   toolName?: string,
   image?: ImagePayload,
   environment?: EnvReport,
+  action?: SurfaceAction,
+  tab?: BridgeTabMeta,
 ) {
   let payload: unknown = result;
   // Lean envelope: wrap array-results from list-style tools so the agent
@@ -503,6 +617,19 @@ export function toolResult(
       payload !== null && typeof payload === "object" && !Array.isArray(payload)
         ? { ...(payload as Record<string, unknown>), environment }
         : { result: payload, environment };
+  }
+  // Attach the automation-run surface member as the FIRST member of the JSON
+  // object. A primitive/array payload is wrapped under `result` so the member
+  // always leads an object (ordering by object-literal spread). `action` is
+  // omitted only by the standalone test harness that calls this helper
+  // directly — the registry wrappers always supply it, so every live result
+  // carries the member.
+  if (action) {
+    const surface = buildSurface(action, tab, screenshotPathOf(payload));
+    payload =
+      payload !== null && typeof payload === "object" && !Array.isArray(payload)
+        ? { surface, ...(payload as Record<string, unknown>) }
+        : { surface, result: payload };
   }
   const textBlock = {
     type: "text" as const,
@@ -523,20 +650,30 @@ export function toolResult(
   return { content };
 }
 
-export function toolError(err: any, environment?: EnvReport) {
-  const payload: Record<string, unknown> = {
+export function toolError(
+  err: any,
+  environment?: EnvReport,
+  action?: SurfaceAction,
+  tab?: BridgeTabMeta,
+) {
+  const errFields: Record<string, unknown> = {
     error: err?.message ?? String(err),
   };
   // Same environment stamp as toolResult — an errored action is exactly when
   // the agent most needs to know a dialog fired or the attach is blocked.
-  if (environment) payload.environment = environment;
+  if (environment) errFields.environment = environment;
   if (err?.leasedBy !== undefined && err.leasedBy !== null)
-    payload.leasedBy = err.leasedBy;
-  if (err?.since !== undefined && err.since !== null) payload.since = err.since;
-  if (err?.hint !== undefined && err.hint !== null) payload.hint = err.hint;
+    errFields.leasedBy = err.leasedBy;
+  if (err?.since !== undefined && err.since !== null) errFields.since = err.since;
+  if (err?.hint !== undefined && err.hint !== null) errFields.hint = err.hint;
   if (err?.recovery !== undefined && err.recovery !== null)
-    payload.recovery = err.recovery;
-  if (err?.kind !== undefined && err.kind !== null) payload.kind = err.kind;
+    errFields.recovery = err.recovery;
+  if (err?.kind !== undefined && err.kind !== null) errFields.kind = err.kind;
+  // Errors carry the surface member too (no screenshot — an errored call wrote
+  // no file), so the automation-run bubble stays coherent through failures.
+  const payload = action
+    ? { surface: buildSurface(action, tab, undefined), ...errFields }
+    : errFields;
   return {
     content: [{ type: "text" as const, text: JSON.stringify(payload) }],
     isError: true,

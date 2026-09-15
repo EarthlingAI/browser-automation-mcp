@@ -44,6 +44,7 @@ export function registerNetTools(server: McpServer, ctx: ToolContext): void {
 
   registerTool(server, ctx, {
     name: "browser_fetch",
+    action: "other",
     title: "Fetch a URL with the user's real cookies (CORS-free)",
     description:
       "Issue an HTTP request from the extension's privileged context — as FIRST-PARTY for the target origin. " +
@@ -177,6 +178,7 @@ export function registerNetTools(server: McpServer, ctx: ToolContext): void {
 
   registerTool(server, ctx, {
     name: "browser_cookies",
+    action: "other",
     title: "Read cookies (incl. httpOnly) for a site",
     description:
       "Read cookies from the browser's default (non-incognito) cookie store by origin/domain — INCLUDING httpOnly " +

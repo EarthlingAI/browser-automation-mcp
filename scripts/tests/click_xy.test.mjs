@@ -40,6 +40,9 @@ function setup(responses = [], { refs = {}, viewport } = {}) {
         throw new Error(`unexpected daemon.exec call: ${command.kind}`);
       return queue.shift();
     },
+    // Acted-tab identity for the surface member's target/title (registry.ts
+    // buildSurface) — a real DaemonClient stamps this from the exec response.
+    takeTab: () => ({ url: "https://widgets.test/board", title: "Widgets Board" }),
   };
   const callbacks = new Map();
   const server = {
@@ -79,6 +82,28 @@ test("browser_click_xy forwards a click_xy ExtCommand with coordinates + options
   assert.equal(c.clickCount, 2);
   assert.deepEqual(c.modifiers, ["Shift"]);
   // click_xy carries no ref → no resolve_ref probe was inserted.
+});
+
+test("browser_click_xy's result envelope leads with the surface member (action:click, tab-derived target/title)", async () => {
+  const { callbacks } = setup([{ clicked: { x: 100, y: 200 }, trusted: true }]);
+  const click_xy = callbacks.get("browser_click_xy");
+  const res = await click_xy({
+    x: 100,
+    y: 200,
+    button: "left",
+    clickCount: 1,
+    tabId: TAB,
+    snapshot: false,
+  });
+  const decoded = parse(res);
+  assert.deepEqual(Object.keys(decoded)[0], "surface", "surface must be the first key");
+  assert.deepEqual(decoded.surface, {
+    kind: "automation",
+    app: "Chrome",
+    action: "click",
+    target: "widgets.test",
+    title: "Widgets Board",
+  });
 });
 
 test("browser_click_xy rejects a coordinate outside the known viewport before any daemon hop", async () => {
@@ -185,4 +210,11 @@ test("browser_press_key(trusted:false) forwards trusted:false (synthetic path)",
   await press({ key: "a", trusted: false, tabId: TAB });
   assert.equal(calls[0].command.kind, "press_key");
   assert.equal(calls[0].command.trusted, false);
+});
+
+test("browser_press_key's result envelope carries surface action:key", async () => {
+  const { callbacks } = setup([{ pressed: "Enter", trusted: true }]);
+  const press = callbacks.get("browser_press_key");
+  const res = await press({ key: "Enter", trusted: true, tabId: TAB, snapshot: false });
+  assert.equal(parse(res).surface.action, "key");
 });

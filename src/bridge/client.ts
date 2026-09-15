@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import {
   BridgeRequest,
   BridgeResponse,
+  BridgeTabMeta,
   DistributiveOmit,
   ExtCommand,
   TabId,
@@ -41,6 +42,22 @@ export class DaemonClient {
    * them on every response, so the latest copy is always current.
    */
   private pendingEnv = new Map<TabId, TabEnvState>();
+  /**
+   * Acted tab identity accumulated off `exec` responses since the last
+   * `takeTab()`, for the automation-run surface member (target host + title).
+   * A tool call spans several exec hops (act + auto-snapshot + resolve_ref
+   * probes) all on the same leased tab, so the latest stamp is the acted tab —
+   * last-write-wins names the single target the surface needs (unlike the
+   * per-tab event accumulation in `pendingEnv`).
+   *
+   * ASSUMPTION: at most one tool call is in flight per bridge at a time — the
+   * same one-call-in-flight invariant `pendingEnv`/`takeEnv()` already rely on.
+   * Genuinely concurrent tool calls (parallel tool_use) could interleave their
+   * exec hops here and cross-contaminate a surface's host/title; a redesign
+   * would key this per in-flight call, but the whole envelope-stamping layer
+   * shares that assumption, so this field does not break it further.
+   */
+  private pendingTab: BridgeTabMeta | undefined;
 
   constructor(
     endpoint: { port: number; token: string },
@@ -183,6 +200,17 @@ export class DaemonClient {
     return this.pendingEnv.get(tabId);
   }
 
+  /**
+   * Consume-once acted-tab identity for the surface member. Cleared on every
+   * take so a following tool call that does no exec (e.g. browser_list_tabs)
+   * doesn't inherit the prior call's tab.
+   */
+  takeTab(): BridgeTabMeta | undefined {
+    const tab = this.pendingTab;
+    this.pendingTab = undefined;
+    return tab;
+  }
+
   private sendOnce(
     req: DistributiveOmit<BridgeRequest, "id">,
   ): Promise<unknown> {
@@ -193,6 +221,10 @@ export class DaemonClient {
         // Env riding on the daemon response (exec only). Both paths — an
         // errored action still surfaces what happened in the environment.
         if (req.type === "exec") this.noteEnv(req.tabId, msg.env);
+        // Acted-tab identity for the surface member (exec only; ok AND error).
+        // Later hops on the same tool call overwrite — the last exec is the
+        // acted tab (its auto-snapshot / probes run on the same tab).
+        if (req.type === "exec" && msg.tab) this.pendingTab = msg.tab;
         if (msg.ok) resolve(msg.result);
         else {
           const err: any = new Error(msg.error);

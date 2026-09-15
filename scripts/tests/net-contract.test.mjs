@@ -256,3 +256,41 @@ test("cookies: domain + name filter both ride the wire", async () => {
   assert.equal(sends[0].filter.name, "sid");
   assert.equal("tabId" in sends[0], false, "lease-free: no tab on the wire");
 });
+
+// ─── 4. surface member — lease-free tools carry no target/title ────
+//
+// browser_fetch and browser_cookies call `ctx.daemon.send(...)`, never
+// `ctx.daemon.exec(tabId, ...)` — so a real DaemonClient never stamps
+// `pendingTab` for them, and `takeTab()` (when present) reports nothing to
+// attribute. This mock daemon (like a version of DaemonClient predating the
+// surface member) omits `takeTab` entirely; registry.ts's `takeTab?.()` must
+// tolerate that exactly as it tolerates a real daemon reporting no acted tab.
+// Both tools' static action is "other".
+
+test("fetch: result envelope leads with surface (action:other) and omits target/title (lease-free)", async () => {
+  const { callbacks } = setup({ responses: [{ status: 200, ok: true, body: "hi" }] });
+  const res = await callbacks.get("browser_fetch")(fetchArgs());
+  const decoded = parse(res);
+  assert.deepEqual(Object.keys(decoded)[0], "surface");
+  assert.deepEqual(decoded.surface, { kind: "automation", app: "Chrome", action: "other" });
+  assert.equal("target" in decoded.surface, false);
+  assert.equal("title" in decoded.surface, false);
+});
+
+test("cookies: result envelope leads with surface (action:other) and omits target/title (lease-free)", async () => {
+  const { callbacks } = setup({ responses: [[]] });
+  const res = await callbacks.get("browser_cookies")({ domain: "e.test" });
+  const decoded = parse(res);
+  assert.deepEqual(Object.keys(decoded)[0], "surface");
+  assert.deepEqual(decoded.surface, { kind: "automation", app: "Chrome", action: "other" });
+});
+
+test("cookies: the url|domain validation error envelope also leads with surface (action:other)", async () => {
+  const { callbacks } = setup();
+  const res = await callbacks.get("browser_cookies")({});
+  assert.equal(res.isError, true);
+  const decoded = parse(res);
+  assert.deepEqual(Object.keys(decoded)[0], "surface");
+  assert.equal(decoded.surface.action, "other");
+  assert.equal("target" in decoded.surface, false);
+});

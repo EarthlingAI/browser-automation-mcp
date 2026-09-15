@@ -16,6 +16,7 @@ export function registerObserveTools(
 ): void {
   registerTool(server, ctx, {
     name: "browser_snapshot",
+    action: "snapshot",
     title: "Snapshot the page accessibility tree (optionally with screenshot)",
     description:
       "Accessibility-tree snapshot of the leased tab, returned as an indented outline in `payload.tree`: " +
@@ -179,6 +180,7 @@ export function registerObserveTools(
 
   registerTool(server, ctx, {
     name: "browser_console_messages",
+    action: "other",
     title: "Recent console messages",
     description:
       "Recent console output from the leased tab (log, warn, error). Supports cursor pagination — pass `next_cursor` from a prior call to page back through history.",
@@ -202,6 +204,7 @@ export function registerObserveTools(
 
   registerTool(server, ctx, {
     name: "browser_network_requests",
+    action: "other",
     title: "Recent network requests",
     description:
       "Recent network requests from the leased tab (method, URL, status, type, timing). For unfamiliar SPAs, call this first to discover real backend endpoints from xhr/fetch traffic before guessing endpoint paths. Default filter excludes images/scripts/stylesheets — pass `type` explicitly to include them. Supports cursor pagination.",
