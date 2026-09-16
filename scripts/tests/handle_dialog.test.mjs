@@ -28,6 +28,7 @@ function setup(responses = []) {
   const daemon = {
     sessionId: "test-handle-dialog",
     takeEnv: () => undefined,
+    takeTab: () => undefined,
     peekEnv: () => undefined,
     async exec(tabId, command) {
       calls.push({ tabId, command });

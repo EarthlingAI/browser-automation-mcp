@@ -40,6 +40,7 @@ function setup({ responses = [] } = {}) {
   const daemon = {
     sessionId: "test-net-contract",
     takeEnv: () => undefined,
+    takeTab: () => undefined,
     peekEnv: () => undefined,
     async send(command) {
       sends.push(command);
@@ -261,11 +262,10 @@ test("cookies: domain + name filter both ride the wire", async () => {
 //
 // browser_fetch and browser_cookies call `ctx.daemon.send(...)`, never
 // `ctx.daemon.exec(tabId, ...)` — so a real DaemonClient never stamps
-// `pendingTab` for them, and `takeTab()` (when present) reports nothing to
-// attribute. This mock daemon (like a version of DaemonClient predating the
-// surface member) omits `takeTab` entirely; registry.ts's `takeTab?.()` must
-// tolerate that exactly as it tolerates a real daemon reporting no acted tab.
-// Both tools' static action is "other".
+// `pendingTab` for them, so `takeTab()` reports nothing to attribute. The mock
+// implements the complete DaemonClient surface and returns undefined here,
+// matching a real daemon after a lease-free call. Both tools' static action is
+// "other".
 
 test("fetch: result envelope leads with surface (action:other) and omits target/title (lease-free)", async () => {
   const { callbacks } = setup({ responses: [{ status: 200, ok: true, body: "hi" }] });

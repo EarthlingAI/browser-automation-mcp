@@ -26,6 +26,7 @@ function captureUploadCallback() {
     daemon: {
       sessionId: "test-session",
       takeEnv: () => undefined,
+      takeTab: () => undefined,
       peekEnv: () => undefined,
     },
     session: new BridgeSession(),
