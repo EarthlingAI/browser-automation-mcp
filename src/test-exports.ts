@@ -38,6 +38,11 @@ export {
   saveToPathSchema,
   saveTreeToPathSchema,
   writeText,
+  writeBase64,
+  pruneAutoSaved,
+  AUTO_SAVED_NAME_RE,
+  AUTO_SAVED_MAX_AGE_MS,
+  AUTO_SAVED_MAX_FILES,
   TREE_EXTS,
 } from "./bridge/tools/save";
 export { VISUAL_CONSTANTS } from "./bridge/tools/visual";

@@ -575,6 +575,7 @@ browser-automation-mcp/
         ├── serialize.test.mjs         # serializeTree compact-outline grammar (flags, value, values-collapse, escaping, nesting)
         ├── diff.test.mjs              # serializeDiff — added/removed/changed classification + Δ-header grammar + numeric-ref sort
         ├── save.test.mjs              # save_to_path resolver (outputs_dir precedence, traversal rejection, non-fatal errors)
+        ├── save-retention.test.mjs    # auto-saved file pruning (age, count cap, name scope, write-path hook)
         ├── snapshot-capture.test.mjs  # runUnifiedCapture — snapshot_capture + annotate_image two-hop topology
         ├── containment.test.mjs       # computeDrawStroke — containment-based parent stroke suppression
         ├── timeout.test.mjs           # inferExtTimeout — per-command watchdog inference
@@ -822,9 +823,11 @@ Relative string paths resolve under `outputs_dir`; absolute paths are allowed; a
 
 1. `BROWSER_AUTOMATION_MCP_OUTPUTS_DIR` env var (highest priority).
 2. `<BROWSER_AUTOMATION_MCP_RUNTIME_DIR>/outputs/` when the runtime dir env var is set.
-3. `<cwd>/outputs/browser/` as the final fallback.
+3. `<cwd>/outputs/browser/` as the final fallback — a host that starts the server in its own folder keeps saves in this package's git-ignored `outputs/`.
 
-**Deployment tip:** hosts that embed this MCP should set `BROWSER_AUTOMATION_MCP_OUTPUTS_DIR` in their `.mcp.json` `env` block so screenshots land in a host-managed folder rather than under the MCP source tree. Example:
+**Retention.** Each auto-named save (`save_to_path:true`, `save_tree_to_path:true`, `browser_fetch` `save_to_path:true`) prunes the auto-named files directly in `outputs_dir`: those older than 7 days, then the oldest beyond the 200 newest (modification time, name as tie-break). Scope is by name: only files named in the auto-namer formats (`screenshot_<tab>_<ms>.jpg`, `tree_<tab>_<ms>.txt`, `fetch_<ms>.txt|.bin`) are considered, and all kinds share the one cap. Any other name, subdirectories, and the file just saved are never deleted, so pass a different name to keep a save. Pruning errors are logged, never fatal. Limits are the `AUTO_SAVED_MAX_AGE_MS` / `AUTO_SAVED_MAX_FILES` constants in `src/bridge/tools/save.ts`.
+
+To redirect saves, set `BROWSER_AUTOMATION_MCP_OUTPUTS_DIR` in the host's `.mcp.json` `env` block. Example:
 
 ```json
 {

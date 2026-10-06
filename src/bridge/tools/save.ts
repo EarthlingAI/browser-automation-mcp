@@ -14,8 +14,8 @@
  * before any capture work happens.
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, extname, isAbsolute, join, resolve } from "node:path";
+import { lstatSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
 import { coerceBoolean } from "./coerce";
 
@@ -102,10 +102,95 @@ export function resolveSavePath(
   return { path: absolute, format };
 }
 
+// ── Auto-saved file retention ────────────────────────────────────────────────
+// Auto-named saves (`browser_snapshot` save_to_path:true / save_tree_to_path:true,
+// `browser_fetch` save_to_path:true) are task residue that can hold whatever a
+// logged-in page showed, so each such write prunes them by age, then by count.
+// Scope is by NAME: a file whose name does not match the auto-namer formats is
+// never pruned, nor is anything outside the outputs dir's top level.
+
+export const AUTO_SAVED_MAX_AGE_MS = 7 * 24 * 3600 * 1000;
+export const AUTO_SAVED_MAX_FILES = 200;
+/** Exactly the names the auto-namers above produce — nothing else is ever pruned. */
+export const AUTO_SAVED_NAME_RE =
+  /^(?:screenshot_[0-9]+_[0-9]+\.jpg|tree_[0-9]+_[0-9]+\.txt|fetch_[0-9]+\.(?:txt|bin))$/;
+
+/**
+ * Delete auto-saved files in `dir` older than the age limit, then the oldest
+ * beyond the newest `AUTO_SAVED_MAX_FILES` (mtime, name as tie-break). Never
+ * deletes `keep`. Fail-soft: errors are logged and never thrown. `remove` is the
+ * deletion seam (tests substitute a failing one).
+ */
+export function pruneAutoSaved(
+  dir: string,
+  keep: string,
+  now = Date.now(),
+  remove: (path: string) => void = unlinkSync,
+): string[] {
+  const removed: string[] = [];
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch (err) {
+    console.error(`[browser-automation-mcp] auto-save prune: cannot list ${dir}: ${String(err)}`);
+    return removed;
+  }
+  const keepPath = resolve(keep);
+  const files: { path: string; name: string; mtime: number }[] = [];
+  for (const name of names) {
+    if (!AUTO_SAVED_NAME_RE.test(name)) continue;
+    const path = resolve(dir, name);
+    try {
+      const st = lstatSync(path);
+      if (st.isFile()) files.push({ path, name, mtime: st.mtimeMs });
+    } catch {
+      // Vanished or unreadable — nothing to prune.
+    }
+  }
+  files.sort((a, b) => b.mtime - a.mtime || (a.name < b.name ? 1 : a.name > b.name ? -1 : 0));
+  const kept: typeof files = [];
+  const doomed: typeof files = [];
+  for (const f of files) {
+    if (f.path === keepPath) kept.push(f);
+    else if (now - f.mtime > AUTO_SAVED_MAX_AGE_MS) doomed.push(f);
+    else kept.push(f);
+  }
+  let slots = AUTO_SAVED_MAX_FILES - (kept.some((f) => f.path === keepPath) ? 1 : 0);
+  for (const f of kept) {
+    if (f.path === keepPath) continue;
+    if (slots > 0) slots--;
+    else doomed.push(f);
+  }
+  for (const f of doomed) {
+    try {
+      remove(f.path);
+      removed.push(f.path);
+    } catch (err) {
+      // Another process sharing this dir pruned it first.
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") continue;
+      console.error(`[browser-automation-mcp] auto-save prune: cannot delete ${f.path}: ${String(err)}`);
+    }
+  }
+  return removed;
+}
+
+/** Prune after a write when that write was itself an auto-named save in the outputs dir. */
+function pruneIfAutoSaved(absolutePath: string): void {
+  try {
+    const outputs = resolve(getOutputsDir());
+    if (resolve(dirname(absolutePath)) === outputs && AUTO_SAVED_NAME_RE.test(basename(absolutePath))) {
+      pruneAutoSaved(outputs, absolutePath);
+    }
+  } catch (err) {
+    console.error(`[browser-automation-mcp] auto-save prune failed: ${String(err)}`);
+  }
+}
+
 /** Write raw base64-decoded bytes to disk (arbitrary binary — image, fetch body). */
 export function writeBase64(absolutePath: string, dataBase64: string): void {
   mkdirSync(dirname(absolutePath), { recursive: true });
   writeFileSync(absolutePath, Buffer.from(dataBase64, "base64"));
+  pruneIfAutoSaved(absolutePath);
 }
 
 /** Alias kept for the capture pipeline's image offload — same bytes-to-disk write. */
@@ -180,6 +265,7 @@ export function resolveTreeSavePath(
 export function writeText(absolutePath: string, text: string): void {
   mkdirSync(dirname(absolutePath), { recursive: true });
   writeFileSync(absolutePath, text, "utf8");
+  pruneIfAutoSaved(absolutePath);
 }
 
 /**
@@ -213,7 +299,7 @@ export const saveToPathSchema = z
   )
   .describe(
     "Write the captured image to disk. false (default) — return inline only (JPEG). " +
-      "true — auto-pick <outputs_dir>/screenshot_<tabId>_<ms>.jpg. " +
+      "true — auto-pick <outputs_dir>/screenshot_<tabId>_<ms>.jpg (auto-named saves of every kind share one cap: pruned after 7 days or beyond the newest 200; any other name is kept). " +
       'String — explicit path; extension picks the format (".png" → PNG, ".jpg"/".jpeg" → JPEG). ' +
       "Relative resolves to outputs_dir; absolute allowed; \"..\" segments rejected. " +
       "Save errors are non-fatal: the image still returns; failure surfaces as `saveError` in the text envelope.",
@@ -236,7 +322,7 @@ export const downloadSaveToPathSchema = z
   .describe(
     "Write the response body to a file and return its path as `fetchedTo` — the escape " +
       "hatch for bodies too big to inline. false (default) — inline only (cut to max_inline_bytes). " +
-      "true — auto-pick <outputs_dir>/fetch_<ms>.{txt|bin} (.txt for text bodies, .bin for binary). " +
+      "true — auto-pick <outputs_dir>/fetch_<ms>.{txt|bin} (.txt for text bodies, .bin for binary; auto-named saves of every kind share one cap: pruned after 7 days or beyond the newest 200; any other name is kept). " +
       'String — explicit path (any extension; relative resolves to outputs_dir; ".." rejected). ' +
       "The saved body is full up to a 25 MB hard ceiling (a larger body is capped, flagged `truncated`). " +
       "Write errors are non-fatal (`fetchError`); the inline body still returns.",
@@ -271,7 +357,7 @@ export const saveTreeToPathSchema = z
       "scoping (honours 'scope' if passed) — and return its path as `treeSavedTo`. The escape hatch " +
       "for pages too big to inline: read the file, then act on any [ref=N] it contains (file-sourced " +
       "refs resolve like any other). false (default) — no file. true — auto-pick " +
-      "<outputs_dir>/tree_<tabId>_<ms>.txt. String — explicit .txt/.md path (relative resolves to " +
+      "<outputs_dir>/tree_<tabId>_<ms>.txt (auto-named saves of every kind share one cap: pruned after 7 days or beyond the newest 200; any other name is kept). String — explicit .txt/.md path (relative resolves to " +
       "outputs_dir; \"..\" rejected). Per-call only, never carried into auto-snapshots. " +
       "Write errors are non-fatal (`treeSaveError`).",
   );
