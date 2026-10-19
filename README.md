@@ -151,7 +151,7 @@ Because the lease owns the debugger session (see [Lease model](#lease-model)), b
 
 ### Observation
 
-#### `browser_snapshot` (read-only)
+#### `browser_snapshot`
 
 Pruned accessibility-tree snapshot of the leased tab. Returns nodes with stable numeric `ref` IDs to target in interaction tools. `screenshot` is tri-state:
 
@@ -462,7 +462,7 @@ Returns session + persistent cookies with `{ name, value, domain, path, secure, 
 | `browser_activate_tab`     | —            | —               | ✓              | ✓             |
 | `browser_resize`           | —            | —               | ✓              | ✓             |
 | `browser_handle_dialog`    | —            | —               | ✓              | ✓             |
-| `browser_snapshot`         | ✓            | —               | ✓              | ✓             |
+| `browser_snapshot`         | —            | ✓               | —              | ✓             |
 | `browser_console_messages` | ✓            | —               | ✓              | ✓             |
 | `browser_network_requests` | ✓            | —               | ✓              | ✓             |
 | `browser_navigate`         | —            | ✓               | —              | ✓             |

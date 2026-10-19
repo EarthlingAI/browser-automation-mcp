@@ -35,10 +35,12 @@ export function registerObserveTools(
       "action), or \"raw\" (tree + clean pixels, no badges — for saving an artifact or showing the page as the " +
       "user sees it). Once \"annotated\" or \"raw\" is set, every subsequent action-tool auto-snapshot carries the " +
       "image forward in the same mode; costs ~150–250 ms per action, so pass \"off\" to drop back to tree-only.",
+    // Not read-only: an explicit save_to_path / save_tree_to_path string writes, and
+    // replaces, a file at a caller-chosen path. Only the default no-save call is pure.
     annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
       openWorldHint: true,
     },
     schema: {

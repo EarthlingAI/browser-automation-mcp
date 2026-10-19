@@ -301,7 +301,7 @@ export const saveToPathSchema = z
     "Write the captured image to disk. false (default) — return inline only (JPEG). " +
       "true — auto-pick <outputs_dir>/screenshot_<tabId>_<ms>.jpg (auto-named saves of every kind share one cap: pruned after 7 days or beyond the newest 200; any other name is kept). " +
       'String — explicit path; extension picks the format (".png" → PNG, ".jpg"/".jpeg" → JPEG). ' +
-      "Relative resolves to outputs_dir; absolute allowed; \"..\" segments rejected. " +
+      "Relative resolves to outputs_dir; absolute allowed; \"..\" segments rejected; an existing file there is replaced. " +
       "Save errors are non-fatal: the image still returns; failure surfaces as `saveError` in the text envelope.",
   );
 
@@ -358,6 +358,6 @@ export const saveTreeToPathSchema = z
       "for pages too big to inline: read the file, then act on any [ref=N] it contains (file-sourced " +
       "refs resolve like any other). false (default) — no file. true — auto-pick " +
       "<outputs_dir>/tree_<tabId>_<ms>.txt (auto-named saves of every kind share one cap: pruned after 7 days or beyond the newest 200; any other name is kept). String — explicit .txt/.md path (relative resolves to " +
-      "outputs_dir; \"..\" rejected). Per-call only, never carried into auto-snapshots. " +
+      "outputs_dir; \"..\" rejected; an existing file there is replaced). Per-call only, never carried into auto-snapshots. " +
       "Write errors are non-fatal (`treeSaveError`).",
   );

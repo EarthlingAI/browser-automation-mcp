@@ -72,10 +72,12 @@ const EXPECTED = {
     openWorld: true,
   },
   // Observe
+  // Not read-only: a save_to_path / save_tree_to_path argument writes, and
+  // replaces, a file at a caller-chosen path.
   browser_snapshot: {
-    readOnly: true,
-    destructive: false,
-    idempotent: true,
+    readOnly: false,
+    destructive: true,
+    idempotent: false,
     openWorld: true,
   },
   browser_console_messages: {
