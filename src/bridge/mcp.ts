@@ -120,7 +120,9 @@ async function handlePost(
 
   if (!sessionId && isInitializeBody(body)) {
     // Per-MCP-session: a fresh McpServer + DaemonClient + BridgeSession so each agent gets its own daemon-side lease scope. Closing the transport closes the daemon socket, which auto-releases that session's leases (see daemon/server.ts socket close handler).
-    const { server, daemon } = await buildServer(opts);
+    // Re-resolve the daemon endpoint per session: this process outlives daemons (several hosts share one, and any of them may respawn it on a new port), so the endpoint captured at startup goes stale and would refuse every later initialize.
+    const endpoint = await opts.ensureDaemonFn();
+    const { server, daemon } = await buildServer({ ...opts, endpoint });
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (id) => {
