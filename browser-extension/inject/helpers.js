@@ -19,7 +19,7 @@
   // loaded — preserves the in-page ref maps so refs stay stable and resolvable
   // across an action sequence. Bump the integer when changing the in-page
   // contract (new act kind, return-shape change, ref-identity scheme).
-  const HELPERS_VERSION = 13;
+  const HELPERS_VERSION = 14;
   if (globalThis.__mcpHelpersVersion === HELPERS_VERSION) return;
   globalThis.__mcpHelpersVersion = HELPERS_VERSION;
   globalThis.__mcpHelpersLoaded = true;
@@ -170,13 +170,43 @@
     }
   }
 
+  // True when an opacity of 0 is only where an unfinished animation or
+  // transition currently stands, not where it ends (HELPERS_VERSION 14). The
+  // browser does not advance animations in a tab that is not being rendered, so
+  // content entering with an opacity animation sits at its first frame for as
+  // long as the tab stays in the background; pruning it would return an empty
+  // tree for a page that is fully there. An animation that ends at 0 (a fade
+  // out) still counts as hidden, as does one that has finished.
+  function opacityIsArriving(el) {
+    let animations;
+    try {
+      animations = el.getAnimations?.() || [];
+    } catch {
+      return false;
+    }
+    for (const animation of animations) {
+      if (animation.playState === "finished" || animation.playState === "idle")
+        continue;
+      let frames;
+      try {
+        frames = animation.effect?.getKeyframes?.() || [];
+      } catch {
+        continue;
+      }
+      if (!frames.some((frame) => frame.opacity !== undefined)) continue;
+      // The last keyframe is where the animation ends. One without an opacity
+      // of its own ends at the element's underlying opacity, which is not the 0
+      // being animated from.
+      const end = frames[frames.length - 1].opacity;
+      if (end === undefined || Number(end) !== 0) return true;
+    }
+    return false;
+  }
+
   function isHidden(el) {
     const style = viewOf(el).getComputedStyle(el);
-    return (
-      style.visibility === "hidden" ||
-      style.display === "none" ||
-      style.opacity === "0"
-    );
+    if (style.visibility === "hidden" || style.display === "none") return true;
+    return style.opacity === "0" && !opacityIsArriving(el);
   }
 
   function isVisible(el, rect) {
