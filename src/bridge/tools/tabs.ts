@@ -54,7 +54,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
     action: "tab",
     title: "Open a new tab",
     description:
-      "Open a URL in a new tab and auto-claim the lease. Defaults to background (no focus change). Returns the actual loaded url/title plus a `navigated` flag and a `settledAt` timestamp.",
+      "Open a URL in a new tab and auto-claim the lease. Defaults to background (no focus change). Close the tab with browser_close_tab when you are done with it, unless you are leaving it open for the user. Returns the actual loaded url/title plus a `navigated` flag and a `settledAt` timestamp.",
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
@@ -156,7 +156,7 @@ export function registerTabTools(server: McpServer, ctx: ToolContext): void {
     action: "tab",
     title: "Release tab lease(s)",
     description:
-      "Release the lease on a tab so another session can claim. Omit tabId to release all this session's leases.",
+      "Release the lease on a tab so another session can claim. The tab stays open. Omit tabId to release all this session's leases.",
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,

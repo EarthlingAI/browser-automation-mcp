@@ -16,7 +16,7 @@ export const BUILD_STAMP: string =
 
 export const SERVER_INSTRUCTIONS = `Cross-tab control of the user's real Chrome via a passive MV3 extension. Tabs act in the BACKGROUND by default — no window raise, no focus theft; agents coexist by leasing different tabs.
 
-Lease: claim a tab (browser_switch_tab, or browser_open_tab auto-claims) before acting; release when done. A revoked/closed lease makes the next action return lease_required — re-claim and continue.
+Lease: claim a tab (browser_switch_tab, or browser_open_tab auto-claims) before acting. When done, close a tab you opened (browser_close_tab) unless you are leaving it open for the user; release a tab you claimed (browser_release_tab) and never close it. A revoked/closed lease makes the next action return lease_required — re-claim and continue.
 
 Observe-act loop: browser_snapshot returns the accessibility tree as indented '- {role} "{name}" [ref=N]' lines; pass a ref to the action tools (browser_click, browser_type, …), which auto-snapshot the change after acting. Each tool's own description carries its mechanics and output grammar — read it before first use.
 

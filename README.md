@@ -70,7 +70,7 @@ Returns `{ id, url, title, navigated, settledAt, previousActiveTab, incognito }`
 
 #### `browser_close_tab`
 
-Close a tab by id and release its lease.
+Close a tab by id and release its lease. The tab leaves its tab group first, so the browser does not keep the emptied group as a saved group.
 
 | Parameter | Type | Default | Description                       |
 | --------- | ---- | ------- | --------------------------------- |
@@ -90,7 +90,7 @@ Returns `{ claimed, previousActiveTab, previousActiveTabError? }` — `previousA
 
 #### `browser_release_tab`
 
-Release the lease on a tab so another session can claim it. Omit `tabId` to release all leases held by this session.
+Release the lease on a tab so another session can claim it. The tab stays open. Omit `tabId` to release all leases held by this session.
 
 | Parameter | Type | Default | Description                              |
 | --------- | ---- | ------- | ---------------------------------------- |

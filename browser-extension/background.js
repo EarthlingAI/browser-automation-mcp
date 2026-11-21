@@ -759,6 +759,12 @@ function urlsLookLikeMatch(requested, landed) {
 }
 
 async function removeTab(tabId) {
+  // Leave the group before closing: the browser keeps a group whose last tab
+  // was closed as a saved group, so every agent-closed tab would otherwise
+  // leave one more saved group behind in the user's browser.
+  try {
+    await chrome.tabs.ungroup(tabId);
+  } catch {}
   await chrome.tabs.remove(tabId);
   return { closed: tabId };
 }
